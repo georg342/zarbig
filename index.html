@@ -468,7 +468,7 @@
         const t0 = Date.now();
         
         try {
-          const r = await fetchRapido(proxyUrl, { method: "GET" }, 12000); 
+          const r = await fetchRapido(proxyUrl, { method: "GET" }, 120000); 
           const ms = Date.now() - t0;
 
           if (!r.ok) {
