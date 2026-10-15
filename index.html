@@ -49,6 +49,11 @@
     .prog-dl { background: #8a2be2; }
 
     textarea { width: 100%; height: 160px; background: #0a0a0a; color: #00ff66; font-family: monospace; font-size: 0.72rem; padding: 10px; border: 1px solid #333; border-radius: 8px; resize: vertical; user-select: text; outline: none; margin-bottom: 8px; }
+
+    /* Estilo do Checkbox YT Music */
+    .yt-music-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+    .yt-music-toggle input { width: 18px; height: 18px; accent-color: #ff0033; margin: 0; }
+    .yt-music-toggle label { font-size: 0.85rem; color: #ddd; font-weight: 600; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -100,12 +105,18 @@
       <div class="progress-bar prog-dl" id="progBarDl"></div>
     </div>
 
-    <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()">🎬 Gerar Links Diretos do YouTube</button>
+    <!-- Toggle YouTube Music -->
+    <div class="yt-music-toggle">
+      <input type="checkbox" id="chkYtMusic" checked />
+      <label for="chkYtMusic">Gerar links do YouTube Music</label>
+    </div>
+
+    <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()">🎬 Gerar Links Diretos</button>
     
     <button id="btnDl" class="btn-dl" onclick="buscarDownloadsAudio()">🎛️ Obter Áudio Direto (M4A)</button>
 
     <div class="row" style="margin-bottom:0;">
-      <button class="btn-sec" onclick="copiarApenasLinks(false)">🔗 Links YT</button>
+      <button class="btn-sec" onclick="copiarApenasLinks(false)">🔗 Links YT/YTM</button>
       <button class="btn-sec" onclick="copiarApenasLinks(true)">🎛️ Links Áudio</button>
       <button class="btn-sec" onclick="baixarTxt()">💾 .TXT (Ambos)</button>
     </div>
@@ -135,7 +146,7 @@
     window.onload = () => {
       document.getElementById('cid').value = localStorage.getItem('sp_cid') || '';
       document.getElementById('csec').value = localStorage.getItem('sp_csec') || '';
-      log("App iniciado. Motor Piped c/ Proxy (Nativo) preparado.");
+      log("App iniciado (Hospedado). Motor Piped c/ YT Music preparado.");
     };
 
     function limparLog() { document.getElementById('debugLog').value = ''; }
@@ -266,7 +277,7 @@
       const sel = musicasGlobal.filter(m => m.selecionada).length;
       const comYt = musicasGlobal.filter(m => m.selecionada && m.ytUrl).length;
       const comDl = musicasGlobal.filter(m => m.selecionada && m.dlUrl).length;
-      document.getElementById('selCount').innerText = `${sel} marcadas (YT: ${comYt} | DL: ${comDl})`;
+      document.getElementById('selCount').innerText = `${sel} marcadas (Link: ${comYt} | DL: ${comDl})`;
     }
 
     function toggleItem(num, ev) {
@@ -294,9 +305,12 @@
       );
 
       document.getElementById('lista').innerHTML = filtradas.map(m => {
-        let badgeYt = `<span class="yt-badge" id="badge-yt-${m.num}">S/ YT</span>`;
-        if (m.ytUrl) badgeYt = `<a class="yt-badge ok" href="${m.ytUrl}" target="_blank">▶ YT</a>`;
-        else if (m.erroYt) badgeYt = `<span class="yt-badge err" data-retry="1" onclick="tentarUnica(${m.num}, 'yt')">🔄 YT</span>`;
+        let badgeYt = `<span class="yt-badge" id="badge-yt-${m.num}">S/ Link</span>`;
+        if (m.ytUrl) {
+          const isYTM = m.ytUrl.includes("music.youtube");
+          badgeYt = `<a class="yt-badge ok" href="${m.ytUrl}" target="_blank">▶ ${isYTM ? 'YTM' : 'YT'}</a>`;
+        }
+        else if (m.erroYt) badgeYt = `<span class="yt-badge err" data-retry="1" onclick="tentarUnica(${m.num}, 'yt')">🔄 Buscar</span>`;
 
         let badgeDl = '';
         if (m.dlUrl) {
@@ -339,12 +353,14 @@
     async function acharVideoIdYoutube(m) {
       const tituloLimpo = m.titulo.replace(/\s*[\(\[].*?[\)\]]/g, '').trim();
       const primeiroArtista = m.artista.split(',')[0].trim();
-      const queries = [`${m.titulo} ${m.artista} official audio`, `${tituloLimpo} ${primeiroArtista}`];
+      
+      // Otimizamos as queries para priorizar áudios originais (estúdio)
+      const queries = [`${m.titulo} ${m.artista} official audio`, `${tituloLimpo} ${primeiroArtista} topic`];
 
       for (let qIdx = 0; qIdx < queries.length; qIdx++) {
         const termo = queries[qIdx];
         const q = encodeURIComponent(termo);
-        log(`🔎 [${m.num}] Buscando YT | Query: "${termo}"`);
+        log(`🔎 [${m.num}] Buscando ID | Query: "${termo}"`);
 
         const fontes = [
           { nome: "Jina-YT", url: `https://r.jina.ai/https://www.youtube.com/results?search_query=${q}` },
@@ -386,12 +402,16 @@
       const progWrap = document.getElementById('progWrap');
       const progBar = document.getElementById('progBar');
       const status = document.getElementById('status');
+      
+      // Verifica qual domínio o usuário quer (YT Music ou YT Normal)
+      const usarYtMusic = document.getElementById('chkYtMusic').checked;
+      const prefixoDominio = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
 
       btn.disabled = true;
       progWrap.style.display = 'block';
       progBar.style.width = '0%';
 
-      log(`=== INICIANDO BUSCA YT (${selecionadas.length} faixas) ===`);
+      log(`=== INICIANDO BUSCA DE LINKS (${selecionadas.length} faixas) ===`);
       let concluidas = 0;
 
       for (const m of selecionadas) {
@@ -403,11 +423,11 @@
 
         const res = await acharVideoIdYoutube(m);
         if (res) {
-          m.ytUrl = `https://www.youtube.com/watch?v=${res.id}`;
+          m.ytUrl = `https://${prefixoDominio}/watch?v=${res.id}`;
           m.erroYt = false;
         } else {
           m.erroYt = true;
-          log(`🚨 FALHA TOTAL no YT para [${m.num}]`);
+          log(`🚨 FALHA TOTAL ao buscar ID para [${m.num}]`);
         }
 
         concluidas++;
@@ -417,15 +437,15 @@
       }
 
       btn.disabled = false;
-      status.innerText = `✅ Busca de YouTube finalizada!`;
-      log(`=== FIM DA BUSCA YT ===`);
+      status.innerText = `✅ Busca de links finalizada!`;
+      log(`=== FIM DA BUSCA DE LINKS ===`);
     }
 
     // ==========================================
     // ETAPA 3: AUDIO EXTRACTION VIA PIPED (COM CORS PROXY)
     // ==========================================
     async function obterLinkAudioDireto(m) {
-      // Extrair o VideoID da URL
+      // Extrair o VideoID da URL (funciona pra YT normal e Music)
       const match = m.ytUrl.match(/v=([a-zA-Z0-9_-]{11})/);
       if (!match) return null;
       const videoId = match[1];
@@ -441,7 +461,7 @@
         const base = instancias[i];
         const apiUrl = `${base}/streams/${videoId}`;
         
-        // Agora usamos o AllOrigins como proxy (é muito estável e converte GET pra JSON no navegador)
+        // AllOrigins atua como ponte se as APIs ainda barrarem algo
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
         
         log(`🎛️ [${m.num}] Lendo Piped via Proxy (${base})...`);
@@ -465,15 +485,14 @@
           const json = JSON.parse(originData.contents);
 
           if (json.audioStreams && json.audioStreams.length > 0) {
-            // Ordena pelo maior bitrate
             const streams = json.audioStreams.sort((a, b) => b.bitrate - a.bitrate);
             
-            // Prioriza M4A para leitura perfeita em VDJ
+            // Prioriza M4A
             const melhorAudio = streams.find(s => s.format === "M4A") || streams[0];
             
             if (melhorAudio && melhorAudio.url) {
               log(`  ✅ Áudio ${melhorAudio.format} capturado! (${Math.round(melhorAudio.bitrate/1000)}kbps | ${ms}ms)`);
-              return melhorAudio.url; // Esse link retornado já escapa do CORS
+              return melhorAudio.url;
             }
           }
           log(`  ❌ Instância não retornou blocos de áudio.`);
@@ -488,7 +507,7 @@
     async function buscarDownloadsAudio() {
       const faixasValidas = musicasGlobal.filter(m => m.selecionada && m.ytUrl);
       
-      if (!faixasValidas.length) return alert("Nenhuma faixa selecionada possui link do YouTube! Gere os links YT primeiro.");
+      if (!faixasValidas.length) return alert("Nenhuma faixa selecionada possui link gerado! Gere os links primeiro.");
 
       const btn = document.getElementById('btnDl');
       const progWrap = document.getElementById('progWrapDl');
@@ -536,13 +555,17 @@
       if (!m) return;
       
       if (tipo === 'yt') {
-        log(`=== Re-tentando YT faixa #${m.num} ===`);
+        log(`=== Re-tentando Link faixa #${m.num} ===`);
         const res = await acharVideoIdYoutube(m);
-        if (res) { m.ytUrl = `https://www.youtube.com/watch?v=${res.id}`; m.erroYt = false; }
+        if (res) { 
+          const prefixo = document.getElementById('chkYtMusic').checked ? "music.youtube.com" : "www.youtube.com";
+          m.ytUrl = `https://${prefixo}/watch?v=${res.id}`; 
+          m.erroYt = false; 
+        }
         else { m.erroYt = true; }
       } 
       else if (tipo === 'dl') {
-        if (!m.ytUrl) return alert("Extraia o YT primeiro!");
+        if (!m.ytUrl) return alert("Extraia o Link primeiro!");
         log(`=== Re-tentando Áudio faixa #${m.num} ===`);
         const dlRes = await obterLinkAudioDireto(m);
         if (dlRes) { m.dlUrl = dlRes; m.erroDl = false; }
@@ -567,7 +590,7 @@
     function baixarTxt() {
       const linhas = musicasGlobal.filter(m => m.selecionada).map(m => {
         let texto = `${m.num}. ${m.titulo} - ${m.artista}`;
-        if (m.ytUrl) texto += `\n   📺 YT: ${m.ytUrl}`;
+        if (m.ytUrl) texto += `\n   📺 Link: ${m.ytUrl}`;
         if (m.dlUrl) texto += `\n   🎛️ DL: ${m.dlUrl}`;
         return texto;
       }).join('\n\n');
