@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#121212">
+  <title>Spotify -> YouTube Extractor</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  
+  <div class="nav-bar">
+    <a href="index.html" class="btn-voltar">⬅ Voltar</a>
+  </div>
+
+  <h1>Spotify ➔ YouTube</h1>
+
+  <div class="card">
+    <input type="url" id="url" value="https://open.spotify.com/playlist/3czJnb7IwdArruuwETysRA" placeholder="Link da playlist do Spotify..." />
+    <button onclick="extrair()" style="margin-bottom:0;">1. Carregar Playlist</button>
+    <span class="link-btn" onclick="toggleBox('manualBox')">🛠️ Modo Manual</span>
+    <span class="link-btn" onclick="toggleBox('apiBox')">⚙️ API Oficial Spotify (+100 músicas)</span>
+    
+    <div id="manualBox">
+      <button class="btn-sec" style="margin-bottom:8px; width:100%;" onclick="abrirFonte()">1. Abrir Dados no Navegador</button>
+      <textarea id="htmlManual" style="height:75px; color:#fff;" placeholder="2. Copie tudo da página que abrir e cole aqui..."></textarea>
+      <button class="btn-sec" style="width:100%;" onclick="extrairManual()">3. Processar Texto Colado</button>
+    </div>
+
+    <div id="apiBox">
+      <input type="text" id="cid" placeholder="Client ID" oninput="salvarChaves()" />
+      <input type="password" id="csec" placeholder="Client Secret" oninput="salvarChaves()" />
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="resCard" class="card" style="display:none;">
+    <div class="header-res">
+      <strong id="pTitle">Playlist</strong>
+      <span id="selCount" style="color:#1DB954;">0 selecionadas</span>
+    </div>
+
+    <input type="search" id="busca" placeholder="🔍 Filtrar música ou artista..." oninput="render()" />
+
+    <div class="row">
+      <button class="btn-sec" onclick="selecionarTodas(true)">☑️ Marcar Visíveis</button>
+      <button class="btn-sec" onclick="selecionarTodas(false)">⬜ Desmarcar Todas</button>
+    </div>
+
+    <ul id="lista" class="track-list"></ul>
+
+    <div class="progress-wrap" id="progWrap">
+      <div class="progress-bar prog-yt" id="progBar"></div>
+    </div>
+    
+    <div class="progress-wrap" id="progWrapDl">
+      <div class="progress-bar prog-dl" id="progBarDl"></div>
+    </div>
+
+    <div class="yt-music-toggle">
+      <input type="checkbox" id="chkYtMusic" checked />
+      <label for="chkYtMusic">Gerar links do YouTube Music</label>
+    </div>
+
+    <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()">🎬 Gerar Links Diretos</button>
+
+    <div class="row" style="margin-bottom:0;">
+      <button class="btn-sec" onclick="copiarApenasLinks(false)">🔗 Links YT/YTM</button>
+      <button class="btn-sec" onclick="copiarApenasLinks(true)">🎛️ Links Áudio</button>
+      <button class="btn-sec" onclick="baixarTxt()">💾 .TXT (Ambos)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="header-res"><strong>🛠️ Console de Debug Detalhado</strong></div>
+    <textarea id="debugLog" readonly></textarea>
+    <div class="row" style="margin-bottom:0;">
+      <button class="btn-sec" onclick="copiarLog()">📋 Copiar Log</button>
+      <button class="btn-sec" onclick="limparLog()">🗑️ Limpar</button>
+    </div>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/extractor.js"></script>
+</body>
+</html>
