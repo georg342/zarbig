@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#121212">
   <title>Spotify -> YouTube Extractor</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
   
-  <div class="nav-bar">
-    <a href="index.html" class="btn-voltar">⬅ Voltar</a>
-  </div>
-
-  <h1>Spotify ➔ YouTube</h1>
+  <header class="app-header sets-header">
+    <a href="../index.html" class="back-btn">⬅ Voltar ao Hub</a>
+    <h1>exxxtractor</h1>
+    <p>get youtube links for musics from a spotify playlist </p>
+  </header>
 
   <div class="card">
     <input type="url" id="url" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="Link da playlist do Spotify..." />
@@ -84,7 +84,7 @@
 
   <div id="toast" class="toast">Link copiado!</div>
 
-  <script src="assets/js/main.js"></script>
-  <script src="assets/js/extractor.js"></script>
+  <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/extractor.js"></script>
 </body>
 </html>
