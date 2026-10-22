@@ -1,0 +1,33 @@
+# PROJECT CONTEXT
+- PROJECT NAME: Zarbig.
+- PURPOSE: A personal web platform for a DJ/Music Producer to store, manage, play, and distribute audio mixes.
+- TERMINOLOGY: The word "set" or "sets" always refers to "DJ sets" (long-form audio files/music mixes like MP3, WAV, FLAC).
+- CORE FEATURES: Uploading audio files to a Supabase storage bucket, listing available sets, playing audio directly in the browser, downloading files, and sharing direct links.
+
+# CORE ENGINEERING PRINCIPLES
+- Write production-ready, clean, and efficient code.
+- Follow modern web development best practices (HTML5, CSS3, ES6+).
+- Use Vanilla JavaScript with ES Modules (`type="module"`). Do not use or assume frameworks like React or Vue.
+- Add comments only where logic is complex. Do not comment the obvious.
+- Avoid overengineering. Keep solutions straightforward and modular.
+- Use English for all codebase elements (variables, functions, classes, IDs, and file names).
+
+# DATA & STATE MANAGEMENT (SUPABASE)
+- Handle all async operations (Supabase calls) with robust try/catch blocks.
+- Always implement loading states (e.g., disable buttons, show loading text) during network requests.
+- Provide clear visual feedback (Toast messages) for both success and error states.
+
+# UI/UX & DESIGN SYSTEM
+- AESTHETIC: Neo-brutalism dev aesthetic, futuristic, modern, minimalist, strict dark mode UI.
+- NEO-BRUTALISM DETAILS: Use distinct, sharp borders (e.g., 1px or 2px solid dark gray/green), high contrast, and raw layout structures. Avoid soft blur drop-shadows.
+- TYPOGRAPHY: Use strictly 'Consolas', monospace globally for all elements.
+- TEXT TRANSFORMATION: All UI text must be in lowercase. Use CSS `text-transform: lowercase;` or type in lowercase directly. Absolutely no uppercase letters.
+- CSS ARCHITECTURE: Use CSS variables (`:root`) for colors, spacing, and borders to maintain strict consistency.
+- RESPONSIVENESS: Ensure mobile-friendly layouts using Flexbox/CSS Grid.
+- ICONS: Use ONLY Phosphor Icons (https://phosphoricons.com/) via CDN. 
+- PROHIBITION: NEVER use emojis for icons, buttons, or decorative elements. Never user native dialogs, alerts etc from chrome, when it needed, build your own component.
+
+# EXECUTION RULES
+- DOM SAFETY: Never remove or alter existing HTML `id` attributes unless explicitly instructed, as they are bound to JavaScript event listeners.
+- PRESERVATION: Preserve existing core logic, environment variables, and backend connections.
+- OUTPUT: Return the complete modified code blocks without unnecessary explanations or filler text.

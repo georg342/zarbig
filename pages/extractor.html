@@ -3,34 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#121212">
-  <title>Spotify -> YouTube Extractor</title>
+  <meta name="theme-color" content="#0c0c0c">
+  <title>spotify extractor</title>
   <link rel="manifest" href="../manifest.json">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body>
   
   <header class="app-header sets-header">
-    <a href="../index.html" class="back-btn">⬅ Voltar ao Hub</a>
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left"></i> back to hub</a>
     <h1>exxxtractor</h1>
-    <p>get youtube links for musics from a spotify playlist </p>
+    <p>get youtube links for tracks from a spotify playlist</p>
   </header>
 
   <div class="card">
-    <input type="url" id="url" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="Link da playlist do Spotify..." />
-    <button onclick="extrair()" style="margin-bottom:0;">Carregar Playlist</button>
-    <span class="link-btn" onclick="toggleBox('manualBox')">🛠️ Modo Manual</span>
-    <span class="link-btn" onclick="toggleBox('apiBox')">⚙️ API Oficial Spotify (+100 músicas)</span>
+    <input type="url" id="url" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." />
+    <button onclick="extrair()" style="margin-bottom:0;">load playlist</button>
+    <span class="link-btn" onclick="toggleBox('manualBox')"><i class="ph ph-wrench"></i> manual mode</span>
+    <span class="link-btn" onclick="toggleBox('apiBox')"><i class="ph ph-gear"></i> official spotify api (+100 tracks)</span>
     
     <div id="manualBox">
-      <button class="btn-sec" style="margin-bottom:8px; width:100%;" onclick="abrirFonte()">1. Abrir Dados no Navegador</button>
-      <textarea id="htmlManual" style="height:75px; color:#fff;" placeholder="2. Copie tudo da página que abrir e cole aqui..."></textarea>
-      <button class="btn-sec" style="width:100%;" onclick="extrairManual()">3. Processar Texto Colado</button>
+      <button class="btn-sec" style="margin-bottom:8px; width:100%;" onclick="abrirFonte()">1. open raw data in browser</button>
+      <textarea id="htmlManual" style="height:75px;" placeholder="2. copy everything from the opened page and paste here..."></textarea>
+      <button class="btn-sec" style="width:100%;" onclick="extrairManual()">3. process pasted text</button>
     </div>
 
     <div id="apiBox">
-      <input type="text" id="cid" placeholder="Client ID" oninput="salvarChaves()" />
-      <input type="password" id="csec" placeholder="Client Secret" oninput="salvarChaves()" />
+      <input type="text" id="cid" placeholder="client id" oninput="salvarChaves()" />
+      <input type="password" id="csec" placeholder="client secret" oninput="salvarChaves()" />
     </div>
   </div>
 
@@ -38,15 +39,15 @@
 
   <div id="resCard" class="card" style="display:none;">
     <div class="header-res">
-      <strong id="pTitle">Playlist</strong>
-      <span id="selCount" style="color:#1DB954;">0 selecionadas</span>
+      <strong id="pTitle">playlist</strong>
+      <span id="selCount" style="color:var(--primary);">0 selected</span>
     </div>
 
-    <input type="search" id="busca" placeholder="🔍 Filtrar música ou artista..." oninput="render()" />
+    <input type="search" id="busca" placeholder="🔍 filter track or artist..." oninput="render()" />
 
     <div class="row">
-      <button class="btn-sec" onclick="selecionarTodas(true)">☑️ Marcar Visíveis</button>
-      <button class="btn-sec" onclick="selecionarTodas(false)">⬜ Desmarcar Todas</button>
+      <button class="btn-sec" onclick="selecionarTodas(true)"><i class="ph ph-check-square"></i> check visible</button>
+      <button class="btn-sec" onclick="selecionarTodas(false)"><i class="ph ph-square"></i> uncheck all</button>
     </div>
 
     <ul id="lista" class="track-list"></ul>
@@ -61,28 +62,35 @@
 
     <div class="yt-music-toggle">
       <input type="checkbox" id="chkYtMusic" checked />
-      <label for="chkYtMusic">Gerar links do YouTube Music</label>
+      <label for="chkYtMusic">generate youtube music links</label>
     </div>
 
-    <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()">🎬 Gerar Links Diretos</button>
+    <div class="yt-music-toggle" style="border-color: #b026ff;">
+      <input type="checkbox" id="chkZarbigMode" />
+      <label for="chkZarbigMode" style="color: #b026ff;">zarbig mode (manual selection)</label>
+    </div>
+
+    <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()"><i class="ph ph-youtube-logo"></i> generate links</button>
 
     <div class="row export-row">
-      <button class="btn-sec" onclick="copiarApenasLinks(false)">🔗 Links YT/YTM</button>
-      <button id="btnForEach" class="btn-sec" onclick="copiarForEach()">🔄 Auto Copy (1s)</button>
-      <button class="btn-sec" onclick="baixarTxt()">💾 .TXT (Ambos)</button>
+      <button class="btn-sec" onclick="copiarApenasLinks(false)"><i class="ph ph-link"></i> yt/ytm links</button>
+      <button id="btnForEach" class="btn-sec" onclick="copiarForEach()"><i class="ph ph-arrows-clockwise"></i> auto copy (1s)</button>
+      <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple"></i> .txt export</button>
     </div>
   </div>
+
+  <div style="margin: 24px 0; border-top: 1px dashed var(--border-color);"></div>
 
   <div class="card">
-    <div class="header-res"><strong>🛠️ Console de Debug Detalhado</strong></div>
+    <div class="header-res"><strong><i class="ph ph-terminal"></i> debug console</strong></div>
     <textarea id="debugLog" readonly></textarea>
     <div class="row" style="margin-bottom:0;">
-      <button class="btn-sec" onclick="copiarLog()">📋 Copiar Log</button>
-      <button class="btn-sec" onclick="limparLog()">🗑️ Limpar</button>
+      <button class="btn-sec" onclick="copiarLog()"><i class="ph ph-copy"></i> copy log</button>
+      <button class="btn-sec" onclick="limparLog()"><i class="ph ph-trash"></i> clear</button>
     </div>
   </div>
 
-  <div id="toast" class="toast">Link copiado!</div>
+  <div id="toast" class="toast">link copied!</div>
 
   <script src="../assets/js/main.js"></script>
   <script src="../assets/js/extractor.js"></script>
