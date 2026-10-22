@@ -18,7 +18,7 @@
 
   <div class="card">
     <input type="url" id="url" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="Link da playlist do Spotify..." />
-    <button onclick="extrair()" style="margin-bottom:0;">1. Carregar Playlist</button>
+    <button onclick="extrair()" style="margin-bottom:0;">Carregar Playlist</button>
     <span class="link-btn" onclick="toggleBox('manualBox')">🛠️ Modo Manual</span>
     <span class="link-btn" onclick="toggleBox('apiBox')">⚙️ API Oficial Spotify (+100 músicas)</span>
     
@@ -66,9 +66,9 @@
 
     <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()">🎬 Gerar Links Diretos</button>
 
-    <div class="row" style="margin-bottom:0;">
+    <div class="row export-row">
       <button class="btn-sec" onclick="copiarApenasLinks(false)">🔗 Links YT/YTM</button>
-      <button class="btn-sec" onclick="copiarApenasLinks(true)">🎛️ Links Áudio</button>
+      <button id="btnForEach" class="btn-sec" onclick="copiarForEach()">🔄 Auto Copy (1s)</button>
       <button class="btn-sec" onclick="baixarTxt()">💾 .TXT (Ambos)</button>
     </div>
   </div>
@@ -81,6 +81,8 @@
       <button class="btn-sec" onclick="limparLog()">🗑️ Limpar</button>
     </div>
   </div>
+
+  <div id="toast" class="toast">Link copiado!</div>
 
   <script src="assets/js/main.js"></script>
   <script src="assets/js/extractor.js"></script>

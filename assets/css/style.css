@@ -71,3 +71,60 @@ textarea { width: 100%; height: 160px; background: #0a0a0a; color: #00ff66; font
 .yt-music-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; }
 .yt-music-toggle input { width: 18px; height: 18px; accent-color: #ff0033; margin: 0; }
 .yt-music-toggle label { font-size: 0.85rem; color: #ddd; font-weight: 600; cursor: pointer; }
+
+/* Notificação Toast Suave */
+.toast {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: #282828;
+  color: #1DB954; /* Verde Spotify */
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px 20px;
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%) translateY(20px);
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+
+.toast.show {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Botão de Copiar Individual */
+.copy-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 5px;
+  margin: 0;
+  margin-left: 2px;
+  transition: color 0.2s, transform 0.1s;
+  width: auto;
+}
+
+.copy-btn:hover { color: var(--text-light); }
+.copy-btn:active { transform: scale(0.9); }
+
+/* Container de botões de exportação (2 por linha) */
+.export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.export-row .btn-sec {
+  flex: 1 1 calc(50% - 8px); 
+  margin-bottom: 0;
+}

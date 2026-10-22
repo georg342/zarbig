@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // FUNÇÕES DE INTERFACE (Chamadas pelo HTML)
 // ==========================================
 function limparLog() { document.getElementById('debugLog').value = ''; }
-function copiarLog() { navigator.clipboard.writeText(document.getElementById('debugLog').value).then(() => alert("Log copiado!")); }
+function copiarLog() { navigator.clipboard.writeText(document.getElementById('debugLog').value).then(() => mostrarToast("Log copiado!")); }
 function salvarChaves() {
   localStorage.setItem('sp_cid', document.getElementById('cid').value.trim());
   localStorage.setItem('sp_csec', document.getElementById('csec').value.trim());
@@ -110,9 +110,7 @@ function criarObjetoMusica(num, tit, art) {
     artista: limparTextoSpotify(art),
     selecionada: true,
     ytUrl: null,
-    erroYt: false,
-    dlUrl: null,    
-    erroDl: false   
+    erroYt: false 
   };
 }
 
@@ -151,14 +149,13 @@ function extrairManual() {
     musicasGlobal = lista;
     render();
     document.getElementById('status').innerText = `✅ ${lista.length} músicas carregadas!`;
-  } else alert("Nenhuma música encontrada no texto.");
+  } else mostrarToast("Nenhuma música encontrada no texto.");
 }
 
 function atualizarContador() {
   const sel = musicasGlobal.filter(m => m.selecionada).length;
   const comYt = musicasGlobal.filter(m => m.selecionada && m.ytUrl).length;
-  const comDl = musicasGlobal.filter(m => m.selecionada && m.dlUrl).length;
-  document.getElementById('selCount').innerText = `${sel} marcadas (Link: ${comYt} | DL: ${comDl})`;
+  document.getElementById('selCount').innerText = `${sel} marcadas (Link: ${comYt})`;
 }
 
 function toggleItem(num, ev) {
@@ -178,6 +175,43 @@ function selecionarTodas(estado) {
   render();
 }
 
+// --- SISTEMA DE TOAST (Substitui os alerts) ---
+function mostrarToast(mensagem) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.innerText = mensagem;
+  toast.classList.add("show");
+  
+  // Limpa o timeout anterior se o usuário clicar várias vezes rápido
+  if(window.toastTimer) clearTimeout(window.toastTimer);
+  
+  window.toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500); // Some suavemente após 2,5 segundos
+}
+
+// --- FUNÇÃO PARA COPIAR APENAS UMA MÚSICA ---
+function copiarLinkUnico(num, ev) {
+  if (ev) ev.stopPropagation(); // Evita que clicar em copiar marque/desmarque a música
+  const m = musicasGlobal.find(x => x.num === num);
+  if (!m) return;
+
+  let links = [];
+  if (m.ytUrl) links.push(m.ytUrl);
+
+  if (links.length === 0) {
+    mostrarToast("⚠️ Nenhum link para copiar ainda!");
+    return;
+  }
+
+  // Se tiver os dois, copia separado por uma barra, senão copia só um
+  const textoCopiar = links.join(" | ");
+
+  navigator.clipboard.writeText(textoCopiar)
+    .then(() => mostrarToast("📋 Link copiado!"))
+    .catch(() => mostrarToast("❌ Erro ao copiar."));
+}
+
 function render() {
   document.getElementById('pTitle').innerText = nomePlaylist;
   const q = document.getElementById('busca').value.toLowerCase();
@@ -193,13 +227,9 @@ function render() {
     }
     else if (m.erroYt) badgeYt = `<span class="yt-badge err" data-retry="1" onclick="tentarUnica(${m.num}, 'yt')">🔄 Buscar</span>`;
 
-    let badgeDl = '';
-    if (m.dlUrl) {
-      badgeDl = `<a class="yt-badge dl-ok" href="${m.dlUrl}" target="_blank">⬇️ M4A</a>`;
-    } else if (m.erroDl) {
-      badgeDl = `<span class="yt-badge dl-err" data-retry="1" onclick="tentarUnica(${m.num}, 'dl')">🔄 Áudio</span>`;
-    } else if (m.ytUrl) {
-      badgeDl = `<span class="yt-badge" id="badge-dl-${m.num}">Pendente</span>`;
+    let btnCopiar = '';
+    if (m.ytUrl) {
+      btnCopiar = `<button class="copy-btn" title="Copiar Link" onclick="copiarLinkUnico(${m.num}, event)">📋</button>`;
     }
 
     return `
@@ -212,7 +242,7 @@ function render() {
         </div>
         <div class="badges-container">
           ${badgeYt}
-          ${badgeDl}
+          ${btnCopiar}
         </div>
       </li>
     `;
@@ -234,7 +264,7 @@ function extrairVideoIdDeTexto(txt) {
 async function acharVideoIdYoutube(m) {
   const tituloLimpo = m.titulo.replace(/\s*[\(\[].*?[\)\]]/g, '').trim();
   const primeiroArtista = m.artista.split(',')[0].trim();
-  const queries = [`${m.titulo} ${m.artista} official audio`, `${tituloLimpo} ${primeiroArtista} topic`];
+  const queries = [`${m.titulo} ${m.artista} official audio`, `${tituloLimpo} ${primeiroArtista} topic`, `${tituloLimpo} ${primeiroArtista}`];
 
   for (let qIdx = 0; qIdx < queries.length; qIdx++) {
     const termo = queries[qIdx];
@@ -250,7 +280,7 @@ async function acharVideoIdYoutube(m) {
     for (const f of fontes) {
       const t0 = Date.now();
       try {
-        const r = await fetchRapido(f.url, { referrerPolicy: "no-referrer" }, 8000);
+        const r = await fetchRapido(f.url, { referrerPolicy: "no-referrer" }, 12000);
         const ms = Date.now() - t0;
 
         if (!r.ok) {
@@ -275,7 +305,7 @@ async function acharVideoIdYoutube(m) {
 
 async function buscarLinksYoutube() {
   const selecionadas = musicasGlobal.filter(m => m.selecionada);
-  if (!selecionadas.length) return alert("Selecione pelo menos 1 música!");
+  if (!selecionadas.length) return mostrarToast("Selecione pelo menos 1 música!");
 
   const btn = document.getElementById('btnYt');
   const progWrap = document.getElementById('progWrap');
@@ -319,107 +349,6 @@ async function buscarLinksYoutube() {
   log(`=== FIM DA BUSCA DE LINKS ===`);
 }
 
-// ==========================================
-// ETAPA 3: AUDIO EXTRACTION VIA PIPED
-// ==========================================
-async function obterLinkAudioDireto(m) {
-  const match = m.ytUrl.match(/v=([a-zA-Z0-9_-]{11})/);
-  if (!match) return null;
-  const videoId = match[1];
-
-  const instancias = [
-    "https://pipedapi.kavin.rocks",
-    "https://pipedapi.tokhmi.xyz",
-    "https://pipedapi.syncpundit.io",
-    "https://api.piped.privacydev.net"
-  ];
-
-  for (let i = 0; i < instancias.length; i++) {
-    const base = instancias[i];
-    const apiUrl = `${base}/streams/${videoId}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-    
-    log(`🎛️ [${m.num}] Lendo Piped via Proxy (${base})...`);
-    const t0 = Date.now();
-    
-    try {
-      const r = await fetchRapido(proxyUrl, { method: "GET" }, 120000); 
-      const ms = Date.now() - t0;
-
-      if (!r.ok) {
-        log(`  ⚠️ Proxy falhou HTTP ${r.status} (${ms}ms)`);
-        continue; 
-      }
-
-      const originData = await r.json();
-      if (!originData.contents) {
-        log(`  ⚠️ Proxy retornou vazio (${ms}ms)`);
-        continue;
-      }
-
-      const json = JSON.parse(originData.contents);
-
-      if (json.audioStreams && json.audioStreams.length > 0) {
-        const streams = json.audioStreams.sort((a, b) => b.bitrate - a.bitrate);
-        const melhorAudio = streams.find(s => s.format === "M4A") || streams[0];
-        
-        if (melhorAudio && melhorAudio.url) {
-          log(`  ✅ Áudio ${melhorAudio.format} capturado! (${Math.round(melhorAudio.bitrate/1000)}kbps | ${ms}ms)`);
-          return melhorAudio.url;
-        }
-      }
-      log(`  ❌ Instância não retornou blocos de áudio.`);
-    } catch(e) {
-      const ms = Date.now() - t0;
-      log(`  🚨 Falha técnica em ${base} (${ms}ms): ${e.message}`);
-    }
-  }
-  return null;
-}
-
-async function buscarDownloadsAudio() {
-  const faixasValidas = musicasGlobal.filter(m => m.selecionada && m.ytUrl);
-  if (!faixasValidas.length) return alert("Nenhuma faixa selecionada possui link gerado! Gere os links primeiro.");
-
-  const btn = document.getElementById('btnDl');
-  const progWrap = document.getElementById('progWrapDl');
-  const progBar = document.getElementById('progBarDl');
-  const status = document.getElementById('status');
-
-  btn.disabled = true;
-  progWrap.style.display = 'block';
-  progBar.style.width = '0%';
-
-  log(`=== INICIANDO EXTRAÇÃO DE ÁUDIO DIRETO (${faixasValidas.length} faixas) ===`);
-  let concluidas = 0;
-
-  for (const m of faixasValidas) {
-    if (m.dlUrl) { concluidas++; continue; }
-
-    const badge = document.getElementById(`badge-dl-${m.num}`);
-    if (badge) badge.innerText = "⏳...";
-    status.innerText = `🎛️ Localizando Áudio Direto (${concluidas + 1}/${faixasValidas.length}): ${m.titulo}`;
-
-    const dlResult = await obterLinkAudioDireto(m);
-    if (dlResult) {
-      m.dlUrl = dlResult;
-      m.erroDl = false;
-    } else {
-      m.erroDl = true;
-      log(`🚨 FALHA TOTAL ao extrair Áudio Direto de [${m.num}]`);
-    }
-
-    concluidas++;
-    progBar.style.width = `${Math.round((concluidas / faixasValidas.length) * 100)}%`;
-    render();
-    await sleep(500); 
-  }
-
-  btn.disabled = false;
-  status.innerText = `✅ Busca de links de Áudio finalizada!`;
-  log(`=== FIM DA EXTRAÇÃO ===`);
-}
-
 async function tentarUnica(num, tipo) {
   const m = musicasGlobal.find(x => x.num === num);
   if (!m) return;
@@ -434,31 +363,64 @@ async function tentarUnica(num, tipo) {
     }
     else { m.erroYt = true; }
   } 
-  else if (tipo === 'dl') {
-    if (!m.ytUrl) return alert("Extraia o Link primeiro!");
-    log(`=== Re-tentando Áudio faixa #${m.num} ===`);
-    const dlRes = await obterLinkAudioDireto(m);
-    if (dlRes) { m.dlUrl = dlRes; m.erroDl = false; }
-    else { m.erroDl = true; }
-  }
   render();
+}
+
+// --- SISTEMA DE CÓPIA AUTOMÁTICA COM DELAY ---
+async function copiarForEach() {
+  const btn = document.getElementById("btnForEach");
+  const faixas = musicasGlobal.filter(m => m.selecionada && (m.ytUrl || m.dlUrl));
+
+  if (faixas.length === 0) {
+    mostrarToast("⚠️ Nenhuma música com link gerado!");
+    return;
+  }
+
+  // Trava o botão para não clicar duas vezes
+  btn.disabled = true;
+  let copiadas = 0;
+
+  for (const m of faixas) {
+    // Prioriza YT, se não tiver pega Áudio
+    const link = m.ytUrl || m.dlUrl;
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      copiadas++;
+      
+      // Atualiza o botão e mostra o balãozinho de Toast
+      btn.innerText = `⏳ (${copiadas}/${faixas.length})`;
+      mostrarToast(`📋 Enviado: ${m.titulo}`);
+      
+      // Espera 1 segundo (1000ms) exato antes da próxima cópia
+      await sleep(1000); 
+    } catch (e) {
+      log(`Erro ao copiar ${m.titulo}: ${e.message}`);
+      mostrarToast(`❌ Bloqueado pelo navegador.`);
+      break; 
+    }
+  }
+
+  // Restaura o botão
+  btn.innerText = "🔄 Auto Copy (1s)";
+  btn.disabled = false;
+  mostrarToast(`✅ ${copiadas} links enviados!`);
 }
 
 function copiarApenasLinks(apenasAudio = false) {
   const urls = musicasGlobal
     .filter(m => m.selecionada)
-    .map(m => apenasAudio ? m.dlUrl : m.ytUrl)
+    .map(m => m.ytUrl)
     .filter(url => url); 
 
-  if (!urls.length) return alert("Nenhum link gerado para as músicas selecionadas!");
-  navigator.clipboard.writeText(urls.join('\n')).then(() => alert("Links copiados!"));
+  if (!urls.length) return mostrarToast("Nenhum link gerado para as músicas selecionadas!");
+  navigator.clipboard.writeText(urls.join(',\n')).then(() => mostrarToast("Links copiados!"));
 }
 
 function baixarTxt() {
   const linhas = musicasGlobal.filter(m => m.selecionada).map(m => {
     let texto = `${m.num}. ${m.titulo} - ${m.artista}`;
     if (m.ytUrl) texto += `\n   📺 Link: ${m.ytUrl}`;
-    if (m.dlUrl) texto += `\n   🎛️ DL: ${m.dlUrl}`;
     return texto;
   }).join('\n\n');
   
