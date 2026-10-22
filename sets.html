@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Zarbig Sets</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <h1>🎛️ Meus Sets</h1>
+
+  <!-- Área de Upload -->
+  <div class="card">
+    <h3>Subir Novo Set</h3>
+    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 10px;">
+    <button id="btnUpload">Fazer Upload</button>
+    <div id="status" style="margin-top: 10px; font-size: 0.85rem; color: #b3b3b3;"></div>
+  </div>
+
+  <!-- Lista de Downloads -->
+  <div class="card">
+    <h3>Sets Disponíveis</h3>
+    <ul id="listaSets" class="track-list">
+      <!-- Os itens serão injetados aqui pelo JS -->
+    </ul>
+  </div>
+
+  <!-- Importante: O type="module" permite usar import no navegador -->
+  <script type="module" src="assets/js/sets.js"></script>
+</body>
+</html>
