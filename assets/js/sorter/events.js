@@ -157,7 +157,18 @@ export function bindEvents() {
   const btnExportM3U = document.getElementById('btnExportM3U');
   if (btnExportM3U) btnExportM3U.addEventListener('click', exportM3U);
   const btnExportVdj = document.getElementById('btnExportVDJ');
-  if (btnExportVdj) btnExportVdj.addEventListener('click', exportVDJ);
+  const vdjBaseInput = document.getElementById('vdjBasePath');
+  if (btnExportVdj) {
+    btnExportVdj.addEventListener('click', exportVDJ);
+    // the vdj xml needs the absolute base path, so the button stays dead without it.
+    if (vdjBaseInput) {
+      const syncVdjExportButton = () => {
+        btnExportVdj.disabled = !vdjBaseInput.value.trim();
+      };
+      vdjBaseInput.addEventListener('input', syncVdjExportButton);
+      syncVdjExportButton();
+    }
+  }
   const btnExportCsv = document.getElementById('btnExportCSV');
   if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
   const btnExportJson = document.getElementById('btnExportJSON');

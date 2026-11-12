@@ -90,34 +90,18 @@ export function exportJSON() {
   toast('json exported');
 }
 
-// base path typed by the user — only the xml uses it, so it is not part of state.
-export function vdjBasePath() {
-  const input = document.getElementById('vdjBasePath');
-  return input ? input.value.trim().replace(/[\\/]+$/, '') : '';
-}
-
-// joins the base with the folder-relative path. webkitRelativePath always starts
-// with the picked folder name, so "C:\music\tracks" + "tracks/sub/a.mp3" drops
-// the duplicated "tracks" instead of producing "tracks\tracks/sub/a.mp3".
-export function joinVdjPath(base, relativePath) {
-  const rel = String(relativePath || '').replace(/\\/g, '/');
-  const root = String(base || '').trim().replace(/[\\/]+$/, '');
-  if (!root) return rel;
-
-  const lastBaseSegment = root.split(/[\\/]/).filter(Boolean).pop() || '';
-  const parts = rel.split('/').filter(Boolean);
-  if (lastBaseSegment && parts.length && parts[0].toLowerCase() === lastBaseSegment.toLowerCase()) {
-    parts.shift();
-  }
-  return parts.length ? [root, ...parts].join('\\') : root;
-}
-
 export function exportVDJ() {
   const list = exportableTracks();
   if (!list.length) return;
 
+  // the xml is only usable with absolute paths, so the base path is mandatory.
   const baseInput = document.getElementById('vdjBasePath');
   const basePath = baseInput ? baseInput.value.trim() : '';
+  if (!basePath) {
+    logDebug('export: vdj xml skipped — base path is empty');
+    toast('base path required');
+    return;
+  }
 
   const lines = [];
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
@@ -125,13 +109,12 @@ export function exportVDJ() {
   lines.push(`  <Playlist Name="${escapeHtml(exportBaseName())}" Entries="${list.length}">`);
 
   list.forEach((track) => {
-    let path = track.file && track.file.path ? track.file.path : track.relativePath;
+    let path = track.file && track.file.path ? track.file.path : (track.relativePath || track.name);
 
-    if (basePath) {
-      const baseClean = basePath.replace(/[\\\/]+$/, '');
-      const pathClean = path.replace(/^[\\\/]+/, '');
-      path = baseClean + '\\' + pathClean;
-    }
+    // base path is mandatory, so every song gets the absolute prefix.
+    const baseClean = basePath.replace(/[\\\/]+$/, '');
+    const pathClean = path.replace(/^[\\\/]+/, '');
+    path = baseClean + '\\' + pathClean;
 
     lines.push(`    <Song FilePath="${escapeHtml(path)}" />`);
   });
