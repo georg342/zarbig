@@ -116,18 +116,31 @@ export function exportVDJ() {
   const list = exportableTracks();
   if (!list.length) return;
 
-  const base = vdjBasePath();
-  const lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<VirtualDJ_Database>'];
+  const baseInput = document.getElementById('vdjBasePath');
+  const basePath = baseInput ? baseInput.value.trim() : '';
+
+  const lines = [];
+  lines.push('<?xml version="1.0" encoding="UTF-8"?>');
+  lines.push('<VirtualDJ_Database>');
+  lines.push(`  <Playlist Name="${escapeHtml(exportBaseName())}" Entries="${list.length}">`);
+
   list.forEach((track) => {
-    // electron/webkit exposes the absolute path on the File object; a plain
-    // browser only knows the folder-relative one, so the typed base fills in.
-    const path = (track.file && track.file.path) || joinVdjPath(base, track.relativePath || track.name);
-    lines.push(`<Song FilePath="${escapeHtml(path)}" />`);
+    let path = track.file && track.file.path ? track.file.path : track.relativePath;
+
+    if (basePath) {
+      const baseClean = basePath.replace(/[\\\/]+$/, '');
+      const pathClean = path.replace(/^[\\\/]+/, '');
+      path = baseClean + '\\' + pathClean;
+    }
+
+    lines.push(`    <Song FilePath="${escapeHtml(path)}" />`);
   });
+
+  lines.push('  </Playlist>');
   lines.push('</VirtualDJ_Database>');
 
-  downloadFile(`${exportBaseName()}-vdj.xml`, lines.join('\n') + '\n', 'application/xml');
-  log(`export: virtualdj xml with ${list.length} tracks (base ${base || 'none'})`);
+  downloadFile(`${exportBaseName()}-vdj.xml`, lines.join('\n'), 'application/xml;charset=utf-8');
+  log(`export: vdj xml with ${list.length} tracks (base path: ${basePath || 'none'})`);
   toast('virtualdj xml exported');
 }
 
