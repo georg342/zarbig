@@ -1,7 +1,7 @@
 // exports: m3u8 / csv / json downloads and the clipboard list + report.
 
 import { state } from './state.js';
-import { downloadFile, copyText, escapeHtml, toast } from './utils.js';
+import { downloadFile, copyText, escapeHtml, sanitizeFileName, toast } from './utils.js';
 import { categoryLabel } from './categories.js';
 import { getActionableTracks } from './table.js';
 import { applyMask } from './rename.js';
@@ -97,6 +97,9 @@ export function exportVDJ() {
   const baseInput = document.getElementById('vdjBasePath');
   const basePath = baseInput ? baseInput.value.trim() : '';
 
+  const nameInput = document.getElementById('vdjPlaylistName');
+  const customName = sanitizeFileName(nameInput ? nameInput.value.trim() : '');
+
   // group tracks by category
   const groups = new Map();
   list.forEach((track) => {
@@ -136,14 +139,21 @@ export function exportVDJ() {
       lines.push(path);
     });
 
-    const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const fileName = `${exportBaseName()}-${safeCategory}.m3u8`;
+    let fileName = '';
+    if (customName) {
+      // the custom name wins; the category suffix only shows up with more than one group
+      const suffix = groups.size > 1 ? `-${category.replace(/[^a-z0-9]/gi, '_').toLowerCase()}` : '';
+      fileName = `${customName}${suffix}.m3u8`;
+    } else {
+      const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      fileName = `${exportBaseName()}-${safeCategory}.m3u8`;
+    }
 
     downloadFile(fileName, lines.join('\n') + '\n', 'audio/x-mpegurl;charset=utf-8');
     fileCount++;
   });
 
-  log(`export: ${fileCount} vdj m3u8 files (one per category) with base path: ${basePath || 'none'}`);
+  log(`export: ${fileCount} vdj m3u8 files (one per category) with base path: ${basePath || 'none'}${customName ? `, custom name: ${customName}` : ''}`);
   toast(`${fileCount} playlists exported!`);
 }
 
