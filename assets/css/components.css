@@ -28,7 +28,7 @@ button, .btn-primary, .btn-sec, .btn-yt, .btn-action-play, .btn-action-dl, .btn-
   font-weight: 700; 
   font-size: var(--text-md); 
   cursor: pointer; 
-  transition: background-color 0.1s, border-color 0.1s, color 0.1s, opacity 0.1s, transform 0.1s; 
+  transition: background-color 0.1s linear, border-color 0.1s linear, color 0.1s linear, transform 0.1s linear; 
   margin-bottom: 10px; 
   font-family: 'Consolas', monospace; 
   text-transform: lowercase;
@@ -39,15 +39,20 @@ button, .btn-primary, .btn-sec, .btn-yt, .btn-action-play, .btn-action-dl, .btn-
   text-decoration: none;
   line-height: 1.2;
 }
-button:hover:not(:disabled), .btn-primary:hover:not(:disabled) { background: rgba(0, 255, 102, 0.1); }
-button:active, .btn-primary:active { transform: scale(0.99); opacity: 0.9; background: rgba(0, 255, 102, 0.1); }
-button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-muted); border-color: var(--border-strong); cursor: not-allowed; }
+/* motion profile: hover is a hard color inversion (fill = accent, label = black), never a
+   translucent tint. :where() keeps this base state at near-zero specificity so each
+   component class can still replace the fill with its own color. */
+:where(button, .btn-primary):hover:where(:not(:disabled):not(.link-btn)) { background: var(--primary); color: #000; }
+/* press: strict mechanical scale; the inverted fill holds so the state never flickers back */
+:where(button, .btn-primary):active:where(:not(:disabled):not(.link-btn)) { transform: scale(0.97); background: var(--primary); color: #000; }
+/* disabled wins over every hover fill: a disabled control must never look active */
+button:disabled, button:disabled:hover, .btn-primary:disabled, .btn-primary:disabled:hover { background: #0a0a0a; color: var(--text-muted); border-color: var(--border-strong); cursor: not-allowed; transform: none; }
 
 .btn-yt { color: #ff3333; border-color: #ff3333; background: #000; }
-.btn-yt:hover { background: rgba(255, 51, 51, 0.1); }
+.btn-yt:hover { background: #ff3333; color: #000; }
 
 .btn-sec { color: var(--accent); border-color: var(--border-strong); font-size: var(--text-sm); padding: 11px; margin-bottom: 0; background: #000; min-height: 40px; }
-.btn-sec:hover { border-color: var(--accent); }
+.btn-sec:hover { background: var(--accent); border-color: var(--accent); color: #000; }
 
 .row { display: flex; gap: var(--space-2); margin-bottom: 10px; flex-wrap: wrap; }
 .row > * { min-width: 0; }
@@ -101,8 +106,10 @@ button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-
   padding: 12px 20px;
   font-size: var(--text-md);
   opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+  /* snap in: one 100ms linear step, no easing curve and no cinematic fade */
+  transition: opacity 0.1s linear, transform 0.1s linear, visibility 0.1s linear;
   transform: translateY(20px);
+  will-change: transform, opacity;
 }
 
 .toast.show {
@@ -117,19 +124,24 @@ button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-
   border-radius: var(--radius);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  transition: background-color 0.1s linear, border-color 0.1s linear, color 0.1s linear, transform 0.1s linear;
   width: auto;
   min-width: 34px;
   min-height: 34px;
   margin-bottom: 0;
 }
 
+/* pressed: the whole action group takes the same strict mechanical scale
+   (the download action is an <a>, so the base button rule does not reach it) */
+.btn-action-play:active, .btn-action-dl:active, .btn-action-copy:active, .btn-action-del:active { transform: scale(0.97); }
+
 .btn-action-play {
   color: var(--primary);
   border: var(--border-width) solid var(--primary);
 }
 .btn-action-play:hover {
-  background: rgba(0, 255, 102, 0.1);
+  background: var(--primary);
+  color: #000;
 }
 
 .btn-action-dl {
@@ -138,7 +150,8 @@ button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-
   text-decoration: none;
 }
 .btn-action-dl:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--accent);
+  color: #000;
 }
 
 .btn-action-copy {
@@ -146,7 +159,8 @@ button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-
   border: var(--border-width) solid var(--admin);
 }
 .btn-action-copy:hover {
-  background: var(--admin-soft);
+  background: var(--admin);
+  color: #000;
 }
 
 .btn-action-del {
@@ -154,7 +168,8 @@ button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-
   border: var(--border-width) solid #ff3333;
 }
 .btn-action-del:hover {
-  background: rgba(255, 51, 51, 0.1);
+  background: #ff3333;
+  color: #000;
 }
 
 /* Audio Player Integrado Fixo */
@@ -203,8 +218,9 @@ body.is-playing { padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px))
   padding: 0;
 }
 .player-close:hover {
-  color: #fff;
-  border-color: var(--border-strong);
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
 }
 audio {
   width: 100%;
@@ -226,7 +242,8 @@ audio {
   z-index: 2000;
   padding: var(--space-3);
   overscroll-behavior: contain;
-  animation: fadeIn 0.15s ease;
+  /* fade is only here to stop the cut from tearing, not to build a cinematic entrance */
+  animation: fadeIn 0.1s linear;
 }
 
 .custom-modal-card {
@@ -236,6 +253,9 @@ audio {
   max-width: 400px;
   padding: var(--space-5);
   border-radius: var(--radius);
+  /* the panel slides up fast and stops dead: no bounce, no long fade */
+  animation: zb-modal-snap 0.1s linear;
+  will-change: transform, opacity;
 }
 
 .custom-modal-msg {
@@ -279,12 +299,19 @@ audio {
   border-color: #ff3333;
 }
 .btn-modal-cancel:hover {
-  background: rgba(255, 51, 51, 0.1);
+  background: #ff3333;
+  color: #000;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* panel entry: rapid slide that snaps into place, no easing curve at the end */
+@keyframes zb-modal-snap {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* admin bg widget: floating gradient color picker injected by main.js.
@@ -337,8 +364,8 @@ audio {
   font-weight: 700;
   line-height: 1;
 }
-.admin-bg-widget button:hover { border-color: var(--admin); color: var(--admin-text); }
-.admin-bg-widget button:active { transform: scale(0.96); background: var(--admin-soft); }
+.admin-bg-widget button:hover { background: var(--admin); border-color: var(--admin); color: #000; }
+.admin-bg-widget button:active { transform: scale(0.97); }
 .admin-bg-widget .admin-bg-reset { width: 100%; padding: 5px 0; }
 
 .admin-bg-picks { display: flex; gap: 6px; margin-bottom: 8px; }

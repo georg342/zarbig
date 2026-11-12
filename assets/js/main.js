@@ -14,9 +14,12 @@ window.mostrarToast = function (message) {
   }
 
   const toast = document.createElement('div');
-  toast.className = 'toast show';
+  toast.className = 'toast';
   toast.innerText = message;
   container.appendChild(toast);
+  // paint the hidden state first, then flip .show on the next frame: appending it
+  // already shown would skip the 100ms css snap and the toast would just pop in
+  requestAnimationFrame(() => toast.classList.add('show'));
   setTimeout(() => toast.remove(), 3000);
 };
 

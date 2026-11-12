@@ -2,8 +2,8 @@
 /* Menu Hub */
 
 .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: var(--space-4); }
-.menu-card { background: var(--card-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius); padding: var(--space-5); text-decoration: none; color: var(--text-light); transition: transform 0.1s, border-color 0.1s; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.menu-card:active { transform: scale(0.99); background: #1a2b1a; }
+.menu-card { background: var(--card-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius); padding: var(--space-5); text-decoration: none; color: var(--text-light); transition: transform 0.1s linear, border-color 0.1s linear; will-change: transform; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.menu-card:active { transform: scale(0.97); background: #1a2b1a; }
 .menu-card:hover { border-color: var(--accent); }
 .menu-card .icon { font-size: 2.5rem; margin-bottom: var(--space-2); color: var(--accent); }
 .menu-card h2 { font-size: var(--text-lg); margin-bottom: var(--space-2); color: var(--accent); text-wrap: balance; }
@@ -30,8 +30,8 @@
 .url-row { display: flex; align-items: stretch; gap: var(--space-2); margin-bottom: 10px; }
 .url-row input[type="url"] { flex: 1; width: auto; min-width: 0; margin-bottom: 0; }
 .btn-url-clear { width: auto; flex-shrink: 0; margin-bottom: 0; padding: 0 var(--space-3); min-width: 44px; font-size: 0.9rem; color: var(--text-muted); border-color: var(--border-strong); background: #000; }
-.btn-url-clear:hover { color: #ff3333; border-color: #ff3333; }
-.btn-url-clear:active { transform: scale(0.97); background: rgba(255, 51, 51, 0.1); }
+.btn-url-clear:hover { background: #ff3333; color: #000; border-color: #ff3333; }
+.btn-url-clear:active { transform: scale(0.97); }
 .track-list { list-style: none; max-height: 45vh; overflow-y: auto; border: var(--border-width) solid var(--border-color); border-radius: var(--radius); margin-bottom: var(--space-3); }
 /* desktop: the results column is tall, so the list can use more vertical space */
 @media (min-width: 1025px) { .track-list { max-height: 62vh; } }
@@ -52,7 +52,9 @@
 .yt-badge.err { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: var(--border-width) solid #ffa500; }
 
 .progress-wrap { display: none; background: #0a0a0a; height: 6px; border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; border: var(--border-width) solid var(--border-strong); }
-.progress-bar { height: 100%; width: 0%; transition: width 0.2s; }
+/* progress fill: width is the one animated property kept on purpose (data feedback,
+   not an interactive state), so it only gets the strict 100ms linear step */
+.progress-bar { height: 100%; width: 0%; transition: width 0.1s linear; }
 .prog-yt { background: #ff3333; }
 .prog-dl { background: var(--accent); }
 
@@ -111,14 +113,14 @@
   font-size: 1rem;
   padding: 2px 5px;
   margin: 0 0 0 2px;
-  transition: color 0.2s, border-color 0.2s, transform 0.1s;
+  transition: color 0.1s linear, border-color 0.1s linear, transform 0.1s linear;
   width: auto;
   min-width: 28px;
   min-height: 28px;
 }
 
-.copy-btn:hover { color: var(--accent); border-color: var(--border-strong); }
-.copy-btn:active { transform: scale(0.9); }
+.copy-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+.copy-btn:active { transform: scale(0.97); }
 
 /* Container de botões de exportação */
 .export-row {
@@ -146,10 +148,10 @@
   font-weight: 600;
   margin-bottom: 10px;
   padding: var(--space-1) 0;
-  transition: opacity 0.2s;
+  transition: color 0.1s linear;
 }
 .back-btn:hover {
-  opacity: 0.8;
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -183,7 +185,7 @@
   color: var(--accent);
   font-size: var(--text-md);
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  transition: border-color 0.1s linear;
   font-family: 'Consolas', monospace;
   text-transform: lowercase;
 }
@@ -201,7 +203,7 @@
   border-radius: var(--radius);
   background: #0a0a0a;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.1s linear, background-color 0.1s linear;
   margin-bottom: var(--space-4);
   text-align: center;
   position: relative;
@@ -268,7 +270,8 @@
   cursor: pointer;
 }
 .btn-danger-outline:hover {
-  background: rgba(255, 51, 51, 0.1);
+  background: #ff3333;
+  color: #000;
 }
 
 .sets-list {
@@ -289,7 +292,7 @@
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
   gap: var(--space-3);
-  transition: border-color 0.2s;
+  transition: border-color 0.1s linear;
 }
 .set-card:hover {
   border-color: var(--accent);
@@ -319,7 +322,7 @@
   flex-shrink: 0;
   border: var(--border-width) solid var(--border-strong);
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.1s linear, color 0.1s linear;
 }
 .set-avatar:hover {
   background: var(--accent);

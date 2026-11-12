@@ -65,7 +65,7 @@
   z-index: 2;
 }
 
-.sorter-table th.sortable { cursor: pointer; transition: color 0.15s, border-color 0.15s; user-select: none; }
+.sorter-table th.sortable { cursor: pointer; transition: color 0.1s linear, border-color 0.1s linear; user-select: none; }
 .sorter-table th.sortable:hover { color: var(--accent); }
 /* the ring is drawn inside the cell so the scroll container cannot clip it */
 .sorter-table th.sortable:focus-visible { outline-offset: -2px; color: var(--accent); }
@@ -132,9 +132,10 @@
   border: var(--border-width) dashed var(--border-strong);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.1s linear, border-color 0.1s linear;
 }
-.token-chip:hover { color: var(--primary); border-color: var(--primary); }
+/* the chip is a button: same hard inversion as every other button */
+.token-chip:hover { background: var(--primary); color: #000; border-color: var(--primary); }
 
 .category-editor {
   display: flex;
@@ -206,7 +207,7 @@
   font-weight: 700;
   cursor: pointer;
 }
-.cat-remove:hover { background: rgba(255, 51, 51, 0.1); }
+.cat-remove:hover { background: #ff3333; color: #000; }
 
 /* selection: per-row checkbox column + the batch buttons above the table */
 .sorter-table th.cell-check,
@@ -268,8 +269,9 @@
   border-radius: var(--radius);
   cursor: pointer;
 }
+/* trigger is a button: hover inverts, open state keeps the same inverted fill */
 .multi-select-trigger:hover,
-.multi-select-trigger[aria-expanded="true"] { border-color: var(--primary); }
+.multi-select-trigger[aria-expanded="true"] { background: var(--primary); border-color: var(--primary); color: #000; }
 .multi-select-trigger i { font-size: 0.9rem; flex-shrink: 0; }
 
 .multi-select-panel {
