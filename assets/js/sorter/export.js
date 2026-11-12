@@ -90,21 +90,44 @@ export function exportJSON() {
   toast('json exported');
 }
 
+// base path typed by the user — only the xml uses it, so it is not part of state.
+export function vdjBasePath() {
+  const input = document.getElementById('vdjBasePath');
+  return input ? input.value.trim().replace(/[\\/]+$/, '') : '';
+}
+
+// joins the base with the folder-relative path. webkitRelativePath always starts
+// with the picked folder name, so "C:\music\tracks" + "tracks/sub/a.mp3" drops
+// the duplicated "tracks" instead of producing "tracks\tracks/sub/a.mp3".
+export function joinVdjPath(base, relativePath) {
+  const rel = String(relativePath || '').replace(/\\/g, '/');
+  const root = String(base || '').trim().replace(/[\\/]+$/, '');
+  if (!root) return rel;
+
+  const lastBaseSegment = root.split(/[\\/]/).filter(Boolean).pop() || '';
+  const parts = rel.split('/').filter(Boolean);
+  if (lastBaseSegment && parts.length && parts[0].toLowerCase() === lastBaseSegment.toLowerCase()) {
+    parts.shift();
+  }
+  return parts.length ? [root, ...parts].join('\\') : root;
+}
+
 export function exportVDJ() {
   const list = exportableTracks();
   if (!list.length) return;
 
+  const base = vdjBasePath();
   const lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<VirtualDJ_Database>'];
   list.forEach((track) => {
     // electron/webkit exposes the absolute path on the File object; a plain
-    // browser only knows the folder-relative one.
-    const path = (track.file && track.file.path) || track.relativePath || track.name;
+    // browser only knows the folder-relative one, so the typed base fills in.
+    const path = (track.file && track.file.path) || joinVdjPath(base, track.relativePath || track.name);
     lines.push(`<Song FilePath="${escapeHtml(path)}" />`);
   });
   lines.push('</VirtualDJ_Database>');
 
   downloadFile(`${exportBaseName()}-vdj.xml`, lines.join('\n') + '\n', 'application/xml');
-  log(`export: virtualdj xml with ${list.length} tracks`);
+  log(`export: virtualdj xml with ${list.length} tracks (base ${base || 'none'})`);
   toast('virtualdj xml exported');
 }
 
