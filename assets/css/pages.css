@@ -30,6 +30,8 @@
 .btn-url-clear:hover { color: #ff3333; border-color: #ff3333; }
 .btn-url-clear:active { transform: scale(0.97); background: rgba(255, 51, 51, 0.1); }
 .track-list { list-style: none; max-height: 45vh; overflow-y: auto; border: var(--border-width) solid var(--border-color); border-radius: 0px; margin-bottom: 12px; }
+/* desktop: the results column is tall, so the list can use more vertical space */
+@media (min-width: 901px) { .track-list { max-height: 62vh; } }
 .track-item { display: flex; align-items: center; padding: 10px 8px; border-bottom: var(--border-width) solid var(--border-color); gap: 10px; cursor: pointer; }
 .track-item.selected { background: rgba(0, 255, 102, 0.05); }
 .track-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; border-radius: 0px; }
