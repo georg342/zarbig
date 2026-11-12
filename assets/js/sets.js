@@ -126,15 +126,17 @@ btnUpload.addEventListener('click', async () => {
   btnUpload.disabled = true;
   statusDiv.innerText = `uploading "${rawCustomName}"... please wait.`;
 
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(finalFileName, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
+  try {
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(finalFileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
-  if (error) {
-    statusDiv.innerText = `upload error: ${error.message}`;
+    if (error) throw error;
+  } catch (err) {
+    statusDiv.innerText = `upload error: ${err.message}`;
     mostrarToast('failed to upload file');
     btnUpload.disabled = false;
     return;
@@ -158,18 +160,25 @@ async function loadSets() {
     </div>
   `;
 
-  const { data: files, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list('', {
-      sortBy: { column: 'created_at', order: 'desc' }
-    });
+  let files = [];
 
-  if (error) {
+  try {
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list('', {
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
+
+    if (error) throw error;
+    files = data || [];
+  } catch (err) {
+    currentFiles = [];
+    btnDeleteAll.style.display = 'none';
     listaSets.innerHTML = `
       <div class="empty-state">
         <i class="ph ph-warning empty-icon" aria-hidden="true"></i>
         <p>error loading list</p>
-        <span>${error.message}</span>
+        <span>${window.escapeHtml(err.message)}</span>
       </div>
     `;
     return;
@@ -204,24 +213,25 @@ async function loadSets() {
     const ext = file.name.split('.').pop().toLowerCase();
 
     let displayName = file.name;
-    if (displayName.includes('--')) {
-      displayName = displayName.split('--').slice(1).join('--');
-    }
+    displayName = displayName.replace(/^\d{10,}--/, '');
     displayName = displayName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+
+    const escapedName = window.escapeHtml(displayName);
+    const escapedUrl = window.escapeHtml(publicUrl);
 
     const li = document.createElement('li');
     li.className = 'set-card';
     li.innerHTML = `
       <div class="set-left">
-        <button class="set-avatar" type="button" title="play set" aria-label="play ${displayName}"><i class="ph ph-play" aria-hidden="true"></i></button>
+        <button class="set-avatar" type="button" title="play set" aria-label="play ${escapedName}"><i class="ph ph-play" aria-hidden="true"></i></button>
         <div class="set-meta">
-          <div class="set-name" title="${displayName}">${displayName}</div>
+          <div class="set-name" title="${escapedName}">${escapedName}</div>
           <div class="set-details">${sizeMB} mb • ${ext}</div>
         </div>
       </div>
       <div class="set-actions">
         <button class="btn-action-play" type="button" title="play" aria-label="play"><i class="ph ph-play" aria-hidden="true"></i></button>
-        <a class="btn-action-dl" href="${publicUrl}" target="_blank" rel="noopener" download="${displayName}.${ext}" title="download" aria-label="download"><i class="ph ph-download-simple" aria-hidden="true"></i></a>
+        <a class="btn-action-dl" href="${escapedUrl}" target="_blank" rel="noopener" download="${escapedName}.${ext}" title="download" aria-label="download"><i class="ph ph-download-simple" aria-hidden="true"></i></a>
         <button class="btn-action-copy" type="button" title="copy download link" aria-label="copy download link"><i class="ph ph-link" aria-hidden="true"></i></button>
         ${isAdmin ? `<button class="btn-action-del" type="button" title="delete set" aria-label="delete set"><i class="ph ph-trash" aria-hidden="true"></i></button>` : ''}
       </div>
@@ -242,11 +252,7 @@ async function loadSets() {
 
     // Copy link action
     li.querySelector('.btn-action-copy').addEventListener('click', () => {
-      navigator.clipboard.writeText(publicUrl).then(() => {
-        mostrarToast('download link copied!');
-      }).catch(() => {
-        mostrarToast('failed to copy link');
-      });
+      window.copyText(publicUrl, 'download link copied!');
     });
 
     // Delete action (only if admin)
@@ -275,12 +281,14 @@ async function deleteSet(fileName, displayName) {
   if (!confirmed) return;
 
   mostrarToast('removing set...');
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove([fileName]);
+  try {
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove([fileName]);
 
-  if (error) {
-    mostrarToast(`error deleting: ${error.message}`);
+    if (error) throw error;
+  } catch (err) {
+    mostrarToast(`error deleting: ${err.message}`);
     return;
   }
 
@@ -305,16 +313,19 @@ btnDeleteAll.addEventListener('click', async () => {
   mostrarToast('deleting all sets...');
 
   const todosNomes = currentFiles.map(f => f.name);
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove(todosNomes);
+  try {
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove(todosNomes);
 
-  btnDeleteAll.disabled = false;
-
-  if (error) {
-    mostrarToast(`error clearing bucket: ${error.message}`);
+    if (error) throw error;
+  } catch (err) {
+    btnDeleteAll.disabled = false;
+    mostrarToast(`error clearing bucket: ${err.message}`);
     return;
   }
+
+  btnDeleteAll.disabled = false;
 
   mostrarToast('all sets deleted!');
   loadSets();
