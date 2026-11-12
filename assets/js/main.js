@@ -77,3 +77,136 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
     });
   });
 };
+
+// ==========================================
+// GLOBAL BACKGROUND GRADIENT + ADMIN COLOR PICKER
+// ==========================================
+// The 3-color gradient is a global preference: it is read from localStorage as
+// soon as this script runs, so every page paints the same background. The
+// picker itself is admin-only -- pages call window.setAdminBgWidget(true/false)
+// from their own admin mode toggles.
+
+const BG_GRADIENT_KEY = 'zb_bg_gradient';
+const BG_GRADIENT_SLOTS = ['c1', 'c2', 'c3'];
+const BG_GRADIENT_DEFAULTS = { c1: '#0a0a0a', c2: '#0d1410', c3: '#110a16' };
+const BG_GRADIENT_VARS = { c1: '--bg-grad-1', c2: '--bg-grad-2', c3: '--bg-grad-3' };
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+let bgGradient = { ...BG_GRADIENT_DEFAULTS };
+let bgWidget = null;
+
+function readBgGradient() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BG_GRADIENT_KEY) || 'null');
+    if (!saved || typeof saved !== 'object') return { ...BG_GRADIENT_DEFAULTS };
+
+    return BG_GRADIENT_SLOTS.reduce((colors, slot) => {
+      const value = saved[slot];
+      colors[slot] = typeof value === 'string' && HEX_COLOR.test(value)
+        ? value.toLowerCase()
+        : BG_GRADIENT_DEFAULTS[slot];
+      return colors;
+    }, {});
+  } catch (e) {
+    return { ...BG_GRADIENT_DEFAULTS };
+  }
+}
+
+function saveBgGradient(colors) {
+  try {
+    localStorage.setItem(BG_GRADIENT_KEY, JSON.stringify(colors));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearBgGradient() {
+  try {
+    localStorage.removeItem(BG_GRADIENT_KEY);
+  } catch (e) {
+    // storage blocked: nothing to clear
+  }
+}
+
+// pushes the colors into the :root custom properties (used by base.css on body)
+function applyBgGradient(colors) {
+  const rootStyle = document.documentElement.style;
+  BG_GRADIENT_SLOTS.forEach((slot) => rootStyle.setProperty(BG_GRADIENT_VARS[slot], colors[slot]));
+
+  if (!bgWidget) return;
+  BG_GRADIENT_SLOTS.forEach((slot) => {
+    const input = document.getElementById('adminBgPick' + slot.slice(1));
+    if (input) input.value = colors[slot];
+  });
+}
+
+// builds and injects the floating widget (kept as a single instance per page)
+function buildBgWidget() {
+  if (bgWidget || !document.body) return bgWidget;
+
+  const widget = document.createElement('div');
+  widget.id = 'adminBgWidget';
+  widget.className = 'admin-bg-widget';
+  widget.style.display = 'none';
+  widget.innerHTML = `
+    <div class="admin-bg-widget-head">
+      <span class="admin-bg-widget-title">bg gradient</span>
+      <button type="button" id="adminBgMin" title="collapse">-</button>
+    </div>
+    <div class="admin-bg-widget-body" id="adminBgWidgetBody">
+      <div class="admin-bg-picks">
+        <input type="color" id="adminBgPick1" title="top-left" value="${BG_GRADIENT_DEFAULTS.c1}">
+        <input type="color" id="adminBgPick2" title="middle" value="${BG_GRADIENT_DEFAULTS.c2}">
+        <input type="color" id="adminBgPick3" title="bottom-right" value="${BG_GRADIENT_DEFAULTS.c3}">
+      </div>
+      <button type="button" id="adminBgReset" class="admin-bg-reset">reset</button>
+    </div>
+  `;
+
+  BG_GRADIENT_SLOTS.forEach((slot) => {
+    const input = widget.querySelector('#adminBgPick' + slot.slice(1));
+    input.value = bgGradient[slot];
+    input.addEventListener('input', () => {
+      bgGradient = { ...bgGradient, [slot]: input.value };
+      applyBgGradient(bgGradient);
+      saveBgGradient(bgGradient);
+    });
+  });
+
+  const minBtn = widget.querySelector('#adminBgMin');
+  minBtn.addEventListener('click', () => {
+    const collapsed = widget.classList.toggle('is-min');
+    minBtn.innerText = collapsed ? '+' : '-';
+    minBtn.title = collapsed ? 'expand' : 'collapse';
+  });
+
+  widget.querySelector('#adminBgReset').addEventListener('click', () => {
+    bgGradient = { ...BG_GRADIENT_DEFAULTS };
+    applyBgGradient(bgGradient);
+    clearBgGradient();
+    window.mostrarToast('bg gradient reset');
+  });
+
+  document.body.appendChild(widget);
+  bgWidget = widget;
+  return widget;
+}
+
+// public hook used by every page's admin mode toggle
+window.setAdminBgWidget = function (isAdmin) {
+  const widget = bgWidget || buildBgWidget();
+  if (!widget) return;
+  widget.style.display = isAdmin ? 'block' : 'none';
+};
+
+// restore the saved gradient before anything else paints
+bgGradient = readBgGradient();
+applyBgGradient(bgGradient);
+
+// inject the widget (hidden) once the body is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => buildBgWidget());
+} else {
+  buildBgWidget();
+}

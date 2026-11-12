@@ -1,6 +1,11 @@
 /* base: design tokens, reset and raw form controls. loaded by main.css (order: base -> components -> pages) */
 :root {
   --bg-color: #0c0c0c;
+  /* global page gradient (top-left -> bottom-right). kept subtle and dark so the
+     green text stays readable; overridable at runtime by the admin color picker. */
+  --bg-grad-1: #0a0a0a;
+  --bg-grad-2: #0d1410;
+  --bg-grad-3: #110a16;
   --card-bg: #141414;
   --primary: #00ff66;
   --accent: #ffffff;
@@ -21,7 +26,9 @@
 }
 
 body { 
-  background: var(--bg-color); 
+  background: linear-gradient(to bottom right, var(--bg-grad-1) 0%, var(--bg-grad-2) 50%, var(--bg-grad-3) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
   color: var(--text-light); 
   padding: 14px; 
   max-width: var(--max-width); 

@@ -40,6 +40,7 @@ let isAdmin = false;
 window.toggleAdminMode = async function() {
   if (isAdmin) {
     isAdmin = false;
+    if (window.setAdminBgWidget) window.setAdminBgWidget(false);
     uploadCard.style.display = 'none';
     btnAdminToggle.innerHTML = '<i class="ph ph-lock"></i> admin mode';
     mostrarToast('admin mode disabled');
@@ -59,6 +60,7 @@ window.toggleAdminMode = async function() {
   const hashed = md5(pass.trim());
   if (hashed === ADMIN_HASH) {
     isAdmin = true;
+    if (window.setAdminBgWidget) window.setAdminBgWidget(true);
     uploadCard.style.display = 'block';
     btnAdminToggle.innerHTML = '<i class="ph ph-lock-open"></i> exit admin mode';
     mostrarToast('login successful');

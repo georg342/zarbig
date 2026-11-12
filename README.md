@@ -100,6 +100,7 @@ depois abra <http://localhost:8000>.
 | supabase url / anon key | `assets/js/sets.js:6-7` |
 | bucket | `assets/js/sets.js:8` (`dj-sets`) |
 | hash da senha admin | `assets/js/sets.js:9` e `assets/js/extractor.js:2` (`ADMIN_HASH`, md5) |
+| gradiente global de fundo | `localStorage.zb_bg_gradient` (`{ c1, c2, c3 }`); default em `assets/css/base.css` (`--bg-grad-1..3`), editável pelo widget flutuante que aparece no **admin mode** de qualquer página |
 
 ## notas
 

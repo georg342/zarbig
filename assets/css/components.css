@@ -249,3 +249,82 @@ audio {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* admin bg widget: floating gradient color picker injected by main.js.
+   hidden by default, only shown while admin mode is on. */
+.admin-bg-widget {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1500;
+  display: none;
+  width: 174px;
+  padding: 8px 10px;
+  background: var(--card-bg);
+  border: 2px solid #b026ff;
+  border-radius: 0px;
+  font-family: 'Consolas', monospace;
+  text-transform: lowercase;
+  color: var(--accent);
+  user-select: none;
+}
+
+.admin-bg-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.admin-bg-widget-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; color: #b026ff; }
+
+/* minimized: only the + badge stays on screen */
+.admin-bg-widget.is-min { width: auto; padding: 4px 6px; }
+.admin-bg-widget.is-min .admin-bg-widget-head { margin-bottom: 0; }
+.admin-bg-widget.is-min .admin-bg-widget-title { display: none; }
+.admin-bg-widget.is-min .admin-bg-widget-body { display: none; }
+
+/* compact controls: they must beat the global button rule (width 100%, 12px pad) */
+.admin-bg-widget button {
+  width: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  margin: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 0px;
+  background: #000;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.admin-bg-widget button:hover { border-color: #b026ff; color: #b026ff; }
+.admin-bg-widget button:active { transform: scale(0.96); background: rgba(176, 38, 255, 0.15); }
+.admin-bg-widget .admin-bg-reset { width: 100%; padding: 5px 0; }
+
+.admin-bg-picks { display: flex; gap: 6px; margin-bottom: 8px; }
+
+.admin-bg-widget input[type="color"] {
+  border: 1px solid var(--border-color);
+  border-radius: 0;
+  background: #000;
+  cursor: pointer;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+}
+.admin-bg-widget input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.admin-bg-widget input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0; }
+.admin-bg-widget input[type="color"]::-moz-color-swatch { border: none; border-radius: 0; }
+
+/* the sets page has a fixed bottom player: lift the widget above it when open */
+body:has(#audioPlayerCard[style*="block"]) .admin-bg-widget { bottom: 104px; }
+
+/* mobile: full-width strip at the bottom, clear of the audio player */
+@media (max-width: 600px) {
+  .admin-bg-widget { left: 8px; right: 8px; bottom: 8px; width: auto; }
+  .admin-bg-widget.is-min { left: auto; right: 8px; width: auto; }
+}

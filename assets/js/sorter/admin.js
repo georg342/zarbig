@@ -25,6 +25,9 @@ export function setAdminUI(enabled) {
       : '<i class="ph ph-lock"></i> admin mode';
   }
 
+  // the floating gradient picker follows admin mode (helper lives in main.js)
+  if (window.setAdminBgWidget) window.setAdminBgWidget(enabled);
+
   if (enabled) {
     renderMaskEditor();
     renderCategoryEditor();

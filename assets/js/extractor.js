@@ -164,6 +164,9 @@ function setAdminUI(state) {
       ? '<i class="ph ph-lock-open"></i> exit admin mode'
       : '<i class="ph ph-lock"></i> admin mode';
   }
+
+  // the floating gradient picker follows admin mode (helper lives in main.js)
+  if (window.setAdminBgWidget) window.setAdminBgWidget(state);
 }
 
 window.toggleAdminMode = async function () {
