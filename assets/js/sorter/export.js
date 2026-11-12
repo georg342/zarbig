@@ -94,37 +94,26 @@ export function exportVDJ() {
   const list = exportableTracks();
   if (!list.length) return;
 
-  // the xml is only usable with absolute paths, so the base path is mandatory.
   const baseInput = document.getElementById('vdjBasePath');
   const basePath = baseInput ? baseInput.value.trim() : '';
-  if (!basePath) {
-    logDebug('export: vdj xml skipped — base path is empty');
-    toast('base path required');
-    return;
-  }
 
-  const lines = [];
-  lines.push('<?xml version="1.0" encoding="UTF-8"?>');
-  lines.push('<VirtualDJ_Database>');
-  lines.push(`  <Playlist Name="${escapeHtml(exportBaseName())}" Entries="${list.length}">`);
+  const lines = ['#EXTM3U'];
 
   list.forEach((track) => {
-    let path = track.file && track.file.path ? track.file.path : (track.relativePath || track.name);
+    let path = track.file && track.file.path ? track.file.path : track.relativePath;
 
-    // base path is mandatory (guard above), so the prefix always applies.
+    // normaliza para barra invertida
+    path = path.replace(/\//g, '\\');
+
     if (basePath) {
       const baseClean = basePath.replace(/[\\\/]+$/, '');
-      // webkitRelativePath uses "/" while the vdj xml wants "\", so normalize
-      // first — otherwise the dedupe regex below never matches.
-      const pathClean = path.replace(/^[\\\/]+/, '').replace(/\//g, '\\');
-      const lastBaseFolder = baseClean.split(/[\\\/]/).pop();
+      const pathClean = path.replace(/^[\\\/]+/, '');
+      const lastBaseFolder = baseClean.split('\\').pop();
       let dedupePath = pathClean;
 
       if (lastBaseFolder) {
-        // O escape da barra invertida na string é crucial para o regex funcionar
         const escapedFolder = lastBaseFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const reg = new RegExp(`^${escapedFolder}\\\\`, 'i');
-
         if (reg.test(dedupePath)) {
           dedupePath = dedupePath.replace(reg, '');
         }
@@ -132,15 +121,14 @@ export function exportVDJ() {
       path = baseClean + '\\' + dedupePath;
     }
 
-    lines.push(`    <Song FilePath="${escapeHtml(path)}" />`);
+    // sem escapeHtml aqui, o m3u precisa do texto puro
+    lines.push(`#EXTINF:-1,${track.meta.artist} - ${track.meta.title}`);
+    lines.push(path);
   });
 
-  lines.push('  </Playlist>');
-  lines.push('</VirtualDJ_Database>');
-
-  downloadFile(`${exportBaseName()}-vdj.xml`, lines.join('\n'), 'application/xml;charset=utf-8');
-  log(`export: vdj xml with ${list.length} tracks (base path: ${basePath || 'none'})`);
-  toast('virtualdj xml exported');
+  downloadFile(`${exportBaseName()}-vdj.m3u8`, lines.join('\n') + '\n', 'audio/x-mpegurl;charset=utf-8');
+  log(`export: vdj m3u8 with ${list.length} tracks (base path: ${basePath || 'none'})`);
+  toast('virtualdj m3u8 exported');
 }
 
 export function copyToList() {
