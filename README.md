@@ -32,7 +32,7 @@ depois abra <http://localhost:8000>.
     ├── css/
     │   ├── main.css        # entry point: só @imports (não coloque regras aqui)
     │   ├── base.css        # tokens, reset, body, inputs e textarea
-    │   ├── components.css  # header, botões, toast, modal, audio player
+    │   ├── components.css  # header, card, botões, toast, modal, audio player
     │   └── pages.css       # regras específicas: hub, extractor, dj sets
     └── js/
         ├── main.js         # utils globais (window.mostrarToast, window.fetchWithTimeout, window.showCustomModal)
