@@ -9,5 +9,11 @@
 - Não "modernize" o visual — preserve o estilo neo-brutalism atual.
 - Não introduza dependências, bundlers ou frameworks.
 
+## duplicatas conhecidas
+- admin gate (md5 + showCustomModal): `sets.js`, `extractor.js`, `sorter/admin.js`.
+- `copyText`: main vs `sorter/utils.js`.
+- `escapeHtml`: `sorter/utils.js`.
+- `sanitizeFileName`: `sorter/utils.js`.
+
 ## Dúvida = pare
 - Se houver dois arquivos similares, CSS duplicado ou código ambíguo, PARE e pergunte antes de agir.
