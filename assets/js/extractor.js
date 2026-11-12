@@ -237,7 +237,7 @@ function limparUrlSpotify() {
 }
 
 function limparLog() { document.getElementById('debugLog').value = ''; }
-function copiarLog() { navigator.clipboard.writeText(document.getElementById('debugLog').value).then(() => mostrarToast("log copied!")); }
+function copiarLog() { window.copyText(document.getElementById('debugLog').value, "log copied!"); }
 function salvarChaves() {
   localStorage.setItem('sp_cid', document.getElementById('cid').value.trim());
   localStorage.setItem('sp_csec', document.getElementById('csec').value.trim());
@@ -391,9 +391,7 @@ function copiarLinkUnico(num, ev) {
     return;
   }
 
-  navigator.clipboard.writeText(links.join('\n')).then(() => {
-    mostrarToast(`link #${m.num} copied!`);
-  });
+  window.copyText(links.join('\n'), `link #${m.num} copied!`);
 }
 
 function render() {
@@ -415,7 +413,7 @@ function render() {
     if (m.ytTitle && m.ytChannel) {
       ytDetailsHtml = `
         <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-transform: lowercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px;">
-          <span style="color: #fff;">video:</span> ${m.ytTitle} | <span style="color: #fff;">channel:</span> ${m.ytChannel}
+          <span style="color: #fff;">video:</span> ${window.escapeHtml(m.ytTitle)} | <span style="color: #fff;">channel:</span> ${window.escapeHtml(m.ytChannel)}
         </div>
       `;
     }
@@ -432,8 +430,8 @@ function render() {
         <input type="checkbox" ${m.selecionada ? 'checked' : ''} ${m.jaTenho ? 'disabled' : ''} onclick="event.stopPropagation(); toggleItem(${m.num})">
         <span class="num">${m.num}</span>
         <div class="info" style="flex-grow: 1; overflow: hidden;">
-          <div class="title">${m.titulo}</div>
-          <div class="artist">${m.artista}</div>
+          <div class="title">${window.escapeHtml(m.titulo)}</div>
+          <div class="artist">${window.escapeHtml(m.artista)}</div>
           ${ytDetailsHtml}
         </div>
         <div class="badges-container" style="display: flex; align-items: center; gap: 6px;">
@@ -599,11 +597,11 @@ async function mostrarModalZarbig(m, opcoes) {
     overlay.setAttribute('aria-labelledby', 'zarbigModalTitle');
 
     let optionsHtml = opcoes.map((opt, index) => `
-      <div style="background: #0a0a0a; border: var(--border-width) solid var(--border-color); padding: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;" data-id="${opt.id}" class="zarbig-opt-item">
-        <img src="${opt.thumbnail}" alt="thumb" style="width: 60px; height: 45px; object-fit: cover; border: var(--border-width) solid var(--border-color); flex-shrink: 0;" />
+      <div style="background: #0a0a0a; border: var(--border-width) solid var(--border-color); padding: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;" data-id="${window.escapeHtml(opt.id)}" class="zarbig-opt-item">
+        <img src="${window.escapeHtml(opt.thumbnail)}" alt="thumb" style="width: 60px; height: 45px; object-fit: cover; border: var(--border-width) solid var(--border-color); flex-shrink: 0;" />
         <div style="flex-grow: 1; overflow: hidden;">
-          <div style="color: #fff; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: lowercase;">${index + 1}. ${opt.title}</div>
-          <div style="color: var(--text-muted); font-size: 0.7rem; text-transform: lowercase;">channel: ${opt.channelTitle}</div>
+          <div style="color: #fff; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: lowercase;">${index + 1}. ${window.escapeHtml(opt.title)}</div>
+          <div style="color: var(--text-muted); font-size: 0.7rem; text-transform: lowercase;">channel: ${window.escapeHtml(opt.channelTitle)}</div>
         </div>
         <button class="btn-sec" style="width: auto; margin:0; padding: 4px 8px; font-size: 0.7rem; text-transform: lowercase;">select</button>
       </div>
@@ -612,7 +610,7 @@ async function mostrarModalZarbig(m, opcoes) {
     overlay.innerHTML = `
       <div class="custom-modal-card" style="max-width: 500px; width: 90%;">
         <h3 class="section-title" id="zarbigModalTitle" style="margin-bottom: 6px; color: var(--admin-text); text-transform: lowercase;">zarbig mode</h3>
-        <div class="custom-modal-msg" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-transform: lowercase;">select the correct video for: <br><strong style="color: #fff;">${m.titulo} - ${m.artista}</strong></div>
+        <div class="custom-modal-msg" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-transform: lowercase;">select the correct video for: <br><strong style="color: #fff;">${window.escapeHtml(m.titulo)} - ${window.escapeHtml(m.artista)}</strong></div>
         <div style="max-height: 350px; overflow-y: auto; margin-bottom: 14px; padding-right: 4px;">
           ${optionsHtml || '<div style="color:var(--text-muted); text-align:center; text-transform: lowercase;">no results found</div>'}
         </div>
@@ -799,13 +797,9 @@ async function copiarForEach() {
     }
     const m = faixas[i];
     const url = m.ytUrl;
-    navigator.clipboard.writeText(url).then(() => {
-      mostrarToast(`copied (${i + 1}/${faixas.length}): ${m.titulo}`);
+    Promise.resolve(window.copyText(url, `copied (${i + 1}/${faixas.length}): ${m.titulo}`)).then(() => {
       i++;
       setTimeout(proximo, 3000);
-    }).catch(() => {
-      mostrarToast("failed to copy, check permissions.");
-      btn.disabled = false;
     });
   }
 
@@ -819,7 +813,7 @@ function copiarApenasLinks() {
     .filter(url => url); 
 
   if (!urls.length) return mostrarToast("no links generated for selected tracks!");
-  navigator.clipboard.writeText(urls.join(',\n')).then(() => mostrarToast("links copied!"));
+  window.copyText(urls.join(',\n'), "links copied!");
 }
 
 function baixarTxt() {
@@ -831,7 +825,7 @@ function baixarTxt() {
   
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([linhas], { type: 'text/plain;charset=utf-8' }));
-  a.download = `${nomePlaylist.replace(/\s+/g, '_')}_extracao.txt`;
+  a.download = `${window.sanitizeFileName(nomePlaylist).replace(/\s+/g, '_')}_extracao.txt`;
   a.click();
   mostrarToast(".txt downloaded!");
 }
@@ -1020,7 +1014,7 @@ function copiarListaFormatada() {
   if (!faixas.length) return mostrarToast('no generated links for selected tracks!');
 
   const texto = faixas.map(m => `${m.artista} - ${m.titulo} | ${m.ytUrl}`).join('\n');
-  navigator.clipboard.writeText(texto).then(() => mostrarToast('formatted list copied!'));
+  window.copyText(texto, 'formatted list copied!');
 }
 
 function baixarCsv() {
@@ -1036,7 +1030,7 @@ function baixarCsv() {
 
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-  a.download = `${nomePlaylist.replace(/\s+/g, '_')}_extracao.csv`;
+  a.download = `${window.sanitizeFileName(nomePlaylist).replace(/\s+/g, '_')}_extracao.csv`;
   a.click();
   mostrarToast('.csv downloaded!');
 }
