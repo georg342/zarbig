@@ -19,3 +19,9 @@ Hub pessoal de DJ/tools com três páginas:
 - Não renomeie IDs HTML sem atualizar todos os seletores JS/HTML na mesma alteração.
 - Legado em PT: `extractor.js` e `sets.js` são PT e não devem ser renomeados sem pedido explícito. Código novo em EN.
 - Admin gate (md5 + showCustomModal) está duplicado em `sets.js`, `extractor.js` e `sorter/admin.js` — manter em sync sem unificar sem pedido.
+
+# edição de arquivos
+
+- arquivo existente: editar por diff (`apply_diff`/`replace_in_file`), nunca reescrever o conteúdo inteiro.
+- `write_to_file` só para arquivo novo ou quando o diff falhou 2× seguidas.
+- antes de editar, ler o trecho exato; não confiar em memória de versão anterior.
