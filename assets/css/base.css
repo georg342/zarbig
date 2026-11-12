@@ -8,6 +8,7 @@
   --text-muted: #888888;
   --border-color: #222222;
   --border-width: 1px;
+  --max-width: 1200px; /* hard cap for the page content on wide screens */
 }
 
 * { 
@@ -23,7 +24,7 @@ body {
   background: var(--bg-color); 
   color: var(--text-light); 
   padding: 14px; 
-  max-width: 600px; 
+  max-width: var(--max-width); 
   margin: 0 auto; 
   user-select: none; 
 }

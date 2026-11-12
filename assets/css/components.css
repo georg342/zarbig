@@ -135,7 +135,7 @@ button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-
   z-index: 999;
   box-shadow: 0 -4px 12px rgba(0,0,0,0.8);
   display: none;
-  max-width: 600px;
+  max-width: var(--max-width);
   margin: 0 auto;
 }
 .player-info {
