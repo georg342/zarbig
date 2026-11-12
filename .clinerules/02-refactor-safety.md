@@ -1,8 +1,8 @@
 # Regras de Segurança para Refatoração
 
-## Nunca faça em lote
-- Trabalhe em UM passo por vez. Após cada passo, mostre o diff e espere aprovação.
+## Cuidado com etapas enormes
 - Se uma etapa for grande, divida em sub-passos.
+- Nunca reescreva arquivos inteiros, separe as alterações em grupos condizentes com o objetivo de cada sub-passo
 
 ## Preservação
 - Não remova código de negócio com "TODO/FIXME" sem confirmar.
