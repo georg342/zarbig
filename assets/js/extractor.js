@@ -768,7 +768,7 @@ async function copiarForEach() {
     navigator.clipboard.writeText(url).then(() => {
       mostrarToast(`copied (${i + 1}/${faixas.length}): ${m.titulo}`);
       i++;
-      setTimeout(proximo, 1000);
+      setTimeout(proximo, 3000);
     }).catch(() => {
       mostrarToast("failed to copy, check permissions.");
       btn.disabled = false;
