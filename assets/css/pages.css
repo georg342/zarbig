@@ -10,6 +10,9 @@
 .menu-card p { font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty; }
 #apiBox, #manualBox { display: none; margin-top: var(--space-3); padding-top: var(--space-3); border-top: var(--border-width) solid var(--border-color); }
 #status { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-2) 0; min-height: 1.2em; }
+/* extractor: the status line sits inside the results card header, between the
+   playlist name and the selected counter, so it must not push the card down */
+.header-res #status { flex: 1; margin: 0; min-height: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* layout: desktop split for the tool pages. columns are placed explicitly so the
    html order can stay mobile-first (results before controls) on the sets page.

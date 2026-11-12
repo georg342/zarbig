@@ -269,6 +269,9 @@ async function extrair() {
   const url = document.getElementById('url').value.trim();
   const status = document.getElementById('status');
   const id = getId(url);
+  // status lives in the results card header now, so the card has to be visible
+  // for the pre-load messages (invalid link / extracting / error).
+  document.getElementById('resCard').style.display = 'block';
   if (!id) return status.innerText = "invalid link.";
 
   nomePlaylist = "playlist";
