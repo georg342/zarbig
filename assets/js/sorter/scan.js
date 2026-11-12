@@ -12,6 +12,9 @@ import { log, logDebug, logWarn, logError } from './debug.js';
 // one tag-reading pass at a time; newer calls queue behind the active one.
 let activeRead = null;
 
+// tag reading is io-bound, so a handful of files run together per wave.
+const CHUNK = 6;
+
 export function buildTrack(file, index) {
   return {
     id: 't_' + index + '_' + Math.random().toString(36).slice(2, 8),
@@ -98,48 +101,53 @@ async function runTagRead(list) {
   log(`tags: reading ${total} files...`);
   setProgress(1);
 
-  for (let i = 0; i < total; i += 1) {
+  for (let start = 0; start < total; start += CHUNK) {
     if (runId !== state.scanId) {
       logDebug('tags: pass superseded by a newer folder — stopped');
+      hideProgress();
       return false; // a newer folder took over
     }
 
-    const track = list[i];
-    let tagMeta = emptyMeta();
-    let source = 'none';
+    const chunk = list.slice(start, start + CHUNK);
+    let doneInChunk = 0;
 
-    try {
-      const result = await readTags(track.file, track.ext);
-      tagMeta = result.meta;
-      source = result.source;
-    } catch (err) {
-      logError(`tags: could not read "${track.name}" —`, err);
-      tagMeta = emptyMeta();
-      source = 'none';
-    }
+    await Promise.all(chunk.map(async (track) => {
+      if (runId !== state.scanId) {
+        logDebug('tags: pass superseded by a newer folder — stopped');
+        hideProgress();
+        return;
+      }
 
-    if (runId !== state.scanId) {
-      logDebug('tags: pass superseded by a newer folder — stopped');
-      return false;
-    }
+      let tagMeta = emptyMeta();
+      let source = 'none';
 
-    track.meta = mergeMeta(parseFilename(track.name), tagMeta);
-    track.tagSource = hasAnyTag(tagMeta) ? source : 'filename';
-    track.tagsRead = true;
+      try {
+        const result = await readTags(track.file, track.ext);
+        tagMeta = result.meta;
+        source = result.source;
+      } catch (err) {
+        logError(`tags: could not read "${track.name}" —`, err);
+        tagMeta = emptyMeta();
+        source = 'none';
+      }
 
-    const details = [
-      track.meta.artist && `artist: ${track.meta.artist}`,
-      track.meta.title && `title: ${track.meta.title}`,
-      track.meta.bpm && `${track.meta.bpm} bpm`,
-      track.meta.key,
-      track.meta.genre
-    ].filter(Boolean).join(' | ');
-    logDebug(`tags ${i + 1}/${total} [${track.tagSource}]: ${track.name} → ${details}`);
+      if (runId !== state.scanId) {
+        logDebug('tags: pass superseded by a newer folder — stopped');
+        hideProgress();
+        return;
+      }
 
-    if (i % 2 === 0 || i === total - 1) {
-      setProgress(Math.round(((i + 1) / total) * 100));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+      track.meta = mergeMeta(parseFilename(track.name), tagMeta);
+      track.tagSource = hasAnyTag(tagMeta) ? source : 'filename';
+      track.tagsRead = true;
+
+      doneInChunk += 1;
+      const done = start + doneInChunk;
+      if (done % 2 === 0 || done === total) setProgress(Math.round((done / total) * 100));
+      logDebug(`tags ${done}/${total} [${track.tagSource}]: ${track.name}`);
+    }));
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
   if (runId !== state.scanId) {
