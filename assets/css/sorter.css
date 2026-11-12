@@ -85,9 +85,9 @@
   padding: 2px 6px;
   font-size: var(--text-xs);
   font-weight: 700;
-  color: #ffa500;
-  border: var(--border-width) solid #ffa500;
-  background: rgba(255, 165, 0, 0.08);
+  color: var(--warning);
+  border: var(--border-width) solid var(--warning);
+  background: var(--warning-soft);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -103,7 +103,7 @@
   color: var(--accent);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius);
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   text-transform: lowercase;
   cursor: pointer;
 }
@@ -187,7 +187,7 @@
   color: var(--accent);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius);
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   text-transform: lowercase;
 }
 .cat-grid input:focus { border-color: var(--accent); }
@@ -200,14 +200,14 @@
   margin: 0;
   padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
-  color: #ff3333;
-  border-color: #ff3333;
+  color: var(--danger);
+  border-color: var(--danger);
   background: #000;
   border-radius: var(--radius);
   font-weight: 700;
   cursor: pointer;
 }
-.cat-remove:hover { background: #ff3333; color: #000; }
+.cat-remove:hover { background: var(--danger); color: #000; }
 
 /* selection: per-row checkbox column + the batch buttons above the table */
 .sorter-table th.cell-check,
@@ -218,8 +218,8 @@
 }
 
 .sorter-table input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
+  width: var(--check-size);
+  height: var(--check-size);
   margin: 0;
   accent-color: var(--primary);
   cursor: pointer;
@@ -258,7 +258,7 @@
   width: 100%;
   margin: 0;
   padding: 9px 10px;
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-weight: 700;
   text-transform: lowercase;
@@ -311,8 +311,8 @@
 .multi-select-item:hover { background: rgba(255, 255, 255, 0.03); }
 
 .multi-select-item input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
+  width: var(--check-size);
+  height: var(--check-size);
   margin: 2px 0 0;
   flex-shrink: 0;
   accent-color: var(--primary);
@@ -336,8 +336,8 @@
   cursor: pointer;
 }
 .switch-row input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
+  width: var(--check-size);
+  height: var(--check-size);
   margin: 0;
   flex-shrink: 0;
   accent-color: var(--primary);

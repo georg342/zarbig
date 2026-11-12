@@ -592,10 +592,15 @@ async function mostrarModalZarbig(m, opcoes) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
+    // same apg dialog pattern as showCustomModal: named, modal and escapable,
+    // otherwise keyboard users are left on the trigger behind the overlay
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'zarbigModalTitle');
 
     let optionsHtml = opcoes.map((opt, index) => `
-      <div style="background: #0a0a0a; border: 1px solid var(--border-color); padding: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;" data-id="${opt.id}" class="zarbig-opt-item">
-        <img src="${opt.thumbnail}" alt="thumb" style="width: 60px; height: 45px; object-fit: cover; border: 1px solid var(--border-color); flex-shrink: 0;" />
+      <div style="background: #0a0a0a; border: var(--border-width) solid var(--border-color); padding: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;" data-id="${opt.id}" class="zarbig-opt-item">
+        <img src="${opt.thumbnail}" alt="thumb" style="width: 60px; height: 45px; object-fit: cover; border: var(--border-width) solid var(--border-color); flex-shrink: 0;" />
         <div style="flex-grow: 1; overflow: hidden;">
           <div style="color: #fff; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: lowercase;">${index + 1}. ${opt.title}</div>
           <div style="color: var(--text-muted); font-size: 0.7rem; text-transform: lowercase;">channel: ${opt.channelTitle}</div>
@@ -606,7 +611,7 @@ async function mostrarModalZarbig(m, opcoes) {
 
     overlay.innerHTML = `
       <div class="custom-modal-card" style="max-width: 500px; width: 90%;">
-        <h3 class="section-title" style="margin-bottom: 6px; color: var(--admin-text); text-transform: lowercase;">zarbig mode</h3>
+        <h3 class="section-title" id="zarbigModalTitle" style="margin-bottom: 6px; color: var(--admin-text); text-transform: lowercase;">zarbig mode</h3>
         <div class="custom-modal-msg" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-transform: lowercase;">select the correct video for: <br><strong style="color: #fff;">${m.titulo} - ${m.artista}</strong></div>
         <div style="max-height: 350px; overflow-y: auto; margin-bottom: 14px; padding-right: 4px;">
           ${optionsHtml || '<div style="color:var(--text-muted); text-align:center; text-transform: lowercase;">no results found</div>'}
@@ -619,18 +624,37 @@ async function mostrarModalZarbig(m, opcoes) {
 
     document.body.appendChild(overlay);
 
+    // focus goes back to the trigger on close; escape cancels like the button does
+    const opener = document.activeElement;
+    const close = (value) => {
+      document.removeEventListener('keydown', onKeydown);
+      overlay.remove();
+      if (opener && typeof opener.focus === 'function') opener.focus();
+      resolve(value);
+    };
+    const onKeydown = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      close(null);
+    };
+    document.addEventListener('keydown', onKeydown);
+
+    // park focus on the panel (not on a "select" button): the list is announced and
+    // the first enter cannot pick a video by accident
+    const card = overlay.querySelector('.custom-modal-card');
+    card.tabIndex = -1;
+    card.focus();
+
     overlay.querySelectorAll('.zarbig-opt-item').forEach(el => {
       el.addEventListener('click', () => {
         const selectedId = el.getAttribute('data-id');
         const selectedOpt = opcoes.find(o => o.id === selectedId);
-        overlay.remove();
-        resolve(selectedOpt || null);
+        close(selectedOpt || null);
       });
     });
 
     overlay.querySelector('#modalBtnCancel').addEventListener('click', () => {
-      overlay.remove();
-      resolve(null);
+      close(null);
     });
   });
 }

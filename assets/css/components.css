@@ -30,7 +30,7 @@ button, .btn-primary, .btn-sec, .btn-yt, .btn-action-play, .btn-action-dl, .btn-
   cursor: pointer; 
   transition: background-color 0.1s linear, border-color 0.1s linear, color 0.1s linear, transform 0.1s linear; 
   margin-bottom: 10px; 
-  font-family: 'Consolas', monospace; 
+  font-family: var(--font-mono); 
   text-transform: lowercase;
   display: inline-flex;
   align-items: center;
@@ -48,8 +48,8 @@ button, .btn-primary, .btn-sec, .btn-yt, .btn-action-play, .btn-action-dl, .btn-
 /* disabled wins over every hover fill: a disabled control must never look active */
 button:disabled, button:disabled:hover, .btn-primary:disabled, .btn-primary:disabled:hover { background: #0a0a0a; color: var(--text-muted); border-color: var(--border-strong); cursor: not-allowed; transform: none; }
 
-.btn-yt { color: #ff3333; border-color: #ff3333; background: #000; }
-.btn-yt:hover { background: #ff3333; color: #000; }
+.btn-yt { color: var(--youtube); border-color: var(--youtube); background: #000; }
+.btn-yt:hover { background: var(--youtube); color: #000; }
 
 .btn-sec { color: var(--accent); border-color: var(--border-strong); font-size: var(--text-sm); padding: 11px; margin-bottom: 0; background: #000; min-height: 40px; }
 .btn-sec:hover { background: var(--accent); border-color: var(--accent); color: #000; }
@@ -164,11 +164,11 @@ button:disabled, button:disabled:hover, .btn-primary:disabled, .btn-primary:disa
 }
 
 .btn-action-del {
-  color: #ff3333;
-  border: var(--border-width) solid #ff3333;
+  color: var(--danger);
+  border: var(--border-width) solid var(--danger);
 }
 .btn-action-del:hover {
-  background: #ff3333;
+  background: var(--danger);
   color: #000;
 }
 
@@ -179,7 +179,7 @@ button:disabled, button:disabled:hover, .btn-primary:disabled, .btn-primary:disa
   left: 0;
   right: 0;
   background: #0c0c0c;
-  border-top: 2px solid var(--accent);
+  border-top: var(--border-width-bold) solid var(--accent);
   padding: var(--space-3);
   padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   z-index: 999;
@@ -248,7 +248,7 @@ audio {
 
 .custom-modal-card {
   background: var(--card-bg);
-  border: 2px solid var(--accent);
+  border: var(--border-width-bold) solid var(--accent);
   width: 100%;
   max-width: 400px;
   padding: var(--space-5);
@@ -274,7 +274,7 @@ audio {
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius);
   color: var(--accent);
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   font-size: var(--text-md);
   margin-bottom: var(--space-4);
   text-transform: lowercase;
@@ -295,11 +295,11 @@ audio {
 
 .btn-modal-cancel {
   background: #000;
-  color: #ff3333;
-  border-color: #ff3333;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 .btn-modal-cancel:hover {
-  background: #ff3333;
+  background: var(--danger);
   color: #000;
 }
 
@@ -325,9 +325,9 @@ audio {
   width: 174px;
   padding: var(--space-2) 10px;
   background: var(--card-bg);
-  border: 2px solid var(--admin);
+  border: var(--border-width-bold) solid var(--admin);
   border-radius: var(--radius);
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   text-transform: lowercase;
   color: var(--accent);
   user-select: none;

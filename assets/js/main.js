@@ -4,6 +4,8 @@
 
 // Toast notification: reuses #toastContainer when the page provides one,
 // otherwise creates it on demand. Visuals come from .toast / .toast-container.
+// The container is a polite live region: a purely visual toast is invisible to
+// screen readers, so the text has to be announced instead of only painted.
 window.mostrarToast = function (message) {
   let container = document.getElementById('toastContainer');
   if (!container) {
@@ -12,6 +14,8 @@ window.mostrarToast = function (message) {
     container.className = 'toast-container';
     document.body.appendChild(container);
   }
+  container.setAttribute('role', 'status');
+  container.setAttribute('aria-live', 'polite');
 
   const toast = document.createElement('div');
   toast.className = 'toast';
@@ -43,10 +47,15 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
+    // apg dialog pattern: the overlay is the modal dialog and the title names it,
+    // so assistive tech announces the panel instead of walking into a bare div
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'modalTitle');
 
     overlay.innerHTML = `
       <div class="custom-modal-card">
-        <h3 class="section-title" style="margin-bottom: 10px;">${title}</h3>
+        <h3 class="section-title" id="modalTitle" style="margin-bottom: 10px;">${title}</h3>
         <div class="custom-modal-msg">${message}</div>
         ${isPrompt ? `<input type="password" id="modalInput" class="custom-modal-input" placeholder="${placeholder}">` : ''}
         <div class="custom-modal-actions">
@@ -58,6 +67,22 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
 
     document.body.appendChild(overlay);
 
+    // focus returns to whatever opened the modal, so the keyboard flow continues
+    const opener = document.activeElement;
+    const close = (value) => {
+      document.removeEventListener('keydown', onKeydown);
+      overlay.remove();
+      if (opener && typeof opener.focus === 'function') opener.focus();
+      resolve(value);
+    };
+    // escape is the expected way out of a dialog; it maps to cancel, never confirm
+    const onKeydown = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      close(isPrompt ? null : false);
+    };
+    document.addEventListener('keydown', onKeydown);
+
     const input = overlay.querySelector('#modalInput');
     if (input) {
       input.focus();
@@ -66,17 +91,20 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
           overlay.querySelector('#modalBtnConfirm').click();
         }
       });
+    } else {
+      // confirm/cancel only: park focus on the panel (not on confirm) so the first
+      // enter never fires a destructive action and the page behind stops taking tabs
+      const card = overlay.querySelector('.custom-modal-card');
+      card.tabIndex = -1;
+      card.focus();
     }
 
     overlay.querySelector('#modalBtnConfirm').addEventListener('click', () => {
-      const val = input ? input.value : true;
-      overlay.remove();
-      resolve(val);
+      close(input ? input.value : true);
     });
 
     overlay.querySelector('#modalBtnCancel').addEventListener('click', () => {
-      overlay.remove();
-      resolve(isPrompt ? null : false);
+      close(isPrompt ? null : false);
     });
   });
 };

@@ -17,9 +17,16 @@
   /* form control edges: 3:1+ against --card-bg so inputs stay identifiable (wcag 1.4.11) */
   --border-strong: #5a5a5a;
   --border-width: 1px;
+  --border-width-bold: 2px; /* bold neobrutalist edge for the panels that must read as primary */
   --admin: #b026ff; /* admin borders and accents */
   --admin-text: #c77dff; /* admin text: 6.8:1 on --card-bg; #b026ff is only 4.01:1 */
   --admin-soft: rgba(176, 38, 255, 0.12); /* tinted admin surfaces (badges only: hover is a solid fill) */
+  /* semantic color roles: every status color is named, so no rule repeats a raw hex */
+  --danger: #ff3333; /* destructive: delete, cancel, remove */
+  --warning: #ffa500; /* needs attention: failed lookup, raw (unparsed) tags */
+  --warning-soft: rgba(255, 165, 0, 0.1);
+  --youtube: #ff3333; /* youtube accents: same hex as danger today, different meaning */
+  --youtube-soft: rgba(255, 51, 51, 0.1);
   --max-width: 1200px; /* hard cap for the page content on wide screens */
   --radius: 0px; /* neo-brutalism: always 0 */
 
@@ -40,13 +47,19 @@
 
   /* every text field shares one inner padding */
   --field-pad: 11px 12px;
+
+  /* the whole ui is monospace: declared once here instead of once per component */
+  --font-mono: 'Consolas', monospace;
+  /* one checkbox size everywhere; the 18px box keeps every checkbox at a 24px+
+     spacing target (wcag 2.5.8) so no per-row hit area has to be faked */
+  --check-size: 18px;
 }
 
 * { 
   box-sizing: border-box; 
   margin: 0; 
   padding: 0; 
-  font-family: 'Consolas', monospace; 
+  font-family: var(--font-mono); 
   text-transform: lowercase; 
   -webkit-tap-highlight-color: transparent; 
 }
@@ -105,10 +118,10 @@ body {
   margin: 0 auto; 
   user-select: text; 
 }
-input[type="url"], input[type="text"], input[type="password"], input[type="search"], input[type="number"] { width: 100%; padding: var(--field-pad); border-radius: var(--radius); border: var(--border-width) solid var(--border-strong); background: #0a0a0a; color: var(--accent); font-size: var(--text-md); margin-bottom: var(--space-2); transition: border-color 0.1s linear, background-color 0.1s linear; font-family: 'Consolas', monospace; text-transform: lowercase; }
+input[type="url"], input[type="text"], input[type="password"], input[type="search"], input[type="number"] { width: 100%; padding: var(--field-pad); border-radius: var(--radius); border: var(--border-width) solid var(--border-strong); background: #0a0a0a; color: var(--accent); font-size: var(--text-md); margin-bottom: var(--space-2); transition: border-color 0.1s linear, background-color 0.1s linear; font-family: var(--font-mono); text-transform: lowercase; }
 input:focus { border-color: var(--accent); }
 input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 1; }
-textarea { width: 100%; height: 160px; background: #0a0a0a; color: var(--accent); font-family: monospace; font-size: var(--text-xs); padding: 10px 12px; border: var(--border-width) solid var(--border-strong); border-radius: var(--radius); resize: vertical; user-select: text; margin-bottom: var(--space-2); text-transform: lowercase; transition: border-color 0.1s linear; }
+textarea { width: 100%; height: 160px; background: #0a0a0a; color: var(--accent); font-family: var(--font-mono); font-size: var(--text-xs); padding: 10px 12px; border: var(--border-width) solid var(--border-strong); border-radius: var(--radius); resize: vertical; user-select: text; margin-bottom: var(--space-2); text-transform: lowercase; transition: border-color 0.1s linear; }
 textarea:focus { border-color: var(--accent); }
 
 /* motion opt-out: kill every transition, animation and scale-press */

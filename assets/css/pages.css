@@ -30,17 +30,20 @@
 .url-row { display: flex; align-items: stretch; gap: var(--space-2); margin-bottom: 10px; }
 .url-row input[type="url"] { flex: 1; width: auto; min-width: 0; margin-bottom: 0; }
 .btn-url-clear { width: auto; flex-shrink: 0; margin-bottom: 0; padding: 0 var(--space-3); min-width: 44px; font-size: 0.9rem; color: var(--text-muted); border-color: var(--border-strong); background: #000; }
-.btn-url-clear:hover { background: #ff3333; color: #000; border-color: #ff3333; }
+.btn-url-clear:hover { background: var(--danger); color: #000; border-color: var(--danger); }
 .btn-url-clear:active { transform: scale(0.97); }
 .track-list { list-style: none; max-height: 45vh; overflow-y: auto; border: var(--border-width) solid var(--border-color); border-radius: var(--radius); margin-bottom: var(--space-3); }
 /* desktop: the results column is tall, so the list can use more vertical space */
 @media (min-width: 1025px) { .track-list { max-height: 62vh; } }
 .track-item { display: flex; align-items: center; padding: 10px var(--space-2); border-bottom: var(--border-width) solid var(--border-color); gap: 10px; cursor: pointer; }
+/* the row is only a pointer shortcut for the checkbox, so it still needs a state:
+   instant hard tint, no transition; the checkbox itself carries the keyboard path */
+.track-item:hover { background: rgba(255, 255, 255, 0.03); }
 .track-item.selected { background: rgba(0, 255, 102, 0.05); }
 /* only pointer users get the row as a shortcut: the checkbox carries the keyboard path */
 .track-item.empty { justify-content: center; color: var(--text-muted); font-size: var(--text-xs); cursor: default; }
 .track-item.empty:hover { background: none; }
-.track-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; border-radius: var(--radius); }
+.track-item input[type="checkbox"] { width: var(--check-size); height: var(--check-size); accent-color: var(--primary); cursor: pointer; flex-shrink: 0; border-radius: var(--radius); }
 .num { color: var(--text-muted); font-size: var(--text-sm); width: 20px; text-align: right; flex-shrink: 0; }
 .info { flex: 1; overflow: hidden; }
 .title { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
@@ -48,23 +51,23 @@
 
 .badges-container { display: flex; gap: var(--space-1); flex-shrink: 0; }
 .yt-badge { width: auto; margin: 0; min-height: 26px; font-size: var(--text-xs); padding: 4px 7px; border-radius: var(--radius); background: var(--card-bg); color: var(--text-muted); text-decoration: none; text-align: center; border: var(--border-width) solid var(--border-strong); cursor: pointer; }
-.yt-badge.ok { background: rgba(255, 51, 51, 0.1); color: #ff3333; border: var(--border-width) solid #ff3333; }
-.yt-badge.err { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: var(--border-width) solid #ffa500; }
+.yt-badge.ok { background: var(--youtube-soft); color: var(--youtube); border: var(--border-width) solid var(--youtube); }
+.yt-badge.err { background: var(--warning-soft); color: var(--warning); border: var(--border-width) solid var(--warning); }
 
 .progress-wrap { display: none; background: #0a0a0a; height: 6px; border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; border: var(--border-width) solid var(--border-strong); }
 /* progress fill: width is the one animated property kept on purpose (data feedback,
    not an interactive state), so it only gets the strict 100ms linear step */
 .progress-bar { height: 100%; width: 0%; transition: width 0.1s linear; }
-.prog-yt { background: #ff3333; }
+.prog-yt { background: var(--youtube); }
 .prog-dl { background: var(--accent); }
 
 
 .yt-music-toggle { display: flex; align-items: center; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-3); background: #0a0a0a; padding: 10px; border-radius: var(--radius); border: var(--border-width) solid var(--border-strong); }
-.yt-music-toggle input { width: 18px; height: 18px; accent-color: #ff3333; margin: 0; }
+.yt-music-toggle input { width: var(--check-size); height: var(--check-size); accent-color: var(--youtube); margin: 0; }
 .yt-music-toggle label { font-size: var(--text-sm); color: #ddd; font-weight: 600; cursor: pointer; }
 
 /* extractor: admin mode */
-.admin-card { border: 2px solid var(--admin); }
+.admin-card { border: var(--border-width-bold) solid var(--admin); }
 .admin-badge {
   display: inline-flex;
   align-items: center;
@@ -86,7 +89,7 @@
 .admin-card .row:last-child { margin-bottom: 0; }
 
 /* extractor: public playlist tools */
-.tools-card { border: 2px solid var(--border-strong); }
+.tools-card { border: var(--border-width-bold) solid var(--border-strong); }
 .tools-subtitle {
   font-size: var(--text-sm);
   font-weight: 700;
@@ -102,7 +105,9 @@
   background: rgba(255, 255, 255, 0.06);
   border: var(--border-width) dashed var(--border-strong);
 }
-.track-item.owned { opacity: 0.55; }
+/* owned: de-emphasize the title, never the whole row -- opacity 0.55 pushed
+   .artist (--text-muted) to ~2.4:1 on --card-bg, below the 4.5:1 of wcag 1.4.3 */
+.track-item.owned .title { color: var(--text-muted); }
 
 /* Botão de Copiar Individual */
 .copy-btn {
@@ -186,7 +191,7 @@
   font-size: var(--text-md);
   box-sizing: border-box;
   transition: border-color 0.1s linear;
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   text-transform: lowercase;
 }
 .text-input:focus {
@@ -199,7 +204,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-5) var(--space-4);
-  border: 2px dashed var(--border-strong);
+  border: var(--border-width-bold) dashed var(--border-strong);
   border-radius: var(--radius);
   background: #0a0a0a;
   cursor: pointer;
@@ -251,8 +256,8 @@
 }
 
 .btn-danger-outline {
-  color: #ff3333;
-  border-color: #ff3333;
+  color: var(--danger);
+  border-color: var(--danger);
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-sm);
   width: auto;
@@ -261,7 +266,7 @@
   background: #000;
   border-radius: var(--radius);
   font-weight: 700;
-  font-family: 'Consolas', monospace;
+  font-family: var(--font-mono);
   text-transform: lowercase;
   display: inline-flex;
   align-items: center;
@@ -270,7 +275,7 @@
   cursor: pointer;
 }
 .btn-danger-outline:hover {
-  background: #ff3333;
+  background: var(--danger);
   color: #000;
 }
 
