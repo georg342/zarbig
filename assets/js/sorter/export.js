@@ -97,38 +97,54 @@ export function exportVDJ() {
   const baseInput = document.getElementById('vdjBasePath');
   const basePath = baseInput ? baseInput.value.trim() : '';
 
-  const lines = ['#EXTM3U'];
-
+  // group tracks by category
+  const groups = new Map();
   list.forEach((track) => {
-    let path = track.file && track.file.path ? track.file.path : track.relativePath;
-
-    // normaliza para barra invertida
-    path = path.replace(/\//g, '\\');
-
-    if (basePath) {
-      const baseClean = basePath.replace(/[\\\/]+$/, '');
-      const pathClean = path.replace(/^[\\\/]+/, '');
-      const lastBaseFolder = baseClean.split('\\').pop();
-      let dedupePath = pathClean;
-
-      if (lastBaseFolder) {
-        const escapedFolder = lastBaseFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const reg = new RegExp(`^${escapedFolder}\\\\`, 'i');
-        if (reg.test(dedupePath)) {
-          dedupePath = dedupePath.replace(reg, '');
-        }
-      }
-      path = baseClean + '\\' + dedupePath;
-    }
-
-    // sem escapeHtml aqui, o m3u precisa do texto puro
-    lines.push(`#EXTINF:-1,${track.meta.artist} - ${track.meta.title}`);
-    lines.push(path);
+    const cat = track.category || 'unsorted';
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(track);
   });
 
-  downloadFile(`${exportBaseName()}-vdj.m3u8`, lines.join('\n') + '\n', 'audio/x-mpegurl;charset=utf-8');
-  log(`export: vdj m3u8 with ${list.length} tracks (base path: ${basePath || 'none'})`);
-  toast('virtualdj m3u8 exported');
+  let fileCount = 0;
+
+  groups.forEach((tracks, category) => {
+    const lines = ['#EXTM3U'];
+
+    tracks.forEach((track) => {
+      let path = track.file && track.file.path ? track.file.path : track.relativePath;
+      // normalize to backslash
+      path = path.replace(/\//g, '\\');
+
+      if (basePath) {
+        const baseClean = basePath.replace(/[\\\/]+$/, '');
+        const pathClean = path.replace(/^[\\\/]+/, '');
+        const lastBaseFolder = baseClean.split('\\').pop();
+        let dedupePath = pathClean;
+
+        if (lastBaseFolder) {
+          const escapedFolder = lastBaseFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const reg = new RegExp(`^${escapedFolder}\\\\`, 'i');
+          if (reg.test(dedupePath)) {
+            dedupePath = dedupePath.replace(reg, '');
+          }
+        }
+        path = baseClean + '\\' + dedupePath;
+      }
+
+      // no escapeHtml here — the m3u needs the raw text
+      lines.push(`#EXTINF:-1,${track.meta.artist} - ${track.meta.title}`);
+      lines.push(path);
+    });
+
+    const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `${exportBaseName()}-${safeCategory}.m3u8`;
+
+    downloadFile(fileName, lines.join('\n') + '\n', 'audio/x-mpegurl;charset=utf-8');
+    fileCount++;
+  });
+
+  log(`export: ${fileCount} vdj m3u8 files (one per category) with base path: ${basePath || 'none'}`);
+  toast(`${fileCount} playlists exported!`);
 }
 
 export function copyToList() {
