@@ -11,7 +11,6 @@
 
 ## duplicatas conhecidas
 - admin gate (md5 + showCustomModal): `sets.js`, `extractor.js`, `sorter/admin.js`.
-- `copyText`: main vs `sorter/utils.js`.
 - `escapeHtml`: `sorter/utils.js`.
 - `sanitizeFileName`: `sorter/utils.js`.
 
