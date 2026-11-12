@@ -1,0 +1,113 @@
+// exports: m3u8 / csv / json downloads and the clipboard list + report.
+
+import { state } from './state.js';
+import { downloadFile, copyText, toast } from './utils.js';
+import { categoryLabel } from './categories.js';
+import { getVisibleTracks } from './table.js';
+import { applyMask } from './rename.js';
+
+export function exportBaseName() {
+  const stamp = new Date().toISOString().slice(0, 10);
+  return `zarbig-sorted-${stamp}`;
+}
+
+export function exportableTracks() {
+  const list = getVisibleTracks();
+  if (!list.length) toast('nothing to export');
+  return list;
+}
+
+export function exportM3U() {
+  const list = exportableTracks();
+  if (!list.length) return;
+
+  const lines = ['#EXTM3U'];
+  list.forEach((track) => {
+    const label = `${track.meta.artist} - ${track.meta.title}`;
+    lines.push(`#EXTINF:-1,${label}`);
+    lines.push(track.relativePath || track.name);
+  });
+
+  downloadFile(`${exportBaseName()}.m3u8`, lines.join('\n') + '\n', 'audio/x-mpegurl;charset=utf-8');
+  toast('m3u8 exported');
+}
+
+export function csvCell(value) {
+  const text = String(value == null ? '' : value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export function exportCSV() {
+  const list = exportableTracks();
+  if (!list.length) return;
+
+  const header = ['artist', 'title', 'bpm', 'key', 'genre', 'category', 'file'];
+  const rows = list.map((track) => [
+    track.meta.artist,
+    track.meta.title,
+    track.meta.bpm,
+    track.meta.key,
+    track.meta.genre,
+    track.category,
+    track.relativePath || track.name
+  ].map(csvCell).join(','));
+
+  downloadFile(`${exportBaseName()}.csv`, [header.join(','), ...rows].join('\n') + '\n', 'text/csv;charset=utf-8');
+  toast('csv exported');
+}
+
+export function exportJSON() {
+  const list = exportableTracks();
+  if (!list.length) return;
+
+  const payload = list.map((track, index) => ({
+    index: index + 1,
+    artist: track.meta.artist,
+    title: track.meta.title,
+    bpm: track.meta.bpm ? Number(track.meta.bpm) : null,
+    key: track.meta.key,
+    genre: track.meta.genre,
+    album: track.meta.album,
+    year: track.meta.year,
+    category: track.category,
+    autoCategory: track.autoCategory,
+    overridden: Boolean(state.overrides[track.id]),
+    tagSource: track.tagSource,
+    file: track.relativePath || track.name,
+    renamed: `${applyMask(track, index)}.${track.ext}`
+  }));
+
+  downloadFile(`${exportBaseName()}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+  toast('json exported');
+}
+
+export function copyToList() {
+  const list = exportableTracks();
+  if (!list.length) return;
+
+  const text = list.map((track, index) => `${index + 1}. ${track.meta.artist} - ${track.meta.title}`).join('\n');
+  copyText(text, 'list copied');
+}
+
+export function copyReport() {
+  const list = exportableTracks();
+  if (!list.length) return;
+
+  const groups = new Map();
+  list.forEach((track) => {
+    if (!groups.has(track.category)) groups.set(track.category, []);
+    groups.get(track.category).push(track);
+  });
+
+  const blocks = [];
+  groups.forEach((tracks, category) => {
+    blocks.push(`## ${categoryLabel(category)} (${tracks.length})`);
+    tracks.forEach((track) => {
+      const extras = [track.meta.bpm ? `${track.meta.bpm} bpm` : '', track.meta.key].filter(Boolean).join(' / ');
+      blocks.push(`- ${track.meta.artist} - ${track.meta.title}${extras ? ` (${extras})` : ''}`);
+    });
+    blocks.push('');
+  });
+
+  copyText(blocks.join('\n').trim(), 'report copied');
+}

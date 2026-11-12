@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0c0c0c">
+  <title>zarbig - track sorter</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+</head>
+<body>
+  <header class="app-header sets-header">
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left"></i> back to hub</a>
+    <h1><i class="ph ph-funnel"></i> track sorter</h1>
+    <p>analyze, categorize and export a music folder</p>
+  </header>
+
+  <div class="layout">
+    <div class="col-controls">
+
+      <!-- 1. folder -->
+      <div class="card">
+        <div class="list-header">
+          <h3 class="section-title" style="margin: 0;">1. folder</h3>
+          <span class="sorter-stat" id="folderStats">0 tracks</span>
+        </div>
+
+        <label for="folderInput" class="file-dropzone" id="sorterDropzone">
+          <i class="ph ph-folder-open drop-icon"></i>
+          <span id="sorterFileName" class="drop-title">click to select a music folder</span>
+          <span class="drop-hint">mp3, opus, wav, flac, m4a, aiff, aif, ogg</span>
+          <input type="file" id="folderInput" webkitdirectory directory multiple
+            accept=".mp3,.opus,.wav,.flac,.m4a,.aiff,.aif,.ogg,audio/mpeg,audio/opus,audio/ogg,audio/wav,audio/flac,audio/mp4,audio/aiff">
+        </label>
+
+        <div class="row">
+          <button id="btnScan" class="btn-sec"><i class="ph ph-magnifying-glass"></i> analyze tags</button>
+          <button id="btnReset" class="btn-sec"><i class="ph ph-arrow-counter-clockwise"></i> reset</button>
+        </div>
+
+        <div class="progress-wrap" id="analyzeWrap">
+          <div class="progress-bar prog-dl" id="analyzeBar"></div>
+        </div>
+        <p class="status-msg" id="analyzeStatus">no folder loaded.</p>
+      </div>
+
+      <!-- 2. categories -->
+      <div class="card">
+        <div class="list-header">
+          <h3 class="section-title" style="margin: 0;">2. categories</h3>
+          <span class="sorter-stat" id="catStats">0 / 0 sorted</span>
+        </div>
+
+        <div class="input-group">
+          <label for="catFilter">filter by category</label>
+          <select id="catFilter" class="text-input">
+            <option value="all">all categories</option>
+          </select>
+        </div>
+
+        <p class="help-text">rules read genre, bpm, key and title. category cells can be overridden by hand. edit the rules in admin mode.</p>
+      </div>
+
+      <!-- 3. export -->
+      <div class="card">
+        <div class="list-header">
+          <h3 class="section-title" style="margin: 0;">3. export</h3>
+          <span class="sorter-stat" id="exportStats">0 rows</span>
+        </div>
+
+        <button id="btnExportM3U" class="btn-primary"><i class="ph ph-playlist"></i> export .m3u8</button>
+
+        <div class="export-row">
+          <button id="btnExportCSV" class="btn-sec"><i class="ph ph-table"></i> .csv</button>
+          <button id="btnExportJSON" class="btn-sec"><i class="ph ph-brackets-curly"></i> .json</button>
+        </div>
+
+        <div class="export-row" style="margin-top: 8px;">
+          <button id="btnCopyList" class="btn-sec"><i class="ph ph-clipboard-text"></i> copy list</button>
+          <button id="btnCopyReport" class="btn-sec"><i class="ph ph-article"></i> copy report</button>
+        </div>
+
+        <p class="help-text" id="maskHint"></p>
+      </div>
+
+      <!-- admin toggle -->
+      <div style="margin-bottom: 12px; text-align: center;">
+        <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock"></i> admin mode</button>
+      </div>
+    </div>
+
+    <div class="col-results">
+
+      <!-- tracks -->
+      <div class="card">
+        <div class="list-header">
+          <h3 class="section-title" style="margin: 0;">4. tracks</h3>
+          <span class="admin-badge" id="adminBadge" style="display: none;"><i class="ph ph-lock-open"></i> admin</span>
+        </div>
+
+        <input type="search" id="trackSearch" class="sorter-search" placeholder="filter artist, title, genre, key...">
+
+        <div class="sorter-table-wrap">
+          <table class="sorter-table">
+            <thead>
+              <tr>
+                <th data-sort="index" class="sortable">#</th>
+                <th data-sort="artist" class="sortable">artist</th>
+                <th data-sort="title" class="sortable">title</th>
+                <th data-sort="bpm" class="sortable">bpm</th>
+                <th data-sort="key" class="sortable">key</th>
+                <th data-sort="genre" class="sortable">genre</th>
+                <th data-sort="category" class="sortable">category</th>
+              </tr>
+            </thead>
+            <tbody id="trackBody"></tbody>
+          </table>
+        </div>
+        <p class="help-text" id="tableHint">pick a folder and analyze tags to fill this table.</p>
+      </div>
+
+      <!-- rename preview -->
+      <div class="card">
+        <div class="list-header">
+          <h3 class="section-title" style="margin: 0;">5. rename preview</h3>
+          <button id="btnBuildRename" class="btn-sec" style="width: auto;"><i class="ph ph-arrow-clockwise"></i> rebuild</button>
+        </div>
+
+        <textarea id="renameOutput" readonly placeholder="nothing to preview yet..."></textarea>
+        <p class="help-text">the mask only changes the exported names — files on disk are never renamed.</p>
+      </div>
+
+      <!-- admin card -->
+      <div id="adminCard" class="card admin-card" style="display: none;">
+        <div class="list-header">
+          <h3 class="section-title" style="margin: 0;">admin config</h3>
+          <span class="admin-badge"><i class="ph ph-lock-open"></i> admin</span>
+        </div>
+
+        <div class="admin-subtitle">rename mask</div>
+
+        <div class="input-group">
+          <label for="maskInput">mask</label>
+          <input type="text" id="maskInput" class="text-input" placeholder="{artist} - {title}">
+        </div>
+
+        <div class="mask-tokens" id="maskTokens"></div>
+
+        <div class="row">
+          <button id="btnMaskPreset" class="btn-sec"><i class="ph ph-magic-wand"></i> bpm/key preset</button>
+          <button id="btnResetMask" class="btn-sec"><i class="ph ph-arrow-counter-clockwise"></i> default</button>
+        </div>
+
+        <div class="admin-subtitle">category presets</div>
+
+        <div id="categoryEditor" class="category-editor"></div>
+
+        <div class="row">
+          <button id="btnAddCategory" class="btn-sec"><i class="ph ph-plus"></i> add category</button>
+          <button id="btnResetCategories" class="btn-sec"><i class="ph ph-arrow-counter-clockwise"></i> reset</button>
+        </div>
+
+        <button id="btnSaveConfig" class="btn-primary"><i class="ph ph-floppy-disk"></i> save config</button>
+        <p class="help-text">saved in localStorage on this browser. bpm range is optional — leave both fields empty for a keyword-only rule.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../assets/js/main.js"></script>
+  <script type="module" src="../assets/js/sorter.js"></script>
+</body>
+</html>
