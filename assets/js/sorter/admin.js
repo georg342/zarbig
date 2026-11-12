@@ -24,9 +24,10 @@ export function setAdminUI(enabled) {
   if (card) card.style.display = enabled ? 'block' : 'none';
   if (badge) badge.style.display = enabled ? 'inline-flex' : 'none';
   if (toggle) {
+    toggle.setAttribute('aria-expanded', enabled ? 'true' : 'false');
     toggle.innerHTML = enabled
-      ? '<i class="ph ph-lock-open"></i> exit admin mode'
-      : '<i class="ph ph-lock"></i> admin mode';
+      ? '<i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode'
+      : '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
   }
 
   // the floating gradient picker follows admin mode (helper lives in main.js)

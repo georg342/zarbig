@@ -161,8 +161,8 @@ function setAdminUI(state) {
   if (adminCard) adminCard.style.display = state ? 'block' : 'none';
   if (btnAdminToggle) {
     btnAdminToggle.innerHTML = state
-      ? '<i class="ph ph-lock-open"></i> exit admin mode'
-      : '<i class="ph ph-lock"></i> admin mode';
+      ? '<i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode'
+      : '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
   }
 
   // the floating gradient picker follows admin mode (helper lives in main.js)
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearBtn.className = 'btn-url-clear';
     clearBtn.title = 'clear url';
     clearBtn.setAttribute('aria-label', 'clear url');
-    clearBtn.innerHTML = '<i class="ph ph-x"></i>';
+    clearBtn.innerHTML = '<i class="ph ph-x" aria-hidden="true"></i>';
     clearBtn.onclick = limparUrlSpotify;
 
     // Wraps the url input so the small clear button sits beside the field.
@@ -244,7 +244,12 @@ function salvarChaves() {
 }
 function toggleBox(id) {
   const b = document.getElementById(id);
-  if(b) b.style.display = b.style.display === 'block' ? 'none' : 'block';
+  if (!b) return;
+  const aberto = b.style.display !== 'block';
+  b.style.display = aberto ? 'block' : 'none';
+  // keep the toggle button in sync for screen readers
+  const controle = document.querySelector(`[aria-controls="${id}"]`);
+  if (controle) controle.setAttribute('aria-expanded', aberto ? 'true' : 'false');
 }
 
 function getId(url) {
@@ -417,7 +422,7 @@ function render() {
 
     let changeVideoBtn = '';
     if (isAdmin && m.ytUrl) {
-      changeVideoBtn = `<button class="copy-btn" onclick="alterarVideoManual(${m.num}, event)" title="change video"><i class="ph ph-pencil-simple"></i></button>`;
+      changeVideoBtn = `<button class="copy-btn" onclick="alterarVideoManual(${m.num}, event)" title="change video"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>`;
     }
 
     const ownedBadge = m.jaTenho ? `<span class="owned-badge">owned</span>` : '';
@@ -435,7 +440,7 @@ function render() {
           ${ownedBadge}
           ${badgeYt}
           ${changeVideoBtn}
-          ${m.ytUrl ? `<button class="copy-btn" onclick="copiarLinkUnico(${m.num}, event)" title="copy link"><i class="ph ph-copy"></i></button>` : ''}
+          ${m.ytUrl ? `<button class="copy-btn" onclick="copiarLinkUnico(${m.num}, event)" title="copy link"><i class="ph ph-copy" aria-hidden="true"></i></button>` : ''}
         </div>
       </li>
     `;
@@ -601,7 +606,7 @@ async function mostrarModalZarbig(m, opcoes) {
 
     overlay.innerHTML = `
       <div class="custom-modal-card" style="max-width: 500px; width: 90%;">
-        <h3 class="section-title" style="margin-bottom: 6px; color: #b026ff; text-transform: lowercase;">zarbig mode</h3>
+        <h3 class="section-title" style="margin-bottom: 6px; color: var(--admin-text); text-transform: lowercase;">zarbig mode</h3>
         <div class="custom-modal-msg" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-transform: lowercase;">select the correct video for: <br><strong style="color: #fff;">${m.titulo} - ${m.artista}</strong></div>
         <div style="max-height: 350px; overflow-y: auto; margin-bottom: 14px; padding-right: 4px;">
           ${optionsHtml || '<div style="color:var(--text-muted); text-align:center; text-transform: lowercase;">no results found</div>'}
@@ -683,6 +688,7 @@ async function buscarLinksYoutube() {
   btn.disabled = true;
   progWrap.style.display = 'block';
   progBar.style.width = '0%';
+  progBar.setAttribute('aria-valuenow', '0');
 
   let concluidas = 0;
   const total = selecionadas.length;
@@ -717,6 +723,7 @@ async function buscarLinksYoutube() {
 
     concluidas++;
     progBar.style.width = `${(concluidas / total) * 100}%`;
+    progBar.setAttribute('aria-valuenow', String(Math.round((concluidas / total) * 100)));
     render();
     await sleep(delayMs);
   }
@@ -856,6 +863,7 @@ async function retentarFalhas() {
 
   progWrap.style.display = 'block';
   progBar.style.width = '0%';
+  progBar.setAttribute('aria-valuenow', '0');
 
   let feitas = 0;
 
@@ -878,6 +886,7 @@ async function retentarFalhas() {
 
     feitas++;
     progBar.style.width = `${(feitas / falhas.length) * 100}%`;
+    progBar.setAttribute('aria-valuenow', String(Math.round((feitas / falhas.length) * 100)));
     render();
     await sleep(delayMs);
   }

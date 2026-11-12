@@ -1,28 +1,31 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0c0c0c">
+  <meta name="description" content="upload, play and share dj sets from cloud storage.">
   <title>zarbig - dj sets</title>
   <link rel="stylesheet" href="../assets/css/main.css">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">skip to content</a>
+
   <header class="app-header sets-header">
-    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left"></i> back to hub</a>
-    <h1><i class="ph ph-sliders"></i> dj sets</h1>
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left" aria-hidden="true"></i> back to hub</a>
+    <h1><i class="ph ph-sliders" aria-hidden="true"></i> dj sets</h1>
     <p>cloud storage and distribution</p>
   </header>
 
-  <div class="layout">
+  <main class="layout" id="main">
   <div class="col-results">
   <!-- Card de Listagem (Topo) -->
   <div class="card">
     <div class="list-header">
-      <h3 class="section-title" style="margin: 0;">available sets</h3>
-      <button id="btnDeleteAll" class="btn-danger-outline" style="display: none;"><i class="ph ph-trash"></i> delete all</button>
+      <h3 class="section-title">available sets</h3>
+      <button id="btnDeleteAll" class="btn-danger-outline" style="display: none;"><i class="ph ph-trash" aria-hidden="true"></i> delete all</button>
     </div>
 
     <ul id="listaSets" class="sets-list">
@@ -34,41 +37,41 @@
 
   <!-- Botão / Toggle Admin Mode -->
   <div style="margin-bottom: 12px; text-align: center;">
-    <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock"></i> admin mode</button>
+    <button id="btnAdminToggle" class="btn-sec" type="button" onclick="toggleAdminMode()" aria-expanded="false" aria-controls="uploadCard"><i class="ph ph-lock" aria-hidden="true"></i> admin mode</button>
   </div>
 
   <!-- Card de Upload (Oculto por padrão, visível apenas com admin autenticado) -->
   <div id="uploadCard" class="card" style="display: none;">
     <div class="list-header">
-      <h3 class="section-title" style="margin: 0;">new set upload</h3>
+      <h3 class="section-title">new set upload</h3>
     </div>
     
     <!-- Input de Nome Customizado -->
     <div class="input-group">
       <label for="setNameInput">set name (optional)</label>
-      <input type="text" id="setNameInput" class="text-input" placeholder="ex: warmup hard techno @ 101hz">
+      <input type="text" id="setNameInput" class="text-input" aria-describedby="setNameHelp" placeholder="ex: warmup hard techno @ 101hz">
     </div>
-    <p class="help-text">leave it empty to reuse the file name. a timestamp is always prepended to keep names unique.</p>
+    <p class="help-text" id="setNameHelp">leave it empty to reuse the file name. a timestamp is always prepended to keep names unique.</p>
 
     <!-- Dropzone Customizada para o Arquivo -->
     <label for="fileInput" class="file-dropzone" id="dropzoneLabel">
-      <i class="ph ph-folder-open drop-icon"></i>
+      <i class="ph ph-folder-open drop-icon" aria-hidden="true"></i>
       <span id="fileNameDisplay" class="drop-title">click to select audio file</span>
       <span class="drop-hint">mp3, wav, flac, m4a, aac, ogg</span>
-      <input type="file" id="fileInput" accept="audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/flac, audio/x-flac, audio/aac, audio/mp4, audio/x-m4a, audio/ogg, audio/webm, audio/aiff, audio/x-aiff">
+      <input type="file" id="fileInput" class="sr-only" accept=".mp3,.opus,.wav,.flac,.m4a,.aac,.ogg,audio/mpeg,audio/mp3,audio/opus,audio/wav,audio/x-wav,audio/flac,audio/x-flac,audio/aac,audio/mp4,audio/x-m4a,audio/ogg,audio/webm,audio/aiff,audio/x-aiff">
     </label>
 
-    <button id="btnUpload" class="btn-primary"><i class="ph ph-rocket"></i> upload set</button>
-    <div id="status" class="status-msg"></div>
+    <button id="btnUpload" class="btn-primary"><i class="ph ph-rocket" aria-hidden="true"></i> upload set</button>
+    <div id="status" class="status-msg" role="status" aria-live="polite"></div>
   </div>
   </div>
-  </div>
+  </main>
 
   <!-- Player de Áudio Integrado Fixo -->
   <div id="audioPlayerCard" class="audio-player-card">
     <div class="player-info">
-      <span id="playerTitle" class="player-title">no track playing</span>
-      <button class="player-close" onclick="closeAudioPlayer()"><i class="ph ph-x"></i></button>
+      <span id="playerTitle" class="player-title" aria-live="polite">no track playing</span>
+      <button class="player-close" type="button" aria-label="close player" onclick="closeAudioPlayer()"><i class="ph ph-x" aria-hidden="true"></i></button>
     </div>
     <audio id="audioPlayer" controls></audio>
   </div>
@@ -83,6 +86,8 @@
       audio.pause();
       audio.src = '';
       playerCard.style.display = 'none';
+      // releases the fixed-player bottom offset
+      document.body.classList.remove('is-playing');
     }
   </script>
   <script type="module" src="../assets/js/sets.js"></script>

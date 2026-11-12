@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0c0c0c">
+  <meta name="description" content="analyze, categorize, rename and export a local music folder.">
   <title>zarbig - track sorter</title>
   <link rel="stylesheet" href="../assets/css/main.css">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -11,50 +12,52 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">skip to content</a>
+
   <header class="app-header sets-header">
-    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left"></i> back to hub</a>
-    <h1><i class="ph ph-funnel"></i> track sorter</h1>
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left" aria-hidden="true"></i> back to hub</a>
+    <h1><i class="ph ph-funnel" aria-hidden="true"></i> track sorter</h1>
     <p>analyze, categorize and export a music folder</p>
   </header>
 
-  <div class="layout">
+  <main class="layout" id="main">
     <div class="col-controls">
 
       <!-- 1. folder -->
       <div class="card">
         <div class="list-header">
-          <h3 class="section-title" style="margin: 0;">1. folder</h3>
+          <h3 class="section-title">1. folder</h3>
           <span class="sorter-stat" id="folderStats">0 tracks</span>
         </div>
 
         <label for="folderInput" class="file-dropzone" id="sorterDropzone">
-          <i class="ph ph-folder-open drop-icon"></i>
+          <i class="ph ph-folder-open drop-icon" aria-hidden="true"></i>
           <span id="sorterFileName" class="drop-title">click to select a music folder</span>
           <span class="drop-hint">mp3, opus, wav, flac, m4a, aiff, aif, ogg</span>
-          <input type="file" id="folderInput" webkitdirectory directory multiple
+          <input type="file" id="folderInput" class="sr-only" webkitdirectory directory multiple
             accept=".mp3,.opus,.wav,.flac,.m4a,.aiff,.aif,.ogg,audio/mpeg,audio/opus,audio/ogg,audio/wav,audio/flac,audio/mp4,audio/aiff">
         </label>
 
         <div class="row">
-          <button id="btnScan" class="btn-sec"><i class="ph ph-magnifying-glass"></i> analyze tags</button>
-          <button id="btnReset" class="btn-sec"><i class="ph ph-arrow-counter-clockwise"></i> reset</button>
+          <button id="btnScan" class="btn-sec"><i class="ph ph-magnifying-glass" aria-hidden="true"></i> analyze tags</button>
+          <button id="btnReset" class="btn-sec"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> reset</button>
         </div>
 
         <div class="row">
-          <button id="btnImportVdj" class="btn-sec"><i class="ph ph-database"></i> import virtualdj db</button>
+          <button id="btnImportVdj" class="btn-sec"><i class="ph ph-database" aria-hidden="true"></i> import virtualdj db</button>
           <input type="file" id="vdjInput" accept=".xml,text/xml,application/xml" hidden>
         </div>
 
         <div class="progress-wrap" id="analyzeWrap">
-          <div class="progress-bar prog-dl" id="analyzeBar"></div>
+          <div class="progress-bar prog-dl" id="analyzeBar" role="progressbar" aria-label="tag analyze progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
         </div>
-        <p class="status-msg" id="analyzeStatus">no folder loaded.</p>
+        <p class="status-msg" id="analyzeStatus" role="status" aria-live="polite">no folder loaded.</p>
       </div>
 
       <!-- 2. categories -->
       <div class="card">
         <div class="list-header">
-          <h3 class="section-title" style="margin: 0;">2. categories</h3>
+          <h3 class="section-title">2. categories</h3>
           <span class="sorter-stat" id="catStats">0 / 0 sorted</span>
         </div>
 
@@ -68,7 +71,7 @@
         <div id="categoryMultiSelect" class="multi-select">
           <button type="button" id="multiSelectTrigger" class="multi-select-trigger" aria-expanded="false" aria-controls="multiSelectPanel">
             <span id="multiSelectLabel">target categories (0 selected)</span>
-            <i class="ph ph-caret-down"></i>
+            <i class="ph ph-caret-down" aria-hidden="true"></i>
           </button>
           <div id="multiSelectPanel" class="multi-select-panel" hidden>
             <div class="multi-select-actions">
@@ -79,14 +82,14 @@
           </div>
         </div>
 
-        <button id="btnAnalyzeSelected" class="btn-primary"><i class="ph ph-sparkle"></i> analyze selected tracks</button>
+        <button id="btnAnalyzeSelected" class="btn-primary"><i class="ph ph-sparkle" aria-hidden="true"></i> analyze selected tracks</button>
 
         <div class="row">
-          <button id="btnCheckVisible" class="btn-sec"><i class="ph ph-check-square"></i> check visible</button>
-          <button id="btnUncheckAll" class="btn-sec"><i class="ph ph-square"></i> uncheck all</button>
+          <button id="btnCheckVisible" class="btn-sec"><i class="ph ph-check-square" aria-hidden="true"></i> check visible</button>
+          <button id="btnUncheckAll" class="btn-sec"><i class="ph ph-square" aria-hidden="true"></i> uncheck all</button>
         </div>
         <div class="row">
-          <button id="btnInvertSelection" class="btn-sec"><i class="ph ph-arrows-left-right"></i> invert selection</button>
+          <button id="btnInvertSelection" class="btn-sec"><i class="ph ph-arrows-left-right" aria-hidden="true"></i> invert selection</button>
         </div>
 
         <p class="help-text">rules read genre, bpm, key and title. category cells can be overridden by hand. edit the rules in admin mode.</p>
@@ -95,20 +98,20 @@
       <!-- 3. export -->
       <div class="card">
         <div class="list-header">
-          <h3 class="section-title" style="margin: 0;">3. export</h3>
+          <h3 class="section-title">3. export</h3>
           <span class="sorter-stat" id="exportStats">0 rows</span>
         </div>
 
-        <button id="btnExportM3U" class="btn-primary"><i class="ph ph-playlist"></i> export .m3u8</button>
+        <button id="btnExportM3U" class="btn-primary"><i class="ph ph-playlist" aria-hidden="true"></i> export .m3u8</button>
 
         <div class="export-row">
-          <button id="btnExportCSV" class="btn-sec"><i class="ph ph-table"></i> .csv</button>
-          <button id="btnExportJSON" class="btn-sec"><i class="ph ph-brackets-curly"></i> .json</button>
+          <button id="btnExportCSV" class="btn-sec"><i class="ph ph-table" aria-hidden="true"></i> .csv</button>
+          <button id="btnExportJSON" class="btn-sec"><i class="ph ph-brackets-curly" aria-hidden="true"></i> .json</button>
         </div>
 
         <div class="export-row" style="margin-top: 8px;">
-          <button id="btnCopyList" class="btn-sec"><i class="ph ph-clipboard-text"></i> copy list</button>
-          <button id="btnCopyReport" class="btn-sec"><i class="ph ph-article"></i> copy report</button>
+          <button id="btnCopyList" class="btn-sec"><i class="ph ph-clipboard-text" aria-hidden="true"></i> copy list</button>
+          <button id="btnCopyReport" class="btn-sec"><i class="ph ph-article" aria-hidden="true"></i> copy report</button>
         </div>
 
         <p class="help-text" id="maskHint"></p>
@@ -116,7 +119,7 @@
 
       <!-- admin toggle -->
       <div style="margin-bottom: 12px; text-align: center;">
-        <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock"></i> admin mode</button>
+        <button id="btnAdminToggle" class="btn-sec" type="button" onclick="toggleAdminMode()" aria-expanded="false" aria-controls="adminCard"><i class="ph ph-lock" aria-hidden="true"></i> admin mode</button>
       </div>
     </div>
 
@@ -125,25 +128,25 @@
       <!-- tracks -->
       <div class="card">
         <div class="list-header tracks-header">
-          <h3 class="section-title" style="margin: 0;">4. tracks</h3>
+          <h3 class="section-title">4. tracks</h3>
           <span class="sorter-stat" id="selectionStats">0 / 0 selected</span>
-          <span class="admin-badge" id="adminBadge" style="display: none;"><i class="ph ph-lock-open"></i> admin</span>
+          <span class="admin-badge" id="adminBadge" style="display: none;"><i class="ph ph-lock-open" aria-hidden="true"></i> admin</span>
         </div>
 
-        <input type="search" id="trackSearch" class="sorter-search" placeholder="filter artist, title, genre, key...">
+        <input type="search" id="trackSearch" class="sorter-search" aria-label="filter artist, title, genre or key" placeholder="filter artist, title, genre, key...">
 
         <div class="sorter-table-wrap">
           <table class="sorter-table">
             <thead>
               <tr>
-                <th class="cell-check sortable" data-sort="selected" aria-label="select"></th>
-                <th data-sort="index" class="sortable">#</th>
-                <th data-sort="artist" class="sortable">artist</th>
-                <th data-sort="title" class="sortable">title</th>
-                <th data-sort="bpm" class="sortable">bpm</th>
-                <th data-sort="key" class="sortable">key</th>
-                <th data-sort="genre" class="sortable">genre</th>
-                <th data-sort="category" class="sortable">category</th>
+                <th class="cell-check sortable" data-sort="selected" tabindex="0" aria-sort="none" aria-label="sort by selection"></th>
+                <th data-sort="index" class="sortable" tabindex="0" aria-sort="none">#</th>
+                <th data-sort="artist" class="sortable" tabindex="0" aria-sort="none">artist</th>
+                <th data-sort="title" class="sortable" tabindex="0" aria-sort="none">title</th>
+                <th data-sort="bpm" class="sortable" tabindex="0" aria-sort="none">bpm</th>
+                <th data-sort="key" class="sortable" tabindex="0" aria-sort="none">key</th>
+                <th data-sort="genre" class="sortable" tabindex="0" aria-sort="none">genre</th>
+                <th data-sort="category" class="sortable" tabindex="0" aria-sort="none">category</th>
               </tr>
             </thead>
             <tbody id="trackBody"></tbody>
@@ -155,19 +158,19 @@
       <!-- rename preview -->
       <div class="card">
         <div class="list-header">
-          <h3 class="section-title" style="margin: 0;">5. rename preview</h3>
-          <button id="btnBuildRename" class="btn-sec" style="width: auto;"><i class="ph ph-arrow-clockwise"></i> rebuild</button>
+          <h3 class="section-title">5. rename preview</h3>
+          <button id="btnBuildRename" class="btn-sec btn-auto"><i class="ph ph-arrow-clockwise" aria-hidden="true"></i> rebuild</button>
         </div>
 
-        <textarea id="renameOutput" readonly placeholder="nothing to preview yet..."></textarea>
+        <textarea id="renameOutput" aria-label="rename preview" readonly placeholder="nothing to preview yet..."></textarea>
         <p class="help-text">the mask only changes the exported names — files on disk are never renamed.</p>
       </div>
 
       <!-- admin card -->
       <div id="adminCard" class="card admin-card" style="display: none;">
         <div class="list-header">
-          <h3 class="section-title" style="margin: 0;">admin config</h3>
-          <span class="admin-badge"><i class="ph ph-lock-open"></i> admin</span>
+          <h3 class="section-title">admin config</h3>
+          <span class="admin-badge"><i class="ph ph-lock-open" aria-hidden="true"></i> admin</span>
         </div>
 
         <div class="admin-subtitle">ai mode (deepseek)</div>
@@ -195,8 +198,8 @@
         <div class="mask-tokens" id="maskTokens"></div>
 
         <div class="row">
-          <button id="btnMaskPreset" class="btn-sec"><i class="ph ph-magic-wand"></i> bpm/key preset</button>
-          <button id="btnResetMask" class="btn-sec"><i class="ph ph-arrow-counter-clockwise"></i> default</button>
+          <button id="btnMaskPreset" class="btn-sec"><i class="ph ph-magic-wand" aria-hidden="true"></i> bpm/key preset</button>
+          <button id="btnResetMask" class="btn-sec"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> default</button>
         </div>
 
         <div class="admin-subtitle">category presets</div>
@@ -204,24 +207,24 @@
         <div id="categoryEditor" class="category-editor"></div>
 
         <div class="row">
-          <button id="btnAddCategory" class="btn-sec"><i class="ph ph-plus"></i> add category</button>
-          <button id="btnResetCategories" class="btn-sec"><i class="ph ph-arrow-counter-clockwise"></i> reset</button>
+          <button id="btnAddCategory" class="btn-sec"><i class="ph ph-plus" aria-hidden="true"></i> add category</button>
+          <button id="btnResetCategories" class="btn-sec"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> reset</button>
         </div>
 
-        <button id="btnSaveConfig" class="btn-primary"><i class="ph ph-floppy-disk"></i> save config</button>
+        <button id="btnSaveConfig" class="btn-primary"><i class="ph ph-floppy-disk" aria-hidden="true"></i> save config</button>
         <p class="help-text">saved in localStorage on this browser. bpm range is optional — leave both fields empty for a keyword-only rule.</p>
       </div>
     </div>
-  </div>
+  </main>
 
-  <div style="margin: 24px 0; border-top: 1px dashed var(--border-color);"></div>
+  <hr class="divider">
 
   <div class="card">
-    <div class="header-res"><strong><i class="ph ph-terminal"></i> debug console</strong></div>
-    <textarea id="debugLog" readonly></textarea>
+    <div class="header-res"><strong><i class="ph ph-terminal" aria-hidden="true"></i> debug console</strong></div>
+    <textarea id="debugLog" aria-label="debug log" readonly></textarea>
     <div class="row" style="margin-bottom:0;">
-      <button class="btn-sec" onclick="copyLog()"><i class="ph ph-copy"></i> copy log</button>
-      <button class="btn-sec" onclick="clearLog()"><i class="ph ph-trash"></i> clear</button>
+      <button class="btn-sec" onclick="copyLog()"><i class="ph ph-copy" aria-hidden="true"></i> copy log</button>
+      <button class="btn-sec" onclick="clearLog()"><i class="ph ph-trash" aria-hidden="true"></i> clear</button>
     </div>
   </div>
 

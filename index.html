@@ -1,32 +1,42 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0c0c0c">
+  <meta name="description" content="hub of dj tools: spotify track extractor, dj sets and track sorter.">
   <title>zarbig hub</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="assets/css/main.css">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">skip to content</a>
+
   <header class="app-header">
     <h1>zarbig hub</h1>
   </header>
 
-  <main class="menu-grid">
+  <main class="menu-grid" id="main">
     <!-- Ferramenta 1: Extrator -->
     <a href="./pages/extractor.html" class="menu-card">
-      <i class="ph ph-file-text icon"></i>
+      <i class="ph ph-file-text icon" aria-hidden="true"></i>
       <h2>exxxtractor</h2>
       <p>extract tracks from playlists</p>
     </a>
 
     <!-- Ferramenta 2: DJ Sets -->
     <a href="./pages/sets.html" class="menu-card">
-      <i class="ph ph-disc icon"></i>
+      <i class="ph ph-disc icon" aria-hidden="true"></i>
       <h2>777</h2>
       <p>manage and play dj sets</p>
+    </a>
+
+    <!-- Ferramenta 3: Track Sorter -->
+    <a href="./pages/sorter.html" class="menu-card">
+      <i class="ph ph-funnel icon" aria-hidden="true"></i>
+      <h2>track-sorter</h2>
+      <p>analyze, categorize and export a music folder</p>
     </a>
   </main>
 

@@ -148,6 +148,8 @@ export function updateSortHeaders() {
     const label = th.textContent.replace(/\s[\^v]$/, '');
     const active = th.dataset.sort === state.sortKey;
     th.classList.toggle('sorted', active);
+    // aria-sort mirrors the visual arrow for screen readers
+    th.setAttribute('aria-sort', active ? (state.sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
     th.textContent = active ? `${label} ${state.sortDir === 'asc' ? '^' : 'v'}` : label;
   });
 }

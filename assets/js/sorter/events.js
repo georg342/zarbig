@@ -126,19 +126,28 @@ export function bindEvents() {
     });
   }
 
-  document.querySelectorAll('.sorter-table th.sortable').forEach((th) => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
-      if (state.sortKey === key) {
-        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-      } else {
-        state.sortKey = key;
-        state.sortDir = 'asc';
-      }
-      logDebug(`table: sorted by ${state.sortKey} ${state.sortDir}`);
-      renderTable();
-      updateStats();
-      renderRenamePreview();
+  const sortableHeaders = document.querySelectorAll('.sorter-table th.sortable');
+  // one place applies the sort, so click and keyboard stay in sync
+  const aplicarOrdenacao = (th) => {
+    const key = th.dataset.sort;
+    if (state.sortKey === key) {
+      state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      state.sortKey = key;
+      state.sortDir = 'asc';
+    }
+    logDebug(`table: sorted by ${state.sortKey} ${state.sortDir}`);
+    renderTable();
+    updateStats();
+    renderRenamePreview();
+  };
+  sortableHeaders.forEach((th) => {
+    th.addEventListener('click', () => aplicarOrdenacao(th));
+    // keyboard parity for the header: enter and space sort
+    th.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      ev.preventDefault();
+      aplicarOrdenacao(th);
     });
   });
 

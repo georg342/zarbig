@@ -85,8 +85,12 @@ export function copyText(text, message) {
 export function setProgress(percent) {
   const bar = document.getElementById('analyzeBar');
   const wrap = document.getElementById('analyzeWrap');
+  const valor = Math.max(0, Math.min(100, percent));
   if (wrap) wrap.style.display = 'block';
-  if (bar) bar.style.width = Math.max(0, Math.min(100, percent)) + '%';
+  if (bar) {
+    bar.style.width = valor + '%';
+    bar.setAttribute('aria-valuenow', String(Math.round(valor)));
+  }
 }
 
 export function hideProgress() {

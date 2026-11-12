@@ -42,7 +42,8 @@ window.toggleAdminMode = async function() {
     isAdmin = false;
     if (window.setAdminBgWidget) window.setAdminBgWidget(false);
     uploadCard.style.display = 'none';
-    btnAdminToggle.innerHTML = '<i class="ph ph-lock"></i> admin mode';
+    btnAdminToggle.setAttribute('aria-expanded', 'false');
+    btnAdminToggle.innerHTML = '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
     mostrarToast('admin mode disabled');
     loadSets();
     return;
@@ -62,7 +63,8 @@ window.toggleAdminMode = async function() {
     isAdmin = true;
     if (window.setAdminBgWidget) window.setAdminBgWidget(true);
     uploadCard.style.display = 'block';
-    btnAdminToggle.innerHTML = '<i class="ph ph-lock-open"></i> exit admin mode';
+    btnAdminToggle.setAttribute('aria-expanded', 'true');
+    btnAdminToggle.innerHTML = '<i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode';
     mostrarToast('login successful');
     loadSets();
   } else {
@@ -151,7 +153,7 @@ btnUpload.addEventListener('click', async () => {
 async function loadSets() {
   listaSets.innerHTML = `
     <div class="empty-state">
-      <i class="ph ph-spinner empty-icon"></i>
+      <i class="ph ph-spinner empty-icon" aria-hidden="true"></i>
       <p>fetching your sets from cloud...</p>
     </div>
   `;
@@ -165,7 +167,7 @@ async function loadSets() {
   if (error) {
     listaSets.innerHTML = `
       <div class="empty-state">
-        <i class="ph ph-warning empty-icon"></i>
+        <i class="ph ph-warning empty-icon" aria-hidden="true"></i>
         <p>error loading list</p>
         <span>${error.message}</span>
       </div>
@@ -179,7 +181,7 @@ async function loadSets() {
     btnDeleteAll.style.display = 'none';
     listaSets.innerHTML = `
       <div class="empty-state">
-        <i class="ph ph-disc empty-icon"></i>
+        <i class="ph ph-disc empty-icon" aria-hidden="true"></i>
         <p>no sets published yet</p>
         <span>enable admin mode above to upload your first set.</span>
       </div>
@@ -211,17 +213,17 @@ async function loadSets() {
     li.className = 'set-card';
     li.innerHTML = `
       <div class="set-left">
-        <div class="set-avatar" title="play set"><i class="ph ph-play"></i></div>
+        <button class="set-avatar" type="button" title="play set" aria-label="play ${displayName}"><i class="ph ph-play" aria-hidden="true"></i></button>
         <div class="set-meta">
           <div class="set-name" title="${displayName}">${displayName}</div>
           <div class="set-details">${sizeMB} mb • ${ext}</div>
         </div>
       </div>
       <div class="set-actions">
-        <button class="btn-action-play" title="play"><i class="ph ph-play"></i></button>
-        <a class="btn-action-dl" href="${publicUrl}" target="_blank" download="${displayName}.${ext}" title="download"><i class="ph ph-download-simple"></i></a>
-        <button class="btn-action-copy" title="copy download link"><i class="ph ph-link"></i></button>
-        ${isAdmin ? `<button class="btn-action-del" title="delete set"><i class="ph ph-trash"></i></button>` : ''}
+        <button class="btn-action-play" type="button" title="play" aria-label="play"><i class="ph ph-play" aria-hidden="true"></i></button>
+        <a class="btn-action-dl" href="${publicUrl}" target="_blank" rel="noopener" download="${displayName}.${ext}" title="download" aria-label="download"><i class="ph ph-download-simple" aria-hidden="true"></i></a>
+        <button class="btn-action-copy" type="button" title="copy download link" aria-label="copy download link"><i class="ph ph-link" aria-hidden="true"></i></button>
+        ${isAdmin ? `<button class="btn-action-del" type="button" title="delete set" aria-label="delete set"><i class="ph ph-trash" aria-hidden="true"></i></button>` : ''}
       </div>
     `;
 
@@ -230,6 +232,8 @@ async function loadSets() {
       audioPlayer.src = publicUrl;
       playerTitle.innerText = displayName;
       audioPlayerCard.style.display = 'block';
+      // keeps the fixed player from covering page content
+      document.body.classList.add('is-playing');
       audioPlayer.play().catch(() => {});
     };
 

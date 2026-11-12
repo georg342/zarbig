@@ -13,7 +13,7 @@ export function categoryRowHtml(cat, index) {
   return `<div class="cat-row" data-index="${index}">
     <div class="cat-row-head">
       <span class="cat-row-id">${escapeHtml(cat.id)}</span>
-      <button type="button" class="cat-remove" data-remove="${index}" title="remove category"><i class="ph ph-trash"></i></button>
+      <button type="button" class="cat-remove" data-remove="${index}" title="remove category" aria-label="remove category"><i class="ph ph-trash" aria-hidden="true"></i></button>
     </div>
     <div class="cat-grid">
       <div>
