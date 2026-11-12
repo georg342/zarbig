@@ -111,10 +111,26 @@ export function exportVDJ() {
   list.forEach((track) => {
     let path = track.file && track.file.path ? track.file.path : (track.relativePath || track.name);
 
-    // base path is mandatory, so every song gets the absolute prefix.
-    const baseClean = basePath.replace(/[\\\/]+$/, '');
-    const pathClean = path.replace(/^[\\\/]+/, '');
-    path = baseClean + '\\' + pathClean;
+    // base path is mandatory (guard above), so the prefix always applies.
+    if (basePath) {
+      const baseClean = basePath.replace(/[\\\/]+$/, '');
+      // webkitRelativePath uses "/" while the vdj xml wants "\", so normalize
+      // first — otherwise the dedupe regex below never matches.
+      const pathClean = path.replace(/^[\\\/]+/, '').replace(/\//g, '\\');
+      const lastBaseFolder = baseClean.split(/[\\\/]/).pop();
+      let dedupePath = pathClean;
+
+      if (lastBaseFolder) {
+        // O escape da barra invertida na string é crucial para o regex funcionar
+        const escapedFolder = lastBaseFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const reg = new RegExp(`^${escapedFolder}\\\\`, 'i');
+
+        if (reg.test(dedupePath)) {
+          dedupePath = dedupePath.replace(reg, '');
+        }
+      }
+      path = baseClean + '\\' + dedupePath;
+    }
 
     lines.push(`    <Song FilePath="${escapeHtml(path)}" />`);
   });
