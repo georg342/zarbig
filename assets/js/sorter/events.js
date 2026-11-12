@@ -9,6 +9,7 @@ import { applyMaskInput, renderRenamePreview } from './rename.js';
 import { renderAll } from './render.js';
 import { exportM3U, exportCSV, exportJSON, copyToList, copyReport } from './export.js';
 import { readTagsOnly, onFolderSelected } from './scan.js';
+import { importVdjDatabase } from './vdj.js';
 import { analyzeSelected } from './analysis.js';
 import { bindSelectionEvents } from './selection.js';
 import { bindMultiSelect } from './multiSelect.js';
@@ -61,12 +62,14 @@ export function resetWorkspace() {
   const catFilter = document.getElementById('catFilter');
   const fileLabel = document.getElementById('sorterFileName');
   const dropzone = document.getElementById('sorterDropzone');
+  const vdjInput = document.getElementById('vdjInput');
 
   if (folderInput) folderInput.value = '';
   if (search) search.value = '';
   if (catFilter) catFilter.value = 'all';
   if (fileLabel) fileLabel.textContent = 'click to select a music folder';
   if (dropzone) dropzone.classList.remove('has-file');
+  if (vdjInput) vdjInput.value = '';
 
   setStatus('no folder loaded.');
   setProgress(0);
@@ -81,6 +84,17 @@ export function bindEvents() {
 
   const scanBtn = document.getElementById('btnScan');
   if (scanBtn) scanBtn.addEventListener('click', readTagsOnly);
+
+  // virtualdj database import: the analyzed bpm/key live in database.xml.
+  const vdjInput = document.getElementById('vdjInput');
+  const vdjBtn = document.getElementById('btnImportVdj');
+  if (vdjBtn && vdjInput) {
+    vdjBtn.addEventListener('click', () => vdjInput.click());
+    vdjInput.addEventListener('change', () => {
+      const file = vdjInput.files && vdjInput.files[0];
+      importVdjDatabase(file).then(() => { vdjInput.value = ''; });
+    });
+  }
 
   const analyzeBtn = document.getElementById('btnAnalyzeSelected');
   if (analyzeBtn) analyzeBtn.addEventListener('click', analyzeSelected);

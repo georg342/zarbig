@@ -18,44 +18,49 @@ export function indexOfBytes(haystack, needle, from) {
 
 // Opus/Ogg keep tags as plain utf-8 Vorbis comment pairs:
 // vendorLength + vendor + count + (length + "KEY=value")*. jsmediatags
-// cannot parse these containers, so the first 64KB are read natively.
-export async function readVorbisComments(file) {
-  const meta = emptyMeta();
-  const buffer = await file.slice(0, 65536).arrayBuffer();
+// cannot parse these containers, so the header is read natively. the first
+// window covers the usual case; files carrying a large cover art push the
+// comment block past it, so the window grows until the whole block fits.
+const VORBIS_WINDOW_START = 65536;
+const VORBIS_WINDOW_MAX = 4 * 1024 * 1024;
+
+const OPUS_MAGIC = [0x4f, 0x70, 0x75, 0x73, 0x54, 0x61, 0x67, 0x73]; // "OpusTags"
+const VORBIS_MAGIC = [0x03, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73]; // "\x03vorbis"
+
+// returns { found, complete, pairs } for the window it was given.
+function parseVorbisBlock(buffer, fileName) {
   const bytes = new Uint8Array(buffer);
+  const pairs = {};
 
-  const opusMagic = [0x4f, 0x70, 0x75, 0x73, 0x54, 0x61, 0x67, 0x73]; // "OpusTags"
-  const vorbisMagic = [0x03, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73]; // "\x03vorbis"
-
-  let start = indexOfBytes(bytes, opusMagic, 0);
+  let start = indexOfBytes(bytes, OPUS_MAGIC, 0);
   if (start >= 0) {
-    start += opusMagic.length;
+    start += OPUS_MAGIC.length;
   } else {
-    start = indexOfBytes(bytes, vorbisMagic, 0);
+    start = indexOfBytes(bytes, VORBIS_MAGIC, 0);
     if (start < 0) {
-      logDebug(`tags: no opus/vorbis header in "${file.name}"`);
-      return meta;
+      logDebug(`tags: no opus/vorbis header in "${fileName}"`);
+      return { found: false, complete: false, pairs };
     }
-    start += vorbisMagic.length;
+    start += VORBIS_MAGIC.length;
   }
 
-  if (start + 4 > bytes.length) return meta;
+  if (start + 4 > bytes.length) return { found: true, complete: false, pairs };
   const view = new DataView(buffer);
   const vendorLength = view.getUint32(start, true);
   let pos = start + 4 + vendorLength;
-  if (pos + 4 > bytes.length) return meta;
+  if (pos + 4 > bytes.length) return { found: true, complete: false, pairs };
 
   const count = view.getUint32(pos, true);
   pos += 4;
-  logDebug(`tags: vorbis header "${file.name}" — ${count} comment(s)`);
 
   const decoder = new TextDecoder('utf-8', { fatal: false });
-  const pairs = {};
+  let complete = true;
 
-  for (let i = 0; i < count && pos + 4 <= bytes.length; i += 1) {
+  for (let i = 0; i < count; i += 1) {
+    if (pos + 4 > bytes.length) { complete = false; break; }
     const length = view.getUint32(pos, true);
     pos += 4;
-    if (length > bytes.length - pos) break; // slice cut the comments short
+    if (length > bytes.length - pos) { complete = false; break; } // window cut the comments short
     const pair = decoder.decode(bytes.subarray(pos, pos + length));
     pos += length;
 
@@ -66,6 +71,11 @@ export async function readVorbisComments(file) {
     if (field && value && !(field in pairs)) pairs[field] = value;
   }
 
+  return { found: true, complete, pairs };
+}
+
+function vorbisMeta(pairs) {
+  const meta = emptyMeta();
   meta.title = pairs.TITLE || '';
   meta.artist = pairs.ARTIST || pairs.ALBUMARTIST || pairs.ALBUM_ARTIST || '';
   meta.bpm = pairs.BPM || pairs.TBPM || '';
@@ -74,6 +84,27 @@ export async function readVorbisComments(file) {
   meta.album = pairs.ALBUM || '';
   meta.year = pairs.DATE || pairs.YEAR || '';
   return meta;
+}
+
+export async function readVorbisComments(file) {
+  const total = file.size || 0;
+  const limit = Math.max(VORBIS_WINDOW_START, Math.min(VORBIS_WINDOW_MAX, total || VORBIS_WINDOW_MAX));
+  let windowSize = Math.min(VORBIS_WINDOW_START, limit);
+
+  for (;;) {
+    const buffer = await file.slice(0, windowSize).arrayBuffer();
+    const parsed = parseVorbisBlock(buffer, file.name);
+    if (!parsed.found) return emptyMeta();
+    if (parsed.complete) return vorbisMeta(parsed.pairs);
+
+    if (windowSize >= limit) {
+      logDebug(`tags: vorbis comments truncated at ${windowSize} bytes on "${file.name}"`);
+      return vorbisMeta(parsed.pairs);
+    }
+
+    windowSize = Math.min(windowSize * 4, limit);
+    logDebug(`tags: vorbis comments exceed the first ${windowSize / 4} bytes on "${file.name}" — reading ${windowSize}`);
+  }
 }
 
 export function normalizeId3(tags) {
