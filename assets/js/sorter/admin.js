@@ -11,9 +11,11 @@ import { applyMaskInput, renderMaskHint, renderRenamePreview } from './rename.js
 import { renderCategoryEditor } from './adminCategories.js';
 import { resetAiMode } from './ai.js';
 import { renderCategoryMultiSelect } from './multiSelect.js';
+import { log, logDebug, logWarn } from './debug.js';
 
 export function setAdminUI(enabled) {
   state.isAdmin = enabled;
+  logDebug(`admin: mode ${enabled ? 'enabled' : 'disabled'}`);
 
   const card = document.getElementById('adminCard');
   const badge = document.getElementById('adminBadge');
@@ -48,6 +50,7 @@ window.toggleAdminMode = async function () {
 
   // md5 comes from the blueimp cdn script, so it lives on window.
   if (typeof window.md5 !== 'function') {
+    logWarn('admin: md5 library not available on window');
     toast('md5 library not loaded');
     return;
   }
@@ -59,12 +62,16 @@ window.toggleAdminMode = async function () {
     placeholder: 'password...'
   });
 
-  if (pass === null) return;
+  if (pass === null) {
+    logDebug('admin: password prompt cancelled');
+    return;
+  }
 
   if (window.md5(pass.trim()) === ADMIN_HASH) {
     setAdminUI(true);
     toast('login successful');
   } else {
+    logWarn('admin: invalid password submitted');
     toast('invalid password');
   }
 };
@@ -115,6 +122,7 @@ export function commitConfig() {
   const clean = normalizeCategoryList(state.categories);
   state.mask = mask;
   state.categories = clean.length ? clean : cloneCategories(DEFAULT_CATEGORIES);
+  log(`config: commit — mask "${state.mask}", ${state.categories.length} categories`);
 
   // overrides + ai pins pointing to removed categories are dropped too.
   pruneCategoryRefs();
@@ -124,5 +132,6 @@ export function commitConfig() {
   renderAll();
 
   const saved = saveConfig();
+  if (!saved) logWarn('config: commit applied but storage rejected the write');
   toast(saved ? 'config saved' : 'config applied (storage blocked)');
 }

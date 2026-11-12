@@ -11,6 +11,7 @@ import {
   LEGACY_DEEPSEEK_KEY_STORAGE
 } from './constants.js';
 import { categoryDescription } from './categories.js';
+import { log, logDebug, logWarn, logError } from './debug.js';
 
 const AI_SYSTEM_PROMPT = [
   'you are an electronic music dj and curator.',
@@ -52,6 +53,7 @@ export function clearDeepseekKeyInput() {
 export function initAiMode() {
   purgeEphemeralDeepseekKey();
   ephemeralDeepseekKey = '';
+  logDebug('ai: legacy deepseek key purged, key kept in memory only');
 
   const input = document.getElementById('deepseekKeyInput');
   if (input) {
@@ -59,12 +61,15 @@ export function initAiMode() {
     input.addEventListener('input', () => {
       ephemeralDeepseekKey = input.value.trim();
     });
+  } else {
+    logWarn('ai: #deepseekKeyInput not found — ai mode cannot receive a key');
   }
 
   // reload, back/forward cache and bfcache restores all wipe the key.
   window.addEventListener('pageshow', () => {
     purgeEphemeralDeepseekKey();
     clearDeepseekKeyInput();
+    logDebug('ai: pageshow — key wiped');
   });
 }
 
@@ -135,38 +140,57 @@ async function requestBatch(batch, categories, key) {
     })
   };
 
+  logDebug(`ai: batch request — ${batch.length} tracks, ${categories.length} categories, model ${DEEPSEEK_MODEL}`);
+
   const doFetch = typeof window.fetchWithTimeout === 'function' ? window.fetchWithTimeout : fetch;
   const response = await doFetch(DEEPSEEK_ENDPOINT, request, 60000);
-  if (!response.ok) throw new Error(`deepseek http ${response.status}`);
+  if (!response.ok) {
+    logError(`ai: deepseek answered http ${response.status}`);
+    throw new Error(`deepseek http ${response.status}`);
+  }
 
   const data = await response.json();
   const message = data && Array.isArray(data.choices) && data.choices[0]
     ? data.choices[0].message
     : null;
+  if (!message) logWarn('ai: response without choices[0].message');
   const parsed = parseJsonObject(message ? message.content : '');
-  return Array.isArray(parsed.results) ? parsed.results : [];
+  const results = Array.isArray(parsed.results) ? parsed.results : [];
+  if (!results.length) logWarn('ai: response had no usable "results" array');
+  return results;
 }
 
 // classifies the given tracks against the given categories, batch by batch.
 // returns how many tracks actually received at least one valid category.
 export async function categorizeWithAi(tracks, categories, options = {}) {
   const key = ephemeralDeepseekKey.trim();
-  if (!key) throw new Error('missing deepseek api key');
+  if (!key) {
+    logError('ai: missing deepseek api key');
+    throw new Error('missing deepseek api key');
+  }
 
   const allowed = new Set(categories.map((cat) => cat.id));
+  const batches = Math.ceil(tracks.length / DEEPSEEK_BATCH_SIZE);
+  log(`ai: start — ${tracks.length} tracks in ${batches} batch(es) of ${DEEPSEEK_BATCH_SIZE}`);
+
   let done = 0;
   let categorized = 0;
 
   for (let start = 0; start < tracks.length; start += DEEPSEEK_BATCH_SIZE) {
     const batch = tracks.slice(start, start + DEEPSEEK_BATCH_SIZE);
+    logDebug(`ai: batch ${Math.floor(start / DEEPSEEK_BATCH_SIZE) + 1}/${batches} (${batch.length} tracks)`);
     const results = await requestBatch(batch, categories, key);
+    logDebug(`ai: batch returned ${results.length} result(s)`);
 
     results.forEach((result) => {
       if (!result || typeof result !== 'object') return;
 
       const position = Number(result.id);
       const track = Number.isInteger(position) ? batch[position - 1] : null;
-      if (!track) return;
+      if (!track) {
+        logDebug(`ai: ignored result with unknown track id ${result.id}`);
+        return;
+      }
 
       const rawIds = Array.isArray(result.categories)
         ? result.categories
@@ -174,7 +198,10 @@ export async function categorizeWithAi(tracks, categories, options = {}) {
       const ids = rawIds
         .map((value) => String(value == null ? '' : value).trim())
         .filter((id, index, list) => allowed.has(id) && list.indexOf(id) === index);
-      if (!ids.length) return;
+      if (!ids.length) {
+        logDebug(`ai: no valid category for "${track.meta.artist} - ${track.meta.title}" —`, rawIds);
+        return;
+      }
 
       track.categories = ids;
       track.category = ids[0];
@@ -182,6 +209,7 @@ export async function categorizeWithAi(tracks, categories, options = {}) {
       track.categorySource = 'ai';
       delete state.overrides[track.id];
       categorized += 1;
+      logDebug(`ai: "${track.meta.artist} - ${track.meta.title}" → ${ids.join(', ')}`);
     });
 
     done += batch.length;

@@ -4,6 +4,7 @@
 import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 import { categoryLabel } from './categories.js';
+import { logDebug } from './debug.js';
 
 export function renderCategoryOptions() {
   const select = document.getElementById('catFilter');
@@ -26,7 +27,10 @@ export function renderCategoryOptions() {
     || state.categoryFilter === 'unsorted'
     || state.categories.some((cat) => cat.id === state.categoryFilter);
 
-  if (!known) state.categoryFilter = 'all';
+  if (!known) {
+    logDebug(`filter: unknown category "${state.categoryFilter}" — falling back to all`);
+    state.categoryFilter = 'all';
+  }
   select.value = state.categoryFilter;
 }
 

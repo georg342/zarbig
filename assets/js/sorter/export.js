@@ -5,6 +5,7 @@ import { downloadFile, copyText, toast } from './utils.js';
 import { categoryLabel } from './categories.js';
 import { getActionableTracks } from './table.js';
 import { applyMask } from './rename.js';
+import { log, logDebug } from './debug.js';
 
 export function exportBaseName() {
   const stamp = new Date().toISOString().slice(0, 10);
@@ -13,7 +14,10 @@ export function exportBaseName() {
 
 export function exportableTracks() {
   const list = getActionableTracks();
-  if (!list.length) toast('nothing to export');
+  if (!list.length) {
+    logDebug('export: nothing to export — no selected or visible tracks');
+    toast('nothing to export');
+  }
   return list;
 }
 
@@ -29,6 +33,7 @@ export function exportM3U() {
   });
 
   downloadFile(`${exportBaseName()}.m3u8`, lines.join('\n') + '\n', 'audio/x-mpegurl;charset=utf-8');
+  log(`export: m3u8 with ${list.length} tracks`);
   toast('m3u8 exported');
 }
 
@@ -53,6 +58,7 @@ export function exportCSV() {
   ].map(csvCell).join(','));
 
   downloadFile(`${exportBaseName()}.csv`, [header.join(','), ...rows].join('\n') + '\n', 'text/csv;charset=utf-8');
+  log(`export: csv with ${list.length} rows`);
   toast('csv exported');
 }
 
@@ -80,6 +86,7 @@ export function exportJSON() {
   }));
 
   downloadFile(`${exportBaseName()}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+  log(`export: json with ${list.length} tracks`);
   toast('json exported');
 }
 
@@ -88,6 +95,7 @@ export function copyToList() {
   if (!list.length) return;
 
   const text = list.map((track, index) => `${index + 1}. ${track.meta.artist} - ${track.meta.title}`).join('\n');
+  log(`export: copied list of ${list.length} tracks`);
   copyText(text, 'list copied');
 }
 
@@ -111,5 +119,6 @@ export function copyReport() {
     blocks.push('');
   });
 
+  log(`export: report with ${list.length} tracks in ${groups.size} categories`);
   copyText(blocks.join('\n').trim(), 'report copied');
 }

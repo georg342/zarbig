@@ -2,6 +2,7 @@
 // fallback for every other container.
 
 import { emptyMeta, hasAnyTag, pickValue } from './metadata.js';
+import { logDebug, logWarn } from './debug.js';
 
 export function indexOfBytes(haystack, needle, from) {
   const limit = haystack.length - needle.length;
@@ -31,7 +32,10 @@ export async function readVorbisComments(file) {
     start += opusMagic.length;
   } else {
     start = indexOfBytes(bytes, vorbisMagic, 0);
-    if (start < 0) return meta;
+    if (start < 0) {
+      logDebug(`tags: no opus/vorbis header in "${file.name}"`);
+      return meta;
+    }
     start += vorbisMagic.length;
   }
 
@@ -43,6 +47,7 @@ export async function readVorbisComments(file) {
 
   const count = view.getUint32(pos, true);
   pos += 4;
+  logDebug(`tags: vorbis header "${file.name}" — ${count} comment(s)`);
 
   const decoder = new TextDecoder('utf-8', { fatal: false });
   const pairs = {};
@@ -87,15 +92,20 @@ export function normalizeId3(tags) {
 export function readWithJsmediatags(file) {
   return new Promise((resolve) => {
     if (typeof window.jsmediatags === 'undefined' || !window.jsmediatags.read) {
+      logWarn('tags: jsmediatags is not loaded — tag reading is disabled');
       resolve(emptyMeta());
       return;
     }
     try {
       window.jsmediatags.read(file, {
         onSuccess: (result) => resolve(normalizeId3(result && result.tags)),
-        onError: () => resolve(emptyMeta())
+        onError: (err) => {
+          logDebug(`tags: jsmediatags failed on "${file.name}" —`, err && err.type ? err.type : err);
+          resolve(emptyMeta());
+        }
       });
     } catch (err) {
+      logWarn(`tags: jsmediatags threw on "${file.name}" —`, err);
       resolve(emptyMeta());
     }
   });
@@ -107,6 +117,7 @@ export async function readTags(file, ext) {
     try {
       return { meta: await readVorbisComments(file), source: 'vorbis' };
     } catch (err) {
+      logWarn(`tags: vorbis parse failed on "${file.name}" —`, err);
       return { meta: emptyMeta(), source: 'none' };
     }
   }

@@ -5,6 +5,7 @@
 import { state } from './state.js';
 import { escapeHtml } from './utils.js';
 import { categoryDescription } from './categories.js';
+import { logDebug } from './debug.js';
 
 const DESCRIPTION_PREVIEW = 72;
 
@@ -15,7 +16,11 @@ export function initTargetCategories() {
 // drops ids that no longer exist after an admin edit/reset.
 export function pruneTargetCategories() {
   const ids = state.categories.map((cat) => cat.id);
-  state.targetCategories = ids.filter((id) => state.targetCategories.includes(id));
+  const kept = ids.filter((id) => state.targetCategories.includes(id));
+  if (kept.length !== state.targetCategories.length) {
+    logDebug(`categories: ${state.targetCategories.length - kept.length} target(s) dropped — ids no longer exist`);
+  }
+  state.targetCategories = kept;
 }
 
 export function activeCategoryIds() {
@@ -86,17 +91,20 @@ export function onMultiSelectChange(event) {
     state.targetCategories = state.targetCategories.filter((value) => value !== id);
   }
 
+  logDebug(`categories: target "${id}" ${box.checked ? 'checked' : 'unchecked'} — ${state.targetCategories.length}/${state.categories.length} active`);
   updateMultiSelectLabel();
 }
 
 export function selectAllTargetCategories() {
   initTargetCategories();
   renderCategoryMultiSelect();
+  logDebug(`categories: all ${state.targetCategories.length} target(s) selected`);
 }
 
 export function clearAllTargetCategories() {
   state.targetCategories = [];
   renderCategoryMultiSelect();
+  logDebug('categories: target list cleared');
 }
 
 export function bindMultiSelect() {

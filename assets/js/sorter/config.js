@@ -4,15 +4,23 @@
 import { SORTER_STORAGE_KEY } from './constants.js';
 import { state } from './state.js';
 import { slugify } from './utils.js';
+import { log, logDebug, logWarn } from './debug.js';
 
 export function loadConfig() {
   let stored = null;
+  let raw = null;
+
   try {
-    stored = JSON.parse(localStorage.getItem(SORTER_STORAGE_KEY) || 'null');
+    raw = localStorage.getItem(SORTER_STORAGE_KEY);
+    stored = JSON.parse(raw || 'null');
   } catch (err) {
+    logWarn('config: stored json is invalid, falling back to defaults —', err);
     stored = null;
   }
-  if (!stored || typeof stored !== 'object') return;
+  if (!stored || typeof stored !== 'object') {
+    logDebug(`config: nothing stored under "${SORTER_STORAGE_KEY}" — defaults in use`);
+    return;
+  }
 
   if (typeof stored.mask === 'string' && stored.mask.trim()) {
     state.mask = stored.mask.trim();
@@ -33,6 +41,7 @@ export function loadConfig() {
       }))
       .filter((cat) => cat.id);
     if (clean.length) state.categories = clean;
+    logDebug(`config: ${stored.categories.length} stored categories → ${state.categories.length} after sanitize`);
   }
 }
 
@@ -43,8 +52,10 @@ export function saveConfig() {
   };
   try {
     localStorage.setItem(SORTER_STORAGE_KEY, JSON.stringify(payload));
+    log(`config: saved — mask "${payload.mask}", ${payload.categories.length} categories`);
     return true;
   } catch (err) {
+    logWarn('config: save failed (storage blocked) —', err);
     return false;
   }
 }
@@ -61,7 +72,10 @@ export function normalizeCategoryList(list) {
 
   list.forEach((cat) => {
     const id = slugify(cat.id || cat.label || '');
-    if (!id || seen.has(id)) return;
+    if (!id || seen.has(id)) {
+      logDebug(`config: dropped category "${cat.id || cat.label || ''}" (empty or duplicated id)`);
+      return;
+    }
     seen.add(id);
 
     clean.push({

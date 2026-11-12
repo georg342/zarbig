@@ -14,18 +14,24 @@ import { bindSelectionEvents } from './selection.js';
 import { bindMultiSelect } from './multiSelect.js';
 import { commitConfig, resetMask } from './admin.js';
 import { addCategory, resetCategories } from './adminCategories.js';
+import { log, logDebug } from './debug.js';
 
 export function onCategoryChange(event) {
   const select = event.target.closest('select[data-track]');
   if (!select) return;
 
   const track = state.tracks.find((item) => item.id === select.dataset.track);
-  if (!track) return;
+  if (!track) {
+    logDebug(`override: select for unknown track id "${select.dataset.track}"`);
+    return;
+  }
 
   if (select.value === track.autoCategory) {
     delete state.overrides[track.id];
+    logDebug(`override: "${track.meta.artist} - ${track.meta.title}" back to auto (${track.autoCategory})`);
   } else {
     state.overrides[track.id] = select.value;
+    logDebug(`override: "${track.meta.artist} - ${track.meta.title}" → ${select.value} (auto was ${track.autoCategory})`);
   }
 
   track.category = select.value;
@@ -40,6 +46,8 @@ export function onCategoryChange(event) {
 }
 
 export function resetWorkspace() {
+  log(`reset: clearing workspace (${state.tracks.length} tracks, ${Object.keys(state.overrides).length} overrides)`);
+
   state.tracks = [];
   state.folderName = '';
   state.overrides = {};
@@ -97,6 +105,7 @@ export function bindEvents() {
   if (catFilter) {
     catFilter.addEventListener('change', () => {
       state.categoryFilter = catFilter.value;
+      logDebug(`filter: category → ${state.categoryFilter}`);
       renderTable();
       updateStats();
       renderRenamePreview();
@@ -112,6 +121,7 @@ export function bindEvents() {
         state.sortKey = key;
         state.sortDir = 'asc';
       }
+      logDebug(`table: sorted by ${state.sortKey} ${state.sortDir}`);
       renderTable();
       updateStats();
       renderRenamePreview();
@@ -135,6 +145,7 @@ export function bindEvents() {
   const btnBuildRename = document.getElementById('btnBuildRename');
   if (btnBuildRename) {
     btnBuildRename.addEventListener('click', () => {
+      logDebug('rename: preview rebuilt manually');
       renderRenamePreview();
       toast('preview rebuilt');
     });

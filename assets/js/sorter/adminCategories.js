@@ -7,6 +7,7 @@ import { escapeHtml, toast } from './utils.js';
 import { pruneCategoryRefs } from './categories.js';
 import { renderAll } from './render.js';
 import { renderCategoryMultiSelect } from './multiSelect.js';
+import { log, logDebug } from './debug.js';
 
 export function categoryRowHtml(cat, index) {
   return `<div class="cat-row" data-index="${index}">
@@ -96,9 +97,13 @@ export async function removeCategory(index) {
     title: 'remove category',
     message: `delete "${escapeHtml(cat.label)}"? matching tracks fall back to the next best rule.`
   });
-  if (!ok) return;
+  if (!ok) {
+    logDebug(`categories: removal of "${cat.id}" cancelled`);
+    return;
+  }
 
   state.categories.splice(index, 1);
+  log(`categories: removed "${cat.id}" — ${state.categories.length} left`);
   pruneCategoryRefs();
   renderCategoryEditor();
   renderCategoryMultiSelect();
@@ -125,6 +130,7 @@ export function addCategory() {
 
   renderCategoryEditor();
   renderCategoryMultiSelect();
+  log(`categories: added "${id}" — ${state.categories.length} total`);
   toast('category added');
 }
 
@@ -133,10 +139,14 @@ export async function resetCategories() {
     title: 'reset categories',
     message: 'restore the four default presets? manual overrides are cleared too.'
   });
-  if (!ok) return;
+  if (!ok) {
+    logDebug('categories: reset cancelled');
+    return;
+  }
 
   state.categories = cloneCategories(DEFAULT_CATEGORIES);
   state.overrides = {};
+  log(`categories: reset to ${state.categories.length} default presets`);
   pruneCategoryRefs();
   renderCategoryEditor();
   renderCategoryMultiSelect();

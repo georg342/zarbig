@@ -2,6 +2,7 @@
 // multi-select and the ai prompt, and the recategorize pass.
 
 import { state } from './state.js';
+import { logDebug } from './debug.js';
 
 export function categoryLabel(id) {
   if (!id || id === 'unsorted') return 'unsorted';
@@ -65,9 +66,14 @@ export function autoCategoryFor(track, allowedIds) {
 // recategorizes the rest. called after any category edit/reset.
 export function pruneCategoryRefs() {
   const ids = new Set(state.categories.map((cat) => cat.id));
+  let droppedOverrides = 0;
+  let resetAiTracks = 0;
 
   Object.keys(state.overrides).forEach((trackId) => {
-    if (!ids.has(state.overrides[trackId])) delete state.overrides[trackId];
+    if (!ids.has(state.overrides[trackId])) {
+      delete state.overrides[trackId];
+      droppedOverrides += 1;
+    }
   });
 
   state.tracks.forEach((track) => {
@@ -79,6 +85,7 @@ export function pruneCategoryRefs() {
       track.category = 'unsorted';
       track.autoCategory = 'unsorted';
       track.categorySource = 'none';
+      resetAiTracks += 1;
       return;
     }
 
@@ -87,11 +94,14 @@ export function pruneCategoryRefs() {
     track.autoCategory = kept[0];
   });
 
+  logDebug(`categories: pruned refs — ${droppedOverrides} override(s) dropped, ${resetAiTracks} ai track(s) back to unsorted`);
   recategorizeAll();
 }
 
 // reassigns every track that is not pinned by the ai or by a manual override.
 export function recategorizeAll(allowedIds) {
+  let recategorized = 0;
+
   state.tracks.forEach((track) => {
     if (track.categorySource === 'ai') return;
 
@@ -104,5 +114,8 @@ export function recategorizeAll(allowedIds) {
     track.categorySource = override
       ? 'manual'
       : (track.autoCategory === 'unsorted' ? 'none' : 'rule');
+    recategorized += 1;
   });
+
+  logDebug(`categories: recategorized ${recategorized} track(s)`);
 }

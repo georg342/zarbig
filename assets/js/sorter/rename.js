@@ -6,6 +6,7 @@ import { DEFAULT_MASK } from './constants.js';
 import { sanitizeFileName } from './utils.js';
 import { categoryLabel } from './categories.js';
 import { getActionableTracks } from './table.js';
+import { logDebug } from './debug.js';
 
 export function renderMaskHint() {
   const hint = document.getElementById('maskHint');
@@ -65,6 +66,7 @@ export function applyMaskInput() {
   const input = document.getElementById('maskInput');
   if (!input) return;
   state.mask = input.value.trim() || DEFAULT_MASK;
+  logDebug(`mask: changed to "${state.mask}"`);
   renderMaskHint();
   renderRenamePreview();
 }

@@ -7,6 +7,7 @@ import { getExtension, isAudioFile, setStatus, toast, setProgress, hideProgress 
 import { emptyMeta, parseFilename, mergeMeta, hasAnyTag } from './metadata.js';
 import { readTags } from './tags.js';
 import { renderAll } from './render.js';
+import { log, logDebug, logWarn, logError } from './debug.js';
 
 // one tag-reading pass at a time; newer calls queue behind the active one.
 let activeRead = null;
@@ -37,7 +38,10 @@ export function onFolderSelected(event) {
     .filter(isAudioFile)
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  log(`folder: picked ${allFiles.length} files → ${files.length} audio`);
+
   if (!files.length) {
+    logWarn(`folder: no audio files in the selection (${allFiles.length} candidates)`);
     setStatus('no audio files in that folder.');
     toast('no audio files found');
     return;
@@ -45,6 +49,7 @@ export function onFolderSelected(event) {
 
   const firstPath = files[0].webkitRelativePath || files[0].name;
   const root = firstPath.includes('/') ? firstPath.split('/')[0] : 'music folder';
+  logDebug(`folder: root "${root}", first file "${firstPath}"`);
 
   state.folderName = root;
   state.tracks = files.map((file, index) => buildTrack(file, index));
@@ -53,6 +58,7 @@ export function onFolderSelected(event) {
   state.categoryFilter = 'all';
   state.scanning = false;
   state.scanId += 1; // cancels a tag read still running for the previous folder
+  logDebug(`folder: ${state.tracks.length} tracks queued, scan id ${state.scanId}`);
 
   const search = document.getElementById('trackSearch');
   if (search) search.value = '';
@@ -66,6 +72,7 @@ export function onFolderSelected(event) {
   if (dropzone) dropzone.classList.add('has-file');
 
   const skipped = allFiles.length - files.length;
+  if (skipped > 0) logDebug(`folder: skipped ${skipped} non-audio files`);
   setStatus(`${files.length} audio files found` + (skipped > 0 ? ` (${skipped} skipped)` : '') + ' — reading tags...');
 
   renderAll();
@@ -74,6 +81,7 @@ export function onFolderSelected(event) {
   readTrackTags(state.tracks).then((done) => {
     if (!done) return;
     const tagged = state.tracks.filter((track) => track.tagSource !== 'filename').length;
+    log(`tags: ${state.tracks.length} tracks loaded — ${tagged} with tags, ${state.tracks.length - tagged} from filename`);
     setStatus(`${state.tracks.length} tracks loaded — ${tagged} with tags, ${state.tracks.length - tagged} from filename. select tracks and analyze.`);
     renderAll();
   });
@@ -87,10 +95,14 @@ async function runTagRead(list) {
   const runId = state.scanId;
   const total = list.length;
 
+  log(`tags: reading ${total} files...`);
   setProgress(1);
 
   for (let i = 0; i < total; i += 1) {
-    if (runId !== state.scanId) return false; // a newer folder took over
+    if (runId !== state.scanId) {
+      logDebug('tags: pass superseded by a newer folder — stopped');
+      return false; // a newer folder took over
+    }
 
     const track = list[i];
     let tagMeta = emptyMeta();
@@ -101,15 +113,28 @@ async function runTagRead(list) {
       tagMeta = result.meta;
       source = result.source;
     } catch (err) {
+      logError(`tags: could not read "${track.name}" —`, err);
       tagMeta = emptyMeta();
       source = 'none';
     }
 
-    if (runId !== state.scanId) return false;
+    if (runId !== state.scanId) {
+      logDebug('tags: pass superseded by a newer folder — stopped');
+      return false;
+    }
 
     track.meta = mergeMeta(parseFilename(track.name), tagMeta);
     track.tagSource = hasAnyTag(tagMeta) ? source : 'filename';
     track.tagsRead = true;
+
+    const details = [
+      track.meta.artist && `artist: ${track.meta.artist}`,
+      track.meta.title && `title: ${track.meta.title}`,
+      track.meta.bpm && `${track.meta.bpm} bpm`,
+      track.meta.key,
+      track.meta.genre
+    ].filter(Boolean).join(' | ');
+    logDebug(`tags ${i + 1}/${total} [${track.tagSource}]: ${track.name} → ${details}`);
 
     if (i % 2 === 0 || i === total - 1) {
       setProgress(Math.round(((i + 1) / total) * 100));
@@ -117,11 +142,15 @@ async function runTagRead(list) {
     }
   }
 
-  if (runId !== state.scanId) return false;
+  if (runId !== state.scanId) {
+    logDebug('tags: pass superseded by a newer folder — stopped');
+    return false;
+  }
 
   state.scanning = false;
   hideProgress();
   renderAll();
+  log(`tags: done — ${total} files read`);
   return true;
 }
 
@@ -130,7 +159,10 @@ async function runTagRead(list) {
 export function readTrackTags(list) {
   const pending = Array.isArray(list) ? list.filter((track) => track && !track.tagsRead) : [];
   if (!pending.length) return Promise.resolve(true);
-  if (activeRead) return activeRead.then(() => readTrackTags(list));
+  if (activeRead) {
+    logDebug(`tags: read already running — ${pending.length} tracks queued behind it`);
+    return activeRead.then(() => readTrackTags(list));
+  }
 
   activeRead = runTagRead(pending).finally(() => {
     activeRead = null;
@@ -141,10 +173,12 @@ export function readTrackTags(list) {
 // "analyze tags" button: re-reads every local tag file, still without categorizing.
 export async function readTagsOnly() {
   if (!state.tracks.length) {
+    logWarn('tags: re-read requested with no folder loaded');
     toast('pick a folder first');
     return;
   }
 
+  log(`tags: re-reading every tag of ${state.tracks.length} tracks`);
   state.tracks.forEach((track) => { track.tagsRead = false; });
 
   setStatus('reading tags...');
@@ -152,6 +186,7 @@ export async function readTagsOnly() {
   if (!done) return;
 
   const tagged = state.tracks.filter((track) => track.tagSource !== 'filename').length;
+  log(`tags: ${state.tracks.length} tracks read — ${tagged} with tags, ${state.tracks.length - tagged} from filename`);
   setStatus(`${state.tracks.length} tracks read — ${tagged} with tags, ${state.tracks.length - tagged} from filename.`);
   toast('tags read');
 }

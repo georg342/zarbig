@@ -209,6 +209,17 @@
     </div>
   </div>
 
+  <div style="margin: 24px 0; border-top: 1px dashed var(--border-color);"></div>
+
+  <div class="card">
+    <div class="header-res"><strong><i class="ph ph-terminal"></i> debug console</strong></div>
+    <textarea id="debugLog" readonly></textarea>
+    <div class="row" style="margin-bottom:0;">
+      <button class="btn-sec" onclick="copyLog()"><i class="ph ph-copy"></i> copy log</button>
+      <button class="btn-sec" onclick="clearLog()"><i class="ph ph-trash"></i> clear</button>
+    </div>
+  </div>
+
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="../assets/js/main.js"></script>
