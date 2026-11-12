@@ -32,7 +32,7 @@ depois abra <http://localhost:8000>.
     ├── css/
     │   ├── main.css        # entry point: só @imports (não coloque regras aqui)
     │   ├── base.css        # tokens, reset, body, inputs e textarea
-    │   ├── components.css  # header, card, botões, toast, modal, audio player
+    │   ├── components.css  # header, card, help, botões, toast, modal, audio player
     │   └── pages.css       # regras específicas: hub, extractor, dj sets
     └── js/
         ├── main.js         # utils globais (window.mostrarToast, window.fetchWithTimeout, window.showCustomModal)
@@ -42,6 +42,8 @@ depois abra <http://localhost:8000>.
 
 - ordem de carga do css: `base` → `components` → `pages`, definida no `assets/css/main.css`.
 - `main.js` precisa vir **antes** dos scripts de página em cada html: `<script src=".../main.js"></script>`, depois `<script src=".../<page>.js"></script>`.
+- layout: o `body` é limitado por `--max-width` (1200px). as páginas de ferramenta usam o grid `.layout` — `.col-controls` em 380px + `.col-results` fluido — e empilham numa coluna abaixo de 900px.
+- `.card` (superfície dos painéis) e `.help-text` (dica curta em lowercase) vivem em `components.css`; `.admin-help` foi substituído por `.help-text`.
 
 ## stack
 
@@ -60,7 +62,7 @@ depois abra <http://localhost:8000>.
 1. cola o link da playlist do spotify;
 2. o app busca `open.spotify.com/embed/playlist/<id>` através de proxies (`r.jina.ai` e, se falhar, `api.allorigins.win`) e faz o parse das faixas;
 3. seleciona as faixas e gera os links do youtube (ou do youtube music, conforme o toggle);
-4. exporta: copiar todos os links, copiar 1 por vez (intervalo de 1s) ou baixar `.txt`.
+4. exporta: copiar todos os links, copiar 1 por vez (intervalo de 3s) ou baixar `.txt`.
 
 **modo manual:** "open raw data in browser" abre a página via `r.jina.ai`; cole o texto no campo e clique em "process pasted text".
 

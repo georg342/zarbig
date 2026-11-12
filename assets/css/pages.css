@@ -76,12 +76,6 @@
   margin: 18px 0 10px 0;
 }
 .admin-card .row:last-child { margin-bottom: 0; }
-.admin-help {
-  font-size: 0.72rem;
-  line-height: 1.5;
-  color: var(--text-muted);
-  margin: 6px 0 0;
-}
 
 /* extractor: public playlist tools */
 .tools-card { border: 2px solid var(--border-color); }

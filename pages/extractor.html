@@ -36,6 +36,8 @@
       <input type="text" id="cid" placeholder="client id" oninput="salvarChaves()" />
       <input type="password" id="csec" placeholder="client secret" oninput="salvarChaves()" />
     </div>
+
+    <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode. the official spotify api only stores the credentials for now.</p>
   </div>
 
   <!-- Botão / Toggle Admin Mode -->
@@ -74,19 +76,19 @@
         <input type="text" id="cfgDelay" class="text-input" inputmode="numeric" value="1000">
       </div>
     </div>
-    <p class="admin-help">pause between tracks, in milliseconds. public mode never goes below 1000 (r.jina.ai allows ~20 requests/min).</p>
+    <p class="help-text">pause between tracks, in milliseconds. public mode never goes below 1000 (r.jina.ai allows ~20 requests/min).</p>
 
     <div class="input-group" style="margin-top: 14px;">
       <label for="cfgSuffix">query suffix</label>
       <textarea id="cfgSuffix" style="height: 62px;" placeholder="official audio&#10;official video"></textarea>
     </div>
-    <p class="admin-help">one suffix per line (or comma separated), tried in order until a video is found. applies to both modes; empty = search without suffix.</p>
+    <p class="help-text">one suffix per line (or comma separated), tried in order until a video is found. applies to both modes; empty = search without suffix.</p>
 
     <div class="yt-music-toggle" style="margin-top: 14px;">
       <input type="checkbox" id="cfgUseApi" checked onchange="alternarUsoApi()">
       <label for="cfgUseApi">use official youtube api</label>
     </div>
-    <p class="admin-help">admin only. off = always search through r.jina.ai, even with admin mode on. no effect when logged out.</p>
+    <p class="help-text">admin only. off = always search through r.jina.ai, even with admin mode on. no effect when logged out.</p>
 
     <div class="yt-music-toggle">
       <input type="checkbox" id="cfgAutoPick" checked>
@@ -156,6 +158,7 @@
       <input type="checkbox" id="chkYtMusic" checked />
       <label for="chkYtMusic">generate youtube music links</label>
     </div>
+    <p class="help-text">on = links point to music.youtube.com, off = regular youtube. the next generate run uses whatever is checked now.</p>
 
     <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()"><i class="ph ph-youtube-logo"></i> generate links</button>
 
