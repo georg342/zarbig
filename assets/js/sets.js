@@ -25,71 +25,14 @@ const playerTitle = document.getElementById('playerTitle');
 const uploadCard = document.getElementById('uploadCard');
 const btnAdminToggle = document.getElementById('btnAdminToggle');
 
-let arquivosAtuais = [];
+let currentFiles = [];
 let isAdmin = false;
 
 // ==========================================
-// TOAST SYSTEM
+// CUSTOM MODAL POPUPS (SHARED HELPER FROM main.js)
 // ==========================================
-function mostrarToast(mensagem) {
-  let container = document.getElementById('toastContainer');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toastContainer';
-    container.className = 'toast-container';
-    document.body.appendChild(container);
-  }
-  const toast = document.createElement('div');
-  toast.className = 'toast show';
-  toast.innerText = mensagem;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-// ==========================================
-// CUSTOM MODAL POPUPS (REPLACES PROMPT/CONFIRM)
-// ==========================================
-function showCustomModal({ title = 'confirmation', message = '', isPrompt = false, placeholder = '' }) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.className = 'custom-modal-overlay';
-
-    overlay.innerHTML = `
-      <div class="custom-modal-card">
-        <h3 class="section-title" style="margin-bottom: 10px;">${title}</h3>
-        <div class="custom-modal-msg">${message}</div>
-        ${isPrompt ? `<input type="password" id="modalInput" class="custom-modal-input" placeholder="${placeholder}">` : ''}
-        <div class="custom-modal-actions">
-          <button id="modalBtnCancel" class="btn-modal-cancel">cancel</button>
-          <button id="modalBtnConfirm" class="btn-primary">confirm</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    const input = overlay.querySelector('#modalInput');
-    if (input) {
-      input.focus();
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('modalBtnConfirm').click();
-        }
-      });
-    }
-
-    overlay.querySelector('#modalBtnConfirm').addEventListener('click', () => {
-      const val = input ? input.value : true;
-      overlay.remove();
-      resolve(val);
-    });
-
-    overlay.querySelector('#modalBtnCancel').addEventListener('click', () => {
-      overlay.remove();
-      resolve(isPrompt ? null : false);
-    });
-  });
-}
+// showCustomModal() lives in assets/js/main.js as window.showCustomModal,
+// so every page uses the same implementation.
 
 // ==========================================
 // ADMIN MODE TOGGLE
@@ -100,7 +43,7 @@ window.toggleAdminMode = async function() {
     uploadCard.style.display = 'none';
     btnAdminToggle.innerHTML = '<i class="ph ph-lock"></i> admin mode';
     mostrarToast('admin mode disabled');
-    carregarSets();
+    loadSets();
     return;
   }
 
@@ -119,7 +62,7 @@ window.toggleAdminMode = async function() {
     uploadCard.style.display = 'block';
     btnAdminToggle.innerHTML = '<i class="ph ph-lock-open"></i> exit admin mode';
     mostrarToast('login successful');
-    carregarSets();
+    loadSets();
   } else {
     mostrarToast('invalid password');
   }
@@ -139,11 +82,11 @@ fileInput.addEventListener('change', () => {
       setNameInput.value = nomeSemExt;
     }
   } else {
-    resetarDropzone();
+    resetDropzone();
   }
 });
 
-function resetarDropzone() {
+function resetDropzone() {
   fileInput.value = '';
   setNameInput.value = '';
   fileNameDisplay.innerText = 'click to select audio file';
@@ -195,15 +138,15 @@ btnUpload.addEventListener('click', async () => {
 
   statusDiv.innerText = '';
   mostrarToast('set uploaded successfully!');
-  resetarDropzone();
+  resetDropzone();
   btnUpload.disabled = false;
-  carregarSets();
+  loadSets();
 });
 
 // ==========================================
 // 2. LIST SETS
 // ==========================================
-async function carregarSets() {
+async function loadSets() {
   listaSets.innerHTML = `
     <div class="empty-state">
       <i class="ph ph-spinner empty-icon"></i>
@@ -228,9 +171,9 @@ async function carregarSets() {
     return;
   }
 
-  arquivosAtuais = files.filter(f => f.name !== '.emptyFolderPlaceholder');
+  currentFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
 
-  if (arquivosAtuais.length === 0) {
+  if (currentFiles.length === 0) {
     btnDeleteAll.style.display = 'none';
     listaSets.innerHTML = `
       <div class="empty-state">
@@ -245,7 +188,7 @@ async function carregarSets() {
   btnDeleteAll.style.display = isAdmin ? 'inline-block' : 'none';
   listaSets.innerHTML = '';
 
-  arquivosAtuais.forEach(file => {
+  currentFiles.forEach(file => {
     const { data: publicUrlData } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(file.name, {
@@ -285,7 +228,7 @@ async function carregarSets() {
       audioPlayer.src = publicUrl;
       playerTitle.innerText = displayName;
       audioPlayerCard.style.display = 'block';
-      audioPlayer.play().catch(e => console.error(e));
+      audioPlayer.play().catch(() => {});
     };
 
     li.querySelector('.set-avatar').addEventListener('click', playHandler);
@@ -302,7 +245,7 @@ async function carregarSets() {
 
     // Delete action (only if admin)
     if (isAdmin) {
-      li.querySelector('.btn-action-del').addEventListener('click', () => apagarSet(file.name, displayName));
+      li.querySelector('.btn-action-del').addEventListener('click', () => deleteSet(file.name, displayName));
     }
 
     listaSets.appendChild(li);
@@ -312,7 +255,7 @@ async function carregarSets() {
 // ==========================================
 // 3. DELETE SET
 // ==========================================
-async function apagarSet(fileName, displayName) {
+async function deleteSet(fileName, displayName) {
   if (!isAdmin) {
     mostrarToast('unauthorized!');
     return;
@@ -336,18 +279,18 @@ async function apagarSet(fileName, displayName) {
   }
 
   mostrarToast('set removed!');
-  carregarSets();
+  loadSets();
 }
 
 // ==========================================
 // 4. DELETE ALL SETS
 // ==========================================
 btnDeleteAll.addEventListener('click', async () => {
-  if (!isAdmin || arquivosAtuais.length === 0) return;
+  if (!isAdmin || currentFiles.length === 0) return;
 
   const confirmed = await showCustomModal({
     title: 'delete all sets',
-    message: `warning: delete all ${arquivosAtuais.length} sets? this cannot be undone.`
+    message: `warning: delete all ${currentFiles.length} sets? this cannot be undone.`
   });
 
   if (!confirmed) return;
@@ -355,7 +298,7 @@ btnDeleteAll.addEventListener('click', async () => {
   btnDeleteAll.disabled = true;
   mostrarToast('deleting all sets...');
 
-  const todosNomes = arquivosAtuais.map(f => f.name);
+  const todosNomes = currentFiles.map(f => f.name);
   const { error } = await supabase.storage
     .from(BUCKET_NAME)
     .remove(todosNomes);
@@ -368,8 +311,8 @@ btnDeleteAll.addEventListener('click', async () => {
   }
 
   mostrarToast('all sets deleted!');
-  carregarSets();
+  loadSets();
 });
 
 // Initialize list on load
-document.addEventListener('DOMContentLoaded', carregarSets);
+document.addEventListener('DOMContentLoaded', loadSets);

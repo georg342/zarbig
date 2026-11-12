@@ -6,8 +6,9 @@
   <meta name="theme-color" content="#0c0c0c">
   <title>spotify extractor</title>
   <link rel="manifest" href="../manifest.json">
-  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
 </head>
 <body>
   
@@ -33,6 +34,63 @@
       <input type="text" id="cid" placeholder="client id" oninput="salvarChaves()" />
       <input type="password" id="csec" placeholder="client secret" oninput="salvarChaves()" />
     </div>
+  </div>
+
+  <!-- Botão / Toggle Admin Mode -->
+  <div style="margin-bottom: 12px; text-align: center;">
+    <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock"></i> admin mode</button>
+  </div>
+
+  <!-- Card Admin (Oculto por padrão, visível apenas com admin autenticado) -->
+  <div id="adminCard" class="card admin-card" style="display: none;">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">admin tools</h3>
+      <span class="admin-badge"><i class="ph ph-shield-check"></i> admin</span>
+    </div>
+
+    <!-- Chaves de API -->
+    <h4 class="admin-subtitle">api keys</h4>
+    <div class="input-group">
+      <label for="ytApiKeyInput">youtube api key</label>
+      <input type="text" id="ytApiKeyInput" class="text-input" placeholder="AIza...">
+    </div>
+    <div class="row">
+      <button class="btn-sec" onclick="salvarYtKey()"><i class="ph ph-floppy-disk"></i> save key</button>
+      <button class="btn-sec" onclick="limparYtKey()"><i class="ph ph-eraser"></i> clear key</button>
+    </div>
+    <button class="btn-danger-outline" style="width: 100%; margin-bottom: 0;" onclick="limparChavesSpotify()"><i class="ph ph-trash"></i> clear spotify keys</button>
+
+    <!-- Parâmetros de busca -->
+    <h4 class="admin-subtitle">search params</h4>
+    <div class="row">
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label for="cfgMaxResults">results per search</label>
+        <input type="text" id="cfgMaxResults" class="text-input" inputmode="numeric" value="15">
+      </div>
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label for="cfgDelay">delay (ms)</label>
+        <input type="text" id="cfgDelay" class="text-input" inputmode="numeric" value="1000">
+      </div>
+    </div>
+    <p class="admin-help">pause between tracks, in milliseconds. public mode never goes below 1000 (r.jina.ai allows ~20 requests/min).</p>
+
+    <div class="input-group" style="margin-top: 14px;">
+      <label for="cfgSuffix">query suffix</label>
+      <textarea id="cfgSuffix" style="height: 62px;" placeholder="official audio&#10;official video"></textarea>
+    </div>
+    <p class="admin-help">one suffix per line (or comma separated), tried in order until a video is found. applies to both modes; empty = search without suffix.</p>
+
+    <div class="yt-music-toggle" style="margin-top: 14px;">
+      <input type="checkbox" id="cfgUseApi" checked onchange="alternarUsoApi()">
+      <label for="cfgUseApi">use official youtube api</label>
+    </div>
+    <p class="admin-help">admin only. off = always search through r.jina.ai, even with admin mode on. no effect when logged out.</p>
+
+    <div class="yt-music-toggle">
+      <input type="checkbox" id="cfgAutoPick" checked>
+      <label for="cfgAutoPick">auto-pick first result</label>
+    </div>
+    <button class="btn-sec" style="width: 100%;" onclick="salvarAdminCfg()"><i class="ph ph-floppy-disk"></i> save params</button>
   </div>
 
   <div id="status"></div>
@@ -65,17 +123,43 @@
       <label for="chkYtMusic">generate youtube music links</label>
     </div>
 
-    <div class="yt-music-toggle" style="border-color: #b026ff;">
-      <input type="checkbox" id="chkZarbigMode" />
-      <label for="chkZarbigMode" style="color: #b026ff;">zarbig mode (manual selection)</label>
-    </div>
-
     <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()"><i class="ph ph-youtube-logo"></i> generate links</button>
 
     <div class="row export-row">
-      <button class="btn-sec" onclick="copiarApenasLinks(false)"><i class="ph ph-link"></i> yt/ytm links</button>
+      <button class="btn-sec" onclick="copiarApenasLinks()"><i class="ph ph-link"></i> yt/ytm links</button>
       <button id="btnForEach" class="btn-sec" onclick="copiarForEach()"><i class="ph ph-arrows-clockwise"></i> auto copy (1s)</button>
       <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple"></i> .txt export</button>
+    </div>
+  </div>
+
+  <!-- Ferramentas de playlist (público) -->
+  <div id="toolsCard" class="card tools-card" style="display: none;">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">playlist tools</h3>
+    </div>
+
+    <h4 class="tools-subtitle">already owned filter</h4>
+    <textarea id="exclusionInput" style="height: 75px;" placeholder="paste local file names (one per line) or scan a folder..."></textarea>
+    <input type="file" id="scanFolderInput" webkitdirectory multiple style="display: none;">
+    <div class="row">
+      <button class="btn-sec" onclick="escanearPasta()"><i class="ph ph-folder-open"></i> scan folder</button>
+      <button class="btn-sec" onclick="aplicarFiltroExclusao()"><i class="ph ph-funnel"></i> uncheck owned</button>
+    </div>
+
+    <h4 class="tools-subtitle">batch tools</h4>
+    <div class="row">
+      <button class="btn-sec" onclick="selecionarFalhas()"><i class="ph ph-warning"></i> check failed</button>
+      <button class="btn-sec" onclick="inverterSelecao()"><i class="ph ph-arrows-left-right"></i> invert selection</button>
+    </div>
+    <div class="row">
+      <button class="btn-sec" onclick="retentarFalhas()"><i class="ph ph-arrows-clockwise"></i> retry failed</button>
+      <button class="btn-danger-outline" style="flex: 1; margin-bottom: 0;" onclick="resetarLinks()"><i class="ph ph-arrow-counter-clockwise"></i> reset links</button>
+    </div>
+
+    <h4 class="tools-subtitle">export</h4>
+    <div class="row">
+      <button class="btn-sec" onclick="copiarListaFormatada()"><i class="ph ph-list-numbers"></i> artist - title | link</button>
+      <button class="btn-sec" onclick="baixarCsv()"><i class="ph ph-file-csv"></i> .csv export</button>
     </div>
   </div>
 
@@ -90,7 +174,7 @@
     </div>
   </div>
 
-  <div id="toast" class="toast">link copied!</div>
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="../assets/js/main.js"></script>
   <script src="../assets/js/extractor.js"></script>

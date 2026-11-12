@@ -1,0 +1,32 @@
+/* base: design tokens, reset and raw form controls. loaded by main.css (order: base -> components -> pages) */
+:root {
+  --bg-color: #0c0c0c;
+  --card-bg: #141414;
+  --primary: #00ff66;
+  --accent: #ffffff;
+  --text-light: #00ff66;
+  --text-muted: #888888;
+  --border-color: #222222;
+  --border-width: 1px;
+}
+
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  font-family: 'Consolas', monospace; 
+  text-transform: lowercase; 
+  -webkit-tap-highlight-color: transparent; 
+}
+
+body { 
+  background: var(--bg-color); 
+  color: var(--text-light); 
+  padding: 14px; 
+  max-width: 600px; 
+  margin: 0 auto; 
+  user-select: none; 
+}
+input[type="url"], input[type="text"], input[type="password"], input[type="search"] { width: 100%; padding: 11px; border-radius: 0px; border: var(--border-width) solid var(--border-color); background: #0a0a0a; color: var(--accent); font-size: 0.9rem; margin-bottom: 10px; outline: none; transition: 0.2s; font-family: 'Consolas', monospace; text-transform: lowercase; }
+input:focus { border-color: var(--accent); }
+textarea { width: 100%; height: 160px; background: #0a0a0a; color: var(--accent); font-family: monospace; font-size: 0.72rem; padding: 10px; border: var(--border-width) solid var(--border-color); border-radius: 0px; resize: vertical; user-select: text; outline: none; margin-bottom: 8px; text-transform: lowercase; }

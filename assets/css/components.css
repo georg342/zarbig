@@ -1,0 +1,245 @@
+/* components: reusable ui widgets (header, buttons, toast, modal, audio player). loaded by main.css */
+
+.app-header { text-align: center; margin: 20px 0 30px 0; }
+.app-header h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 5px; }
+.app-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+/* Estilos Globais de Botões (Neo-brutalism Outline Style) */
+
+button, .btn-primary, .btn-sec, .btn-action-play, .btn-action-copy {
+  width: 100%; 
+  padding: 12px; 
+  border-radius: 0px; 
+  border: var(--border-width) solid var(--primary); 
+  background: #000; 
+  color: var(--primary); 
+  font-weight: 700; 
+  font-size: 0.92rem; 
+  cursor: pointer; 
+  transition: 0.1s; 
+  margin-bottom: 10px; 
+  font-family: 'Consolas', monospace; 
+  text-transform: lowercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+button:active, .btn-primary:active { transform: scale(0.99); opacity: 0.9; background: rgba(0, 255, 102, 0.1); }
+button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-muted); border-color: var(--border-color); cursor: not-allowed; }
+
+.btn-yt { color: #ff3333; border-color: #ff3333; background: #000; width: 100%; padding: 12px; border-radius: 0px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Consolas', monospace; text-transform: lowercase; margin-bottom: 10px; }
+.btn-yt:hover { background: rgba(255, 51, 51, 0.1); }
+
+.btn-action-dl { color: var(--accent); border-color: var(--accent); background: #000; width: 100%; padding: 12px; border-radius: 0px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Consolas', monospace; text-transform: lowercase; margin-bottom: 10px; text-decoration: none; }
+.btn-action-dl:hover { background: rgba(255, 255, 255, 0.1); }
+
+.btn-sec { color: var(--accent); border-color: var(--border-color); font-size: 0.82rem; padding: 9px; margin-bottom: 0; background: #000; }
+.btn-sec:hover { border-color: var(--accent); }
+
+.row { display: flex; gap: 8px; margin-bottom: 10px; }
+.link-btn { font-size: 0.78rem; color: var(--accent); text-align: center; display: block; margin-top: 8px; cursor: pointer; }
+.header-res { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.88rem; }
+
+
+/* Notificação Toast */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.toast {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: var(--card-bg);
+  color: var(--accent);
+  text-align: center;
+  font-weight: 600;
+  border: var(--border-width) solid var(--accent);
+  border-radius: 0px;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+  transform: translateY(20px);
+}
+
+.toast.show {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.btn-action-play, .btn-action-dl, .btn-action-copy, .btn-action-del {
+  background: #000;
+  padding: 7px 10px;
+  border-radius: 0px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: auto;
+  margin-bottom: 0;
+}
+
+.btn-action-play {
+  color: var(--primary);
+  border: var(--border-width) solid var(--primary);
+}
+.btn-action-play:hover {
+  background: rgba(0, 255, 102, 0.1);
+}
+
+.btn-action-dl {
+  color: var(--accent);
+  border: var(--border-width) solid var(--accent);
+  text-decoration: none;
+}
+.btn-action-dl:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-action-copy {
+  color: #b026ff;
+  border: var(--border-width) solid #b026ff;
+}
+.btn-action-copy:hover {
+  background: rgba(176, 38, 255, 0.1);
+}
+
+.btn-action-del {
+  color: #ff3333;
+  border: var(--border-width) solid #ff3333;
+}
+.btn-action-del:hover {
+  background: rgba(255, 51, 51, 0.1);
+}
+
+/* Audio Player Integrado Fixo */
+.audio-player-card {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0c0c0c;
+  border-top: 2px solid var(--accent);
+  padding: 12px;
+  z-index: 999;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.8);
+  display: none;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.player-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: #fff;
+}
+.player-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--accent);
+}
+.player-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+.player-close:hover {
+  color: #fff;
+}
+audio {
+  width: 100%;
+  height: 36px;
+  outline: none;
+}
+
+/* Custom Modal Popup Styles */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 14px;
+  animation: fadeIn 0.15s ease;
+}
+
+.custom-modal-card {
+  background: var(--card-bg);
+  border: 2px solid var(--accent);
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  border-radius: 0px;
+}
+
+.custom-modal-msg {
+  font-size: 0.95rem;
+  color: #fff;
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+
+.custom-modal-input {
+  width: 100%;
+  padding: 11px;
+  background: #0a0a0a;
+  border: var(--border-width) solid var(--border-color);
+  color: var(--accent);
+  font-family: 'Consolas', monospace;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  outline: none;
+  text-transform: lowercase;
+}
+.custom-modal-input:focus {
+  border-color: var(--accent);
+}
+
+.custom-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.custom-modal-actions button {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.btn-modal-cancel {
+  background: #000;
+  color: #ff3333;
+  border-color: #ff3333;
+}
+.btn-modal-cancel:hover {
+  background: rgba(255, 51, 51, 0.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

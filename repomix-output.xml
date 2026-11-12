@@ -1,0 +1,2672 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.clinerules/
+  01-project-context.md
+  02-refactor-safety.md
+  03-rtk.md
+assets/
+  css/
+    base.css
+    components.css
+    main.css
+    pages.css
+  js/
+    extractor.js
+    main.js
+    sets.js
+pages/
+  extractor.html
+  sets.html
+.gitignore
+aider_setup.txt
+index.html
+manifest.json
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".clinerules/01-project-context.md">
+# Zarbig — Contexto do Projeto
+
+Hub pessoal de DJ/tools com duas páginas:
+- `pages/extractor.html` — extrai links do YouTube a partir de playlists do Spotify.
+- `pages/sets.html` — gerencia, reproduz e distribui DJ sets via Supabase Storage.
+
+## Stack
+- HTML5 + CSS3 + Vanilla JS (ES Modules onde necessário).
+- Supabase Storage (bucket `dj-sets`).
+- YouTube Data API v3 (chave em `assets/js/extractor.js`).
+- Phosphor Icons (CDN).
+
+## Regras de código
+- Idioma do código: inglês (variáveis, funções, IDs). Textos de UI: lowercase, não traduzir.
+- Estilo: neo-brutalism, dark mode, Consolas monospace, `text-transform: lowercase` global.
+- Sem bundlers, frameworks, TypeScript ou dependências novas.
+- Não altere strings de UI visível sem confirmação.
+- Não renomeie IDs HTML sem atualizar todos os seletores JS/HTML na mesma alteração.
+</file>
+
+<file path=".clinerules/02-refactor-safety.md">
+# Regras de Segurança para Refatoração
+
+## Nunca faça em lote
+- Trabalhe em UM passo por vez. Após cada passo, mostre o diff e espere aprovação.
+- Se uma etapa for grande, divida em sub-passos.
+
+## Preservação
+- Não remova código de negócio com "TODO/FIXME" sem confirmar.
+- Não "modernize" o visual — preserve o estilo neo-brutalism atual.
+- Não introduza dependências, bundlers ou frameworks.
+
+## Dúvida = pare
+- Se houver dois arquivos similares, CSS duplicado ou código ambíguo, PARE e pergunte antes de agir.
+</file>
+
+<file path=".clinerules/03-rtk.md">
+# Uso do rtk (Rust Token Killer)
+
+`rtk` está instalado globalmente (`rtk 1.2.0`). ele filtra/compacta a saída de comandos antes de chegar ao meu contexto.
+
+## usar
+
+- `rtk git status|diff|log|show` — leitura de git;
+- `rtk git add|commit|push` — sempre com eco de exit code e `rtk git status` depois;
+- `rtk run <cmd> [args]` — executor genérico (propaga exit code: testado com `node`);
+- `rtk bypass <cmd>` — executa sem filtro quando o filtro esconder o que preciso;
+- `rtk err <cmd>` / `rtk summary <cmd>` — quando só importam erros/resumo.
+
+## não usar
+
+- `rtk ls`, `rtk tree`, `rtk grep`, `rtk rg` — falham neste windows (sem `ls`/`grep`/`rg` no PATH). usar `Get-ChildItem`, `Select-String` ou as tools de busca;
+- `rtk read` em arquivo que eu vou editar — a saída é filtrada/truncada. usar `read_files`;
+- `rm`, `mv`, instalação de pacote ou redirecionamento de arquivo embrulhado em filtro.
+
+## execução (evitar "command completion could not be observed")
+
+- **um comando por chamada** de terminal; nunca vários comandos soltos na mesma chamada;
+- encadear dentro de uma string só: `cmd /c "rtk git status"; Write-Output "EXIT=$LASTEXITCODE"`;
+- sempre ecoar o exit code no fim;
+- se aparecer `command completion could not be observed`: reexecutar o comando sozinho antes de assumir sucesso ou falha.
+
+## conferência
+
+- `rtk gain` quando o usuário pedir as estatísticas de economia.
+</file>
+
+<file path="assets/css/base.css">
+/* base: design tokens, reset and raw form controls. loaded by main.css (order: base -> components -> pages) */
+:root {
+  --bg-color: #0c0c0c;
+  --card-bg: #141414;
+  --primary: #00ff66;
+  --accent: #ffffff;
+  --text-light: #00ff66;
+  --text-muted: #888888;
+  --border-color: #222222;
+  --border-width: 1px;
+}
+
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  font-family: 'Consolas', monospace; 
+  text-transform: lowercase; 
+  -webkit-tap-highlight-color: transparent; 
+}
+
+body { 
+  background: var(--bg-color); 
+  color: var(--text-light); 
+  padding: 14px; 
+  max-width: 600px; 
+  margin: 0 auto; 
+  user-select: none; 
+}
+input[type="url"], input[type="text"], input[type="password"], input[type="search"] { width: 100%; padding: 11px; border-radius: 0px; border: var(--border-width) solid var(--border-color); background: #0a0a0a; color: var(--accent); font-size: 0.9rem; margin-bottom: 10px; outline: none; transition: 0.2s; font-family: 'Consolas', monospace; text-transform: lowercase; }
+input:focus { border-color: var(--accent); }
+textarea { width: 100%; height: 160px; background: #0a0a0a; color: var(--accent); font-family: monospace; font-size: 0.72rem; padding: 10px; border: var(--border-width) solid var(--border-color); border-radius: 0px; resize: vertical; user-select: text; outline: none; margin-bottom: 8px; text-transform: lowercase; }
+</file>
+
+<file path="assets/css/components.css">
+/* components: reusable ui widgets (header, buttons, toast, modal, audio player). loaded by main.css */
+
+.app-header { text-align: center; margin: 20px 0 30px 0; }
+.app-header h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 5px; }
+.app-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+/* Estilos Globais de Botões (Neo-brutalism Outline Style) */
+
+button, .btn-primary, .btn-sec, .btn-action-play, .btn-action-copy {
+  width: 100%; 
+  padding: 12px; 
+  border-radius: 0px; 
+  border: var(--border-width) solid var(--primary); 
+  background: #000; 
+  color: var(--primary); 
+  font-weight: 700; 
+  font-size: 0.92rem; 
+  cursor: pointer; 
+  transition: 0.1s; 
+  margin-bottom: 10px; 
+  font-family: 'Consolas', monospace; 
+  text-transform: lowercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+button:active, .btn-primary:active { transform: scale(0.99); opacity: 0.9; background: rgba(0, 255, 102, 0.1); }
+button:disabled, .btn-primary:disabled { background: #0a0a0a; color: var(--text-muted); border-color: var(--border-color); cursor: not-allowed; }
+
+.btn-yt { color: #ff3333; border-color: #ff3333; background: #000; width: 100%; padding: 12px; border-radius: 0px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Consolas', monospace; text-transform: lowercase; margin-bottom: 10px; }
+.btn-yt:hover { background: rgba(255, 51, 51, 0.1); }
+
+.btn-action-dl { color: var(--accent); border-color: var(--accent); background: #000; width: 100%; padding: 12px; border-radius: 0px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Consolas', monospace; text-transform: lowercase; margin-bottom: 10px; text-decoration: none; }
+.btn-action-dl:hover { background: rgba(255, 255, 255, 0.1); }
+
+.btn-sec { color: var(--accent); border-color: var(--border-color); font-size: 0.82rem; padding: 9px; margin-bottom: 0; background: #000; }
+.btn-sec:hover { border-color: var(--accent); }
+
+.row { display: flex; gap: 8px; margin-bottom: 10px; }
+.link-btn { font-size: 0.78rem; color: var(--accent); text-align: center; display: block; margin-top: 8px; cursor: pointer; }
+.header-res { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.88rem; }
+
+
+/* Notificação Toast */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.toast {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: var(--card-bg);
+  color: var(--accent);
+  text-align: center;
+  font-weight: 600;
+  border: var(--border-width) solid var(--accent);
+  border-radius: 0px;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+  transform: translateY(20px);
+}
+
+.toast.show {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.btn-action-play, .btn-action-dl, .btn-action-copy, .btn-action-del {
+  background: #000;
+  padding: 7px 10px;
+  border-radius: 0px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: auto;
+  margin-bottom: 0;
+}
+
+.btn-action-play {
+  color: var(--primary);
+  border: var(--border-width) solid var(--primary);
+}
+.btn-action-play:hover {
+  background: rgba(0, 255, 102, 0.1);
+}
+
+.btn-action-dl {
+  color: var(--accent);
+  border: var(--border-width) solid var(--accent);
+  text-decoration: none;
+}
+.btn-action-dl:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-action-copy {
+  color: #b026ff;
+  border: var(--border-width) solid #b026ff;
+}
+.btn-action-copy:hover {
+  background: rgba(176, 38, 255, 0.1);
+}
+
+.btn-action-del {
+  color: #ff3333;
+  border: var(--border-width) solid #ff3333;
+}
+.btn-action-del:hover {
+  background: rgba(255, 51, 51, 0.1);
+}
+
+/* Audio Player Integrado Fixo */
+.audio-player-card {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0c0c0c;
+  border-top: 2px solid var(--accent);
+  padding: 12px;
+  z-index: 999;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.8);
+  display: none;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.player-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: #fff;
+}
+.player-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--accent);
+}
+.player-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+.player-close:hover {
+  color: #fff;
+}
+audio {
+  width: 100%;
+  height: 36px;
+  outline: none;
+}
+
+/* Custom Modal Popup Styles */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 14px;
+  animation: fadeIn 0.15s ease;
+}
+
+.custom-modal-card {
+  background: var(--card-bg);
+  border: 2px solid var(--accent);
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  border-radius: 0px;
+}
+
+.custom-modal-msg {
+  font-size: 0.95rem;
+  color: #fff;
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+
+.custom-modal-input {
+  width: 100%;
+  padding: 11px;
+  background: #0a0a0a;
+  border: var(--border-width) solid var(--border-color);
+  color: var(--accent);
+  font-family: 'Consolas', monospace;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  outline: none;
+  text-transform: lowercase;
+}
+.custom-modal-input:focus {
+  border-color: var(--accent);
+}
+
+.custom-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.custom-modal-actions button {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.btn-modal-cancel {
+  background: #000;
+  color: #ff3333;
+  border-color: #ff3333;
+}
+.btn-modal-cancel:hover {
+  background: rgba(255, 51, 51, 0.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</file>
+
+<file path="assets/css/main.css">
+/* main: entry stylesheet. edit the partials, not this file. */
+@import url("base.css");
+@import url("components.css");
+@import url("pages.css");
+</file>
+
+<file path="assets/css/pages.css">
+/* pages: page-specific rules. hub menu, extractor, dj sets. loaded by main.css */
+/* Menu Hub */
+
+.menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+.menu-card { background: var(--card-bg); border: var(--border-width) solid var(--border-color); border-radius: 0px; padding: 20px; text-decoration: none; color: var(--text-light); transition: transform 0.1s, border-color 0.1s; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.menu-card:active { transform: scale(0.99); background: #1a2b1a; }
+.menu-card .icon { font-size: 2.5rem; margin-bottom: 10px; color: var(--accent); }
+.menu-card h2 { font-size: 1.1rem; margin-bottom: 8px; color: var(--accent); }
+.menu-card p { font-size: 0.85rem; color: var(--text-muted); }
+#apiBox, #manualBox { display: none; margin-top: 12px; padding-top: 12px; border-top: var(--border-width) solid var(--border-color); }
+#status { text-align: center; font-size: 0.85rem; color: var(--text-muted); margin: 8px 0; }
+
+/* extractor: url field with a small inline clear (x) button */
+.url-row { display: flex; align-items: stretch; gap: 8px; margin-bottom: 10px; }
+.url-row input[type="url"] { flex: 1; width: auto; min-width: 0; margin-bottom: 0; }
+.btn-url-clear { width: auto; flex-shrink: 0; margin-bottom: 0; padding: 0 11px; font-size: 0.9rem; color: var(--text-muted); border-color: var(--border-color); background: #000; }
+.btn-url-clear:hover { color: #ff3333; border-color: #ff3333; }
+.btn-url-clear:active { transform: scale(0.97); background: rgba(255, 51, 51, 0.1); }
+.track-list { list-style: none; max-height: 45vh; overflow-y: auto; border: var(--border-width) solid var(--border-color); border-radius: 0px; margin-bottom: 12px; }
+.track-item { display: flex; align-items: center; padding: 10px 8px; border-bottom: var(--border-width) solid var(--border-color); gap: 10px; cursor: pointer; }
+.track-item.selected { background: rgba(0, 255, 102, 0.05); }
+.track-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; border-radius: 0px; }
+.num { color: var(--text-muted); font-size: 0.78rem; width: 20px; text-align: right; flex-shrink: 0; }
+.info { flex: 1; overflow: hidden; }
+.title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+.artist { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.badges-container { display: flex; gap: 4px; flex-shrink: 0; }
+.yt-badge { font-size: 0.72rem; padding: 4px 7px; border-radius: 0px; background: var(--card-bg); color: var(--text-muted); text-decoration: none; text-align: center; border: var(--border-width) solid var(--border-color); }
+.yt-badge.ok { background: rgba(255, 51, 51, 0.1); color: #ff3333; border: var(--border-width) solid #ff3333; }
+.yt-badge.err { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: var(--border-width) solid #ffa500; }
+
+.progress-wrap { display: none; background: #0a0a0a; height: 6px; border-radius: 0px; overflow: hidden; margin-bottom: 10px; border: var(--border-width) solid var(--border-color); }
+.progress-bar { height: 100%; width: 0%; transition: width 0.2s; }
+.prog-yt { background: #ff3333; }
+.prog-dl { background: var(--accent); }
+
+
+.yt-music-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; background: #0a0a0a; padding: 10px; border-radius: 0px; border: var(--border-width) solid var(--border-color); }
+.yt-music-toggle input { width: 18px; height: 18px; accent-color: #ff3333; margin: 0; }
+.yt-music-toggle label { font-size: 0.85rem; color: #ddd; font-weight: 600; cursor: pointer; }
+
+/* extractor: admin mode */
+.admin-card { border: 2px solid #b026ff; }
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b026ff;
+  border: var(--border-width) solid #b026ff;
+  background: rgba(176, 38, 255, 0.08);
+}
+.admin-subtitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin: 18px 0 10px 0;
+}
+.admin-card .row:last-child { margin-bottom: 0; }
+.admin-help {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 6px 0 0;
+}
+
+/* extractor: public playlist tools */
+.tools-card { border: 2px solid var(--border-color); }
+.tools-subtitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin: 18px 0 10px 0;
+}
+.tools-card .row:last-child { margin-bottom: 0; }
+.owned-badge {
+  font-size: 0.72rem;
+  padding: 4px 7px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: var(--border-width) dashed var(--border-color);
+}
+.track-item.owned { opacity: 0.55; }
+
+/* Botão de Copiar Individual */
+.copy-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 5px;
+  margin: 0;
+  margin-left: 2px;
+  transition: color 0.2s, transform 0.1s;
+  width: auto;
+}
+
+.copy-btn:hover { color: var(--accent); }
+.copy-btn:active { transform: scale(0.9); }
+
+/* Container de botões de exportação */
+.export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.export-row .btn-sec {
+  flex: 1 1 calc(50% - 8px); 
+  margin-bottom: 0;
+}
+
+/* DJ Sets */
+.sets-header {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  transition: opacity 0.2s;
+}
+.back-btn:hover {
+  opacity: 0.8;
+}
+
+.section-title {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.input-group {
+  margin-bottom: 14px;
+  text-align: left;
+}
+.input-group label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #0a0a0a;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 0px;
+  color: var(--accent);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: 'Consolas', monospace;
+  text-transform: lowercase;
+}
+.text-input:focus {
+  border-color: var(--accent);
+}
+
+.file-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 16px;
+  border: 2px dashed var(--border-color);
+  border-radius: 0px;
+  background: #0a0a0a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.file-dropzone:hover, .file-dropzone.has-file {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+}
+.file-dropzone input[type="file"] {
+  display: none;
+}
+.drop-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+.drop-title {
+  font-weight: 600;
+  color: #eaeaea;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.drop-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.status-msg {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.btn-danger-outline {
+  color: #ff3333;
+  border-color: #ff3333;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  width: auto;
+  margin-bottom: 0;
+  background: #000;
+  border-radius: 0px;
+  font-weight: 700;
+  font-family: 'Consolas', monospace;
+  text-transform: lowercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.btn-danger-outline:hover {
+  background: rgba(255, 51, 51, 0.1);
+}
+
+.sets-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.set-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0a0a0a;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 0px;
+  padding: 12px 14px;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+.set-card:hover {
+  border-color: var(--accent);
+}
+
+.set-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.set-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 0px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  border: var(--border-width) solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.set-avatar:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+.set-meta {
+  min-width: 0;
+  flex: 1;
+}
+.set-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.set-details {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.set-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  background: #0a0a0a;
+  border: var(--border-width) dashed var(--border-color);
+  border-radius: 0px;
+  color: var(--text-muted);
+}
+.empty-state .empty-icon {
+  font-size: 2.4rem;
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+.empty-state p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #ccc;
+  font-weight: 500;
+}
+.empty-state span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+</file>
+
+<file path="assets/js/main.js">
+// ==========================================
+// SHARED UTILITIES (must load before page scripts)
+// ==========================================
+
+// Toast notification: reuses #toastContainer when the page provides one,
+// otherwise creates it on demand. Visuals come from .toast / .toast-container.
+window.mostrarToast = function (message) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast show';
+  toast.innerText = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+};
+
+// fetch() with an AbortController timeout.
+window.fetchWithTimeout = async function (url, options = {}, timeoutMs = 9000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return response;
+  } catch (e) {
+    clearTimeout(timer);
+    throw new Error(e.name === 'AbortError' ? `timeout (${timeoutMs}ms)` : e.message);
+  }
+};
+
+// Modal popup shared by every page (replaces prompt/confirm).
+// Resolves with the typed value (prompt), true (confirm) or null/false (cancel).
+window.showCustomModal = function ({ title = 'confirmation', message = '', isPrompt = false, placeholder = '' } = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+
+    overlay.innerHTML = `
+      <div class="custom-modal-card">
+        <h3 class="section-title" style="margin-bottom: 10px;">${title}</h3>
+        <div class="custom-modal-msg">${message}</div>
+        ${isPrompt ? `<input type="password" id="modalInput" class="custom-modal-input" placeholder="${placeholder}">` : ''}
+        <div class="custom-modal-actions">
+          <button id="modalBtnCancel" class="btn-modal-cancel">cancel</button>
+          <button id="modalBtnConfirm" class="btn-primary">confirm</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#modalInput');
+    if (input) {
+      input.focus();
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          overlay.querySelector('#modalBtnConfirm').click();
+        }
+      });
+    }
+
+    overlay.querySelector('#modalBtnConfirm').addEventListener('click', () => {
+      const val = input ? input.value : true;
+      overlay.remove();
+      resolve(val);
+    });
+
+    overlay.querySelector('#modalBtnCancel').addEventListener('click', () => {
+      overlay.remove();
+      resolve(isPrompt ? null : false);
+    });
+  });
+};
+</file>
+
+<file path=".gitignore">
+.aider*
+.env
+</file>
+
+<file path="aider_setup.txt">
+# PROJECT CONTEXT
+- PROJECT NAME: Zarbig.
+- PURPOSE: A personal web platform for a DJ/Music Producer to store, manage, play, and distribute audio mixes.
+- TERMINOLOGY: The word "set" or "sets" always refers to "DJ sets" (long-form audio files/music mixes like MP3, WAV, FLAC).
+- CORE FEATURES: Uploading audio files to a Supabase storage bucket, listing available sets, playing audio directly in the browser, downloading files, and sharing direct links.
+
+# CORE ENGINEERING PRINCIPLES
+- Write production-ready, clean, and efficient code.
+- Follow modern web development best practices (HTML5, CSS3, ES6+).
+- Use Vanilla JavaScript with ES Modules (`type="module"`). Do not use or assume frameworks like React or Vue.
+- Add comments only where logic is complex. Do not comment the obvious.
+- Avoid overengineering. Keep solutions straightforward and modular.
+- Use English for all codebase elements (variables, functions, classes, IDs, and file names).
+
+# DATA & STATE MANAGEMENT (SUPABASE)
+- Handle all async operations (Supabase calls) with robust try/catch blocks.
+- Always implement loading states (e.g., disable buttons, show loading text) during network requests.
+- Provide clear visual feedback (Toast messages) for both success and error states.
+
+# UI/UX & DESIGN SYSTEM
+- AESTHETIC: Neo-brutalism dev aesthetic, futuristic, modern, minimalist, strict dark mode UI.
+- NEO-BRUTALISM DETAILS: Use distinct, sharp borders (e.g., 1px or 2px solid dark gray/green), high contrast, and raw layout structures. Avoid soft blur drop-shadows.
+- TYPOGRAPHY: Use strictly 'Consolas', monospace globally for all elements.
+- TEXT TRANSFORMATION: All UI text must be in lowercase. Use CSS `text-transform: lowercase;` or type in lowercase directly. Absolutely no uppercase letters.
+- CSS ARCHITECTURE: Use CSS variables (`:root`) for colors, spacing, and borders to maintain strict consistency.
+- RESPONSIVENESS: Ensure mobile-friendly layouts using Flexbox/CSS Grid.
+- ICONS: Use ONLY Phosphor Icons (https://phosphoricons.com/) via CDN. 
+- PROHIBITION: NEVER use emojis for icons, buttons, or decorative elements. Never user native dialogs, alerts etc from chrome, when it needed, build your own component.
+
+# EXECUTION RULES
+- DOM SAFETY: Never remove or alter existing HTML `id` attributes unless explicitly instructed, as they are bound to JavaScript event listeners.
+- PRESERVATION: Preserve existing core logic, environment variables, and backend connections.
+- OUTPUT: Return the complete modified code blocks without unnecessary explanations or filler text.
+</file>
+
+<file path="manifest.json">
+{
+  "name": "Zarbig Hub",
+  "short_name": "Zarbig",
+  "description": "Ferramentas e automações do Zarbig",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/8438/8438495.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+</file>
+
+<file path="README.md">
+# zarbig
+
+hub pessoal de dj/tools. duas ferramentas em html/css/js puro, sem build.
+
+- `pages/extractor.html` — extrai links do youtube a partir de playlists do spotify.
+- `pages/sets.html` — gerencia, reproduz e distribui dj sets (supabase storage).
+
+## como rodar
+
+precisa ser servido por **http**: o projeto usa `type="module"` e `@import` de css, então `file://` não funciona.
+
+```bash
+# opção 1
+python -m http.server 8000
+
+# opção 2
+npx serve .
+```
+
+depois abra <http://localhost:8000>.
+
+## estrutura
+
+```
+.
+├── index.html              # hub com os dois cards
+├── manifest.json           # manifest pwa
+├── pages/
+│   ├── extractor.html
+│   └── sets.html
+└── assets/
+    ├── css/
+    │   ├── main.css        # entry point: só @imports (não coloque regras aqui)
+    │   ├── base.css        # tokens, reset, body, inputs e textarea
+    │   ├── components.css  # header, botões, toast, modal, audio player
+    │   └── pages.css       # regras específicas: hub, extractor, dj sets
+    └── js/
+        ├── main.js         # utils globais (window.mostrarToast, window.fetchWithTimeout, window.showCustomModal)
+        ├── extractor.js
+        └── sets.js         # es module (importa o supabase via cdn)
+```
+
+- ordem de carga do css: `base` → `components` → `pages`, definida no `assets/css/main.css`.
+- `main.js` precisa vir **antes** dos scripts de página em cada html: `<script src=".../main.js"></script>`, depois `<script src=".../<page>.js"></script>`.
+
+## stack
+
+| item | uso |
+|---|---|
+| html5 / css3 / js (es modules) | tudo, sem bundler, framework ou typescript |
+| [supabase](https://supabase.com) storage | bucket `dj-sets`: upload, list, remove e getpublicurl |
+| `@supabase/supabase-js@2` | via cdn jsdelivr (entrada `+esm`) |
+| youtube data api v3 | busca de vídeos (`/youtube/v3/search`) — **apenas no admin mode**; público usa `r.jina.ai` |
+| [phosphor icons](https://phosphoricons.com) | via cdn unpkg |
+
+## páginas
+
+### exxxtractor (`pages/extractor.html`)
+
+1. cola o link da playlist do spotify;
+2. o app busca `open.spotify.com/embed/playlist/<id>` através de proxies (`r.jina.ai` e, se falhar, `api.allorigins.win`) e faz o parse das faixas;
+3. seleciona as faixas e gera os links do youtube (ou do youtube music, conforme o toggle);
+4. exporta: copiar todos os links, copiar 1 por vez (intervalo de 1s) ou baixar `.txt`.
+
+**modo manual:** "open raw data in browser" abre a página via `r.jina.ai`; cole o texto no campo e clique em "process pasted text".
+
+**busca dos links:** o backend depende do modo.
+
+| modo | backend | detalhes |
+|---|---|---|
+| público | `r.jina.ai` (scrape de `youtube.com/results?search_query=`) | sem chave; ~20 req/min no free tier; 3 tentativas com backoff |
+| admin | youtube data api v3 | `maxResults`, `delay`, lista de `suffix` e `auto-pick` configuráveis; o toggle `use official youtube api` desliga a api e força `r.jina.ai`; se a api falhar ou vier vazia, cai automaticamente para `r.jina.ai` |
+
+**query suffix (lista):** vale nos dois modos, inclusive no público. o padrão é `official audio` + `official video`: os termos são tentados em ordem até aparecer um vídeo, então só cai para o próximo sufixo quando o anterior não retorna nada. lista vazia = busca sem sufixo.
+
+**delay (ms):** pausa entre faixas na geração em lote (e no `retry failed`); o modo público nunca desce de 1000ms. cada tentativa de sufixo é uma requisição, então listas longas + delay baixo estouram o limite do `r.jina.ai`.
+
+**playlist tools (público, aparecem após carregar uma playlist):**
+
+- **already owned filter** — cole os nomes dos arquivos locais (ou use "scan folder") e clique em "uncheck owned"; as faixas encontradas ganham o badge `owned`, são desmarcadas e ficam protegidas de seleção/geração;
+- **batch tools** — `check failed` (marca só as faixas com erro), `invert selection`, `retry failed` (re-tenta apenas as que falharam) e `reset links` (limpa os links gerados, com confirmação);
+- **export** — copia `artista - titulo | url` da seleção ou baixa um `.csv` (`num,titulo,artista,yt_url,yt_title,yt_channel`).
+
+**admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), limpeza das chaves do spotify, os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
+
+### sets (`pages/sets.html`)
+
+- upload de áudio para o bucket — nome final: `<timestamp>--<nome_normalizado>.<ext>`;
+- lista os sets, reproduz no player fixo e copia o link público;
+- excluir um set ou limpar o bucket exige **admin mode** (senha digitada → md5 comparado com `ADMIN_HASH`).
+
+## configuração
+
+| o quê | onde |
+|---|---|
+| youtube api key (default) | `assets/js/extractor.js:1` (`YOUTUBE_API_KEY`); o admin pode sobrescrever em runtime (`localStorage.zb_yt_key`) |
+| parâmetros de busca | `localStorage.zb_admin_cfg` (salvos pelo card `admin tools`: `maxResults`, `delayMs`, `suffixes[]`, `useApi`, `autoPick`) |
+| supabase url / anon key | `assets/js/sets.js:6-7` |
+| bucket | `assets/js/sets.js:8` (`dj-sets`) |
+| hash da senha admin | `assets/js/sets.js:9` e `assets/js/extractor.js:2` (`ADMIN_HASH`, md5) |
+
+## notas
+
+- **as chaves vivem no front-end.** a anon key e a youtube api key são públicas por natureza: restrinja referrer/quota no google cloud e use rls/policies no bucket do supabase.
+- `r.jina.ai` e `api.allorigins.win` são proxies de terceiros: podem falhar, limitar requisições ou mudar o formato. quando isso acontecer, use o modo manual.
+- a busca pública de links usa `r.jina.ai` e está limitada a ~20 req/min no free tier; o delay mínimo nesse modo é 1s e a lista de sufixos também vale aqui (cada sufixo tentado é 1 requisição).
+- o bloco "official spotify api (+100 tracks)" apenas salva `client id`/`client secret` no `localStorage` (`sp_cid`/`sp_csec`); a extração atual não consome esses valores.
+- `.env` está no `.gitignore` e não é lido pelo app (só chaves locais de ia).
+- sem service worker: `sw.js` e `old.html` foram removidos na refatoração.
+</file>
+
+<file path="pages/extractor.html">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0c0c0c">
+  <title>spotify extractor</title>
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+</head>
+<body>
+  
+  <header class="app-header sets-header">
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left"></i> back to hub</a>
+    <h1>exxxtractor</h1>
+    <p>get youtube links for tracks from a spotify playlist</p>
+  </header>
+
+  <div class="card">
+    <input type="url" id="url" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." />
+    <button onclick="extrair()" style="margin-bottom:0;">load playlist</button>
+    <span class="link-btn" onclick="toggleBox('manualBox')"><i class="ph ph-wrench"></i> manual mode</span>
+    <span class="link-btn" onclick="toggleBox('apiBox')"><i class="ph ph-gear"></i> official spotify api (+100 tracks)</span>
+    
+    <div id="manualBox">
+      <button class="btn-sec" style="margin-bottom:8px; width:100%;" onclick="abrirFonte()">1. open raw data in browser</button>
+      <textarea id="htmlManual" style="height:75px;" placeholder="2. copy everything from the opened page and paste here..."></textarea>
+      <button class="btn-sec" style="width:100%;" onclick="extrairManual()">3. process pasted text</button>
+    </div>
+
+    <div id="apiBox">
+      <input type="text" id="cid" placeholder="client id" oninput="salvarChaves()" />
+      <input type="password" id="csec" placeholder="client secret" oninput="salvarChaves()" />
+    </div>
+  </div>
+
+  <!-- Botão / Toggle Admin Mode -->
+  <div style="margin-bottom: 12px; text-align: center;">
+    <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock"></i> admin mode</button>
+  </div>
+
+  <!-- Card Admin (Oculto por padrão, visível apenas com admin autenticado) -->
+  <div id="adminCard" class="card admin-card" style="display: none;">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">admin tools</h3>
+      <span class="admin-badge"><i class="ph ph-shield-check"></i> admin</span>
+    </div>
+
+    <!-- Chaves de API -->
+    <h4 class="admin-subtitle">api keys</h4>
+    <div class="input-group">
+      <label for="ytApiKeyInput">youtube api key</label>
+      <input type="text" id="ytApiKeyInput" class="text-input" placeholder="AIza...">
+    </div>
+    <div class="row">
+      <button class="btn-sec" onclick="salvarYtKey()"><i class="ph ph-floppy-disk"></i> save key</button>
+      <button class="btn-sec" onclick="limparYtKey()"><i class="ph ph-eraser"></i> clear key</button>
+    </div>
+    <button class="btn-danger-outline" style="width: 100%; margin-bottom: 0;" onclick="limparChavesSpotify()"><i class="ph ph-trash"></i> clear spotify keys</button>
+
+    <!-- Parâmetros de busca -->
+    <h4 class="admin-subtitle">search params</h4>
+    <div class="row">
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label for="cfgMaxResults">results per search</label>
+        <input type="text" id="cfgMaxResults" class="text-input" inputmode="numeric" value="15">
+      </div>
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label for="cfgDelay">delay (ms)</label>
+        <input type="text" id="cfgDelay" class="text-input" inputmode="numeric" value="1000">
+      </div>
+    </div>
+    <p class="admin-help">pause between tracks, in milliseconds. public mode never goes below 1000 (r.jina.ai allows ~20 requests/min).</p>
+
+    <div class="input-group" style="margin-top: 14px;">
+      <label for="cfgSuffix">query suffix</label>
+      <textarea id="cfgSuffix" style="height: 62px;" placeholder="official audio&#10;official video"></textarea>
+    </div>
+    <p class="admin-help">one suffix per line (or comma separated), tried in order until a video is found. applies to both modes; empty = search without suffix.</p>
+
+    <div class="yt-music-toggle" style="margin-top: 14px;">
+      <input type="checkbox" id="cfgUseApi" checked onchange="alternarUsoApi()">
+      <label for="cfgUseApi">use official youtube api</label>
+    </div>
+    <p class="admin-help">admin only. off = always search through r.jina.ai, even with admin mode on. no effect when logged out.</p>
+
+    <div class="yt-music-toggle">
+      <input type="checkbox" id="cfgAutoPick" checked>
+      <label for="cfgAutoPick">auto-pick first result</label>
+    </div>
+    <button class="btn-sec" style="width: 100%;" onclick="salvarAdminCfg()"><i class="ph ph-floppy-disk"></i> save params</button>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="resCard" class="card" style="display:none;">
+    <div class="header-res">
+      <strong id="pTitle">playlist</strong>
+      <span id="selCount" style="color:var(--primary);">0 selected</span>
+    </div>
+
+    <input type="search" id="busca" placeholder="🔍 filter track or artist..." oninput="render()" />
+
+    <div class="row">
+      <button class="btn-sec" onclick="selecionarTodas(true)"><i class="ph ph-check-square"></i> check visible</button>
+      <button class="btn-sec" onclick="selecionarTodas(false)"><i class="ph ph-square"></i> uncheck all</button>
+    </div>
+
+    <ul id="lista" class="track-list"></ul>
+
+    <div class="progress-wrap" id="progWrap">
+      <div class="progress-bar prog-yt" id="progBar"></div>
+    </div>
+    
+    <div class="progress-wrap" id="progWrapDl">
+      <div class="progress-bar prog-dl" id="progBarDl"></div>
+    </div>
+
+    <div class="yt-music-toggle">
+      <input type="checkbox" id="chkYtMusic" checked />
+      <label for="chkYtMusic">generate youtube music links</label>
+    </div>
+
+    <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()"><i class="ph ph-youtube-logo"></i> generate links</button>
+
+    <div class="row export-row">
+      <button class="btn-sec" onclick="copiarApenasLinks()"><i class="ph ph-link"></i> yt/ytm links</button>
+      <button id="btnForEach" class="btn-sec" onclick="copiarForEach()"><i class="ph ph-arrows-clockwise"></i> auto copy (1s)</button>
+      <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple"></i> .txt export</button>
+    </div>
+  </div>
+
+  <!-- Ferramentas de playlist (público) -->
+  <div id="toolsCard" class="card tools-card" style="display: none;">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">playlist tools</h3>
+    </div>
+
+    <h4 class="tools-subtitle">already owned filter</h4>
+    <textarea id="exclusionInput" style="height: 75px;" placeholder="paste local file names (one per line) or scan a folder..."></textarea>
+    <input type="file" id="scanFolderInput" webkitdirectory multiple style="display: none;">
+    <div class="row">
+      <button class="btn-sec" onclick="escanearPasta()"><i class="ph ph-folder-open"></i> scan folder</button>
+      <button class="btn-sec" onclick="aplicarFiltroExclusao()"><i class="ph ph-funnel"></i> uncheck owned</button>
+    </div>
+
+    <h4 class="tools-subtitle">batch tools</h4>
+    <div class="row">
+      <button class="btn-sec" onclick="selecionarFalhas()"><i class="ph ph-warning"></i> check failed</button>
+      <button class="btn-sec" onclick="inverterSelecao()"><i class="ph ph-arrows-left-right"></i> invert selection</button>
+    </div>
+    <div class="row">
+      <button class="btn-sec" onclick="retentarFalhas()"><i class="ph ph-arrows-clockwise"></i> retry failed</button>
+      <button class="btn-danger-outline" style="flex: 1; margin-bottom: 0;" onclick="resetarLinks()"><i class="ph ph-arrow-counter-clockwise"></i> reset links</button>
+    </div>
+
+    <h4 class="tools-subtitle">export</h4>
+    <div class="row">
+      <button class="btn-sec" onclick="copiarListaFormatada()"><i class="ph ph-list-numbers"></i> artist - title | link</button>
+      <button class="btn-sec" onclick="baixarCsv()"><i class="ph ph-file-csv"></i> .csv export</button>
+    </div>
+  </div>
+
+  <div style="margin: 24px 0; border-top: 1px dashed var(--border-color);"></div>
+
+  <div class="card">
+    <div class="header-res"><strong><i class="ph ph-terminal"></i> debug console</strong></div>
+    <textarea id="debugLog" readonly></textarea>
+    <div class="row" style="margin-bottom:0;">
+      <button class="btn-sec" onclick="copiarLog()"><i class="ph ph-copy"></i> copy log</button>
+      <button class="btn-sec" onclick="limparLog()"><i class="ph ph-trash"></i> clear</button>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/extractor.js"></script>
+</body>
+</html>
+</file>
+
+<file path="pages/sets.html">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0c0c0c">
+  <title>zarbig - dj sets</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+</head>
+<body>
+  <header class="app-header sets-header">
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left"></i> back to hub</a>
+    <h1><i class="ph ph-sliders"></i> dj sets</h1>
+    <p>cloud storage and distribution</p>
+  </header>
+
+  <!-- Card de Listagem (Topo) -->
+  <div class="card">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">available sets</h3>
+      <button id="btnDeleteAll" class="btn-danger-outline" style="display: none;"><i class="ph ph-trash"></i> delete all</button>
+    </div>
+
+    <ul id="listaSets" class="sets-list">
+      <!-- Injetado via JS -->
+    </ul>
+  </div>
+
+  <!-- Botão / Toggle Admin Mode -->
+  <div style="margin-bottom: 12px; text-align: center;">
+    <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock"></i> admin mode</button>
+  </div>
+
+  <!-- Card de Upload (Oculto por padrão, visível apenas com admin autenticado) -->
+  <div id="uploadCard" class="card" style="display: none;">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">new set upload</h3>
+    </div>
+    
+    <!-- Input de Nome Customizado -->
+    <div class="input-group">
+      <label for="setNameInput">set name (optional)</label>
+      <input type="text" id="setNameInput" class="text-input" placeholder="ex: warmup hard techno @ 101hz">
+    </div>
+
+    <!-- Dropzone Customizada para o Arquivo -->
+    <label for="fileInput" class="file-dropzone" id="dropzoneLabel">
+      <i class="ph ph-folder-open drop-icon"></i>
+      <span id="fileNameDisplay" class="drop-title">click to select audio file</span>
+      <span class="drop-hint">mp3, wav, flac, m4a, aac, ogg</span>
+      <input type="file" id="fileInput" accept="audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/flac, audio/x-flac, audio/aac, audio/mp4, audio/x-m4a, audio/ogg, audio/webm, audio/aiff, audio/x-aiff">
+    </label>
+
+    <button id="btnUpload" class="btn-primary"><i class="ph ph-rocket"></i> upload set</button>
+    <div id="status" class="status-msg"></div>
+  </div>
+
+  <!-- Player de Áudio Integrado Fixo -->
+  <div id="audioPlayerCard" class="audio-player-card">
+    <div class="player-info">
+      <span id="playerTitle" class="player-title">no track playing</span>
+      <button class="player-close" onclick="closeAudioPlayer()"><i class="ph ph-x"></i></button>
+    </div>
+    <audio id="audioPlayer" controls></audio>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../assets/js/main.js"></script>
+  <script>
+    function closeAudioPlayer() {
+      const playerCard = document.getElementById('audioPlayerCard');
+      const audio = document.getElementById('audioPlayer');
+      audio.pause();
+      audio.src = '';
+      playerCard.style.display = 'none';
+    }
+  </script>
+  <script type="module" src="../assets/js/sets.js"></script>
+</body>
+</html>
+</file>
+
+<file path="assets/js/extractor.js">
+const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default youtube data api key (public search uses jina)
+const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
+const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
+const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg' };
+const DEFAULT_SUFFIXES = ['official audio', 'official video'];
+const DEFAULT_ADMIN_CFG = { maxResults: 15, delayMs: 1000, suffixes: DEFAULT_SUFFIXES, useApi: true, autoPick: true };
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function log(msg) {
+  const box = document.getElementById('debugLog');
+  if (!box) return;
+  box.value += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+  box.scrollTop = box.scrollHeight;
+}
+
+window.onerror = (msg, src, l) => log(`erro global (l:${l}): ${msg}`);
+
+let musicasGlobal = [];
+let nomePlaylist = "playlist";
+let isAdmin = false;
+
+// ==========================================
+// ADMIN MODE (same scheme as sets.js)
+// ==========================================
+// Accepts an array or a ",/;"-separated string and returns a clean suffix list.
+// `fallback` is used only when nothing was ever saved (no key in localStorage).
+function parseSufixos(valor, fallback) {
+  if (valor === undefined || valor === null) return [...fallback];
+
+  const lista = Array.isArray(valor) ? valor : String(valor).split(/[\n,;]+/);
+  const sufixos = lista.map(s => String(s).trim().replace(/\s+/g, ' ').toLowerCase()).filter(Boolean);
+
+  return [...new Set(sufixos)].slice(0, 10);
+}
+
+function getAdminCfg() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.adminCfg);
+    if (!raw) return { ...DEFAULT_ADMIN_CFG };
+
+    const parsed = JSON.parse(raw);
+    const maxResults = parseInt(parsed.maxResults, 10);
+    const delayMs = parseInt(parsed.delayMs, 10);
+
+    return {
+      maxResults: Number.isFinite(maxResults) ? Math.min(50, Math.max(1, maxResults)) : DEFAULT_ADMIN_CFG.maxResults,
+      delayMs: Number.isFinite(delayMs) ? Math.min(15000, Math.max(0, delayMs)) : DEFAULT_ADMIN_CFG.delayMs,
+      // `suffix` (old single string) is still read and migrated into the list.
+      suffixes: parseSufixos(parsed.suffixes !== undefined ? parsed.suffixes : parsed.suffix, DEFAULT_ADMIN_CFG.suffixes),
+      useApi: parsed.useApi !== false,
+      autoPick: parsed.autoPick !== false
+    };
+  } catch (e) {
+    return { ...DEFAULT_ADMIN_CFG };
+  }
+}
+
+function getYtKey() {
+  try {
+    return (localStorage.getItem(STORAGE_KEYS.ytKey) || YOUTUBE_API_KEY || '').trim();
+  } catch (e) {
+    return YOUTUBE_API_KEY;
+  }
+}
+
+function preencherYtKey() {
+  const input = document.getElementById('ytApiKeyInput');
+  if (input) input.value = getYtKey();
+}
+
+function preencherAdminCfg() {
+  const cfg = getAdminCfg();
+  const maxInput = document.getElementById('cfgMaxResults');
+  const delayInput = document.getElementById('cfgDelay');
+  const suffixInput = document.getElementById('cfgSuffix');
+  const apiInput = document.getElementById('cfgUseApi');
+  const autoInput = document.getElementById('cfgAutoPick');
+
+  if (maxInput) maxInput.value = cfg.maxResults;
+  if (delayInput) delayInput.value = cfg.delayMs;
+  if (suffixInput) suffixInput.value = cfg.suffixes.join('\n');
+  if (apiInput) apiInput.checked = cfg.useApi;
+  if (autoInput) autoInput.checked = cfg.autoPick;
+}
+
+function salvarYtKey() {
+  const input = document.getElementById('ytApiKeyInput');
+  const value = input ? input.value.trim() : '';
+  if (!value) {
+    mostrarToast('empty key, nothing to save!');
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEYS.ytKey, value);
+  log('[admin] youtube api key saved (localStorage).');
+  mostrarToast('youtube api key saved!');
+}
+
+function limparYtKey() {
+  localStorage.removeItem(STORAGE_KEYS.ytKey);
+  preencherYtKey();
+  log('[admin] youtube api key reset to the default value.');
+  mostrarToast('youtube api key reset to default');
+}
+
+function limparChavesSpotify() {
+  localStorage.removeItem('sp_cid');
+  localStorage.removeItem('sp_csec');
+
+  const cid = document.getElementById('cid');
+  const csec = document.getElementById('csec');
+  if (cid) cid.value = '';
+  if (csec) csec.value = '';
+
+  log('[admin] spotify keys cleared.');
+  mostrarToast('spotify keys cleared');
+}
+
+function salvarAdminCfg() {
+  const maxInput = document.getElementById('cfgMaxResults');
+  const delayInput = document.getElementById('cfgDelay');
+  const suffixInput = document.getElementById('cfgSuffix');
+  const apiInput = document.getElementById('cfgUseApi');
+  const autoInput = document.getElementById('cfgAutoPick');
+  const atual = getAdminCfg();
+
+  const maxResults = parseInt(maxInput ? maxInput.value : '', 10);
+  const delayMs = parseInt(delayInput ? delayInput.value : '', 10);
+
+  const cfg = {
+    maxResults: Number.isFinite(maxResults) ? Math.min(50, Math.max(1, maxResults)) : atual.maxResults,
+    delayMs: Number.isFinite(delayMs) ? Math.min(15000, Math.max(0, delayMs)) : atual.delayMs,
+    suffixes: parseSufixos(suffixInput ? suffixInput.value : '', []),
+    useApi: apiInput ? apiInput.checked : atual.useApi,
+    autoPick: autoInput ? autoInput.checked : true
+  };
+
+  localStorage.setItem(STORAGE_KEYS.adminCfg, JSON.stringify(cfg));
+  preencherAdminCfg();
+  log(`[admin] search params saved: ${JSON.stringify(cfg)}`);
+  mostrarToast('search params saved!');
+}
+
+// Instant toggle: turns the official api on/off without waiting for "save params".
+function alternarUsoApi() {
+  const input = document.getElementById('cfgUseApi');
+  const cfg = { ...getAdminCfg(), useApi: !!(input && input.checked) };
+
+  localStorage.setItem(STORAGE_KEYS.adminCfg, JSON.stringify(cfg));
+  log(`[admin] official youtube api ${cfg.useApi ? 'enabled' : 'disabled'} (fallback: r.jina.ai).`);
+  mostrarToast(cfg.useApi ? 'youtube api enabled' : 'youtube api disabled');
+}
+
+function setAdminUI(state) {
+  isAdmin = state;
+
+  const adminCard = document.getElementById('adminCard');
+  const btnAdminToggle = document.getElementById('btnAdminToggle');
+
+  if (adminCard) adminCard.style.display = state ? 'block' : 'none';
+  if (btnAdminToggle) {
+    btnAdminToggle.innerHTML = state
+      ? '<i class="ph ph-lock-open"></i> exit admin mode'
+      : '<i class="ph ph-lock"></i> admin mode';
+  }
+}
+
+window.toggleAdminMode = async function () {
+  if (isAdmin) {
+    setAdminUI(false);
+    mostrarToast('admin mode disabled');
+    if (musicasGlobal.length) render();
+    return;
+  }
+
+  if (typeof md5 !== 'function') {
+    log('[err] library md5 não carregou; não é possível validar a senha.');
+    mostrarToast('md5 library not loaded');
+    return;
+  }
+
+  const pass = await window.showCustomModal({
+    title: 'admin access',
+    message: 'enter admin password to proceed:',
+    isPrompt: true,
+    placeholder: 'password...'
+  });
+
+  if (pass === null) return;
+
+  if (md5(pass.trim()) === ADMIN_HASH) {
+    setAdminUI(true);
+    preencherYtKey();
+    preencherAdminCfg();
+    mostrarToast('login successful');
+    if (musicasGlobal.length) render();
+  } else {
+    mostrarToast('invalid password');
+  }
+};
+
+// Inicializa melhorias na UI dinamicamente se necessário
+document.addEventListener('DOMContentLoaded', () => {
+  const urlInput = document.getElementById('url');
+  if (urlInput && !document.getElementById('btnClearUrl')) {
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.id = 'btnClearUrl';
+    clearBtn.className = 'btn-url-clear';
+    clearBtn.title = 'clear url';
+    clearBtn.setAttribute('aria-label', 'clear url');
+    clearBtn.innerHTML = '<i class="ph ph-x"></i>';
+    clearBtn.onclick = limparUrlSpotify;
+
+    // Wraps the url input so the small clear button sits beside the field.
+    const row = document.createElement('div');
+    row.className = 'url-row';
+    urlInput.parentNode.insertBefore(row, urlInput);
+    row.appendChild(urlInput);
+    row.appendChild(clearBtn);
+  }
+
+  preencherYtKey();
+
+  const scanInput = document.getElementById('scanFolderInput');
+  if (scanInput) scanInput.addEventListener('change', onPastaSelecionada);
+});
+
+function limparUrlSpotify() {
+  const urlInput = document.getElementById('url');
+  if (urlInput) urlInput.value = '';
+  mostrarToast('spotify url cleared');
+}
+
+function limparLog() { document.getElementById('debugLog').value = ''; }
+function copiarLog() { navigator.clipboard.writeText(document.getElementById('debugLog').value).then(() => mostrarToast("log copied!")); }
+function salvarChaves() {
+  localStorage.setItem('sp_cid', document.getElementById('cid').value.trim());
+  localStorage.setItem('sp_csec', document.getElementById('csec').value.trim());
+}
+function toggleBox(id) {
+  const b = document.getElementById(id);
+  if(b) b.style.display = b.style.display === 'block' ? 'none' : 'block';
+}
+
+function getId(url) {
+  const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
+  return m ? m[1] : null;
+}
+
+// Shared timeout wrapper provided by main.js.
+const fetchRapido = window.fetchWithTimeout;
+
+async function extrair() {
+  const url = document.getElementById('url').value.trim();
+  const status = document.getElementById('status');
+  const id = getId(url);
+  if (!id) return status.innerText = "invalid link.";
+
+  nomePlaylist = "playlist";
+  status.innerText = "extracting playlist...";
+  try {
+    await semApi(id); 
+  } catch (e) {
+    status.innerText = `error: ${e.message}`;
+    log(`erro na extração: ${e.message}`);
+  }
+}
+
+function limparTextoSpotify(str) {
+  return str.replace(/&amp;/g, '&').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/^E\s+/, '').toLowerCase();
+}
+
+function extrairDados(raw) {
+  if (raw.includes("### ") && raw.includes("#### ")) {
+    const tm = raw.match(/Title:\s*(.+)/i);
+    if (tm) nomePlaylist = tm[1].trim().toLowerCase();
+    const rx = /(?:^\d+\.\s*)?###\s+([^\n\r]+)[\s\r\n]+####\s+([^\n\r]+)/gm;
+    const faixas = [];
+    let m;
+    while ((m = rx.exec(raw)) !== null) {
+      faixas.push(criarObjetoMusica(faixas.length + 1, m[1], m[2]));
+    }
+    return faixas;
+  }
+  return [];
+}
+
+function criarObjetoMusica(num, tit, art) {
+  return {
+    num: num,
+    titulo: limparTextoSpotify(tit),
+    artista: limparTextoSpotify(art),
+    selecionada: true,
+    ytUrl: null,
+    ytTitle: null,
+    ytChannel: null,
+    erroYt: false 
+  };
+}
+
+async function semApi(id) {
+  const target = `https://open.spotify.com/embed/playlist/${id}`;
+  const proxies = [
+    { nome: "jina", url: `https://r.jina.ai/${target}` },
+    { nome: "allorigins", url: `https://api.allorigins.win/get?url=${encodeURIComponent(target)}` }
+  ];
+  for (const p of proxies) {
+    try {
+      log(`buscando playlist via [${p.nome}]...`);
+      const r = await fetchRapido(p.url, { referrerPolicy: "no-referrer" });
+      if (!r.ok) continue;
+      let txt = await r.text();
+      if (p.nome === "allorigins") {
+        try { txt = JSON.parse(txt).contents; } catch(ex){}
+      }
+      const dados = extrairDados(txt);
+      if (dados && dados.length > 0) {
+        musicasGlobal = dados;
+        render();
+        document.getElementById('status').innerText = `${dados.length} tracks loaded!`;
+        document.getElementById('resCard').style.display = 'block';
+        log(`sucesso! ${dados.length} músicas extraídas.`);
+        return;
+      }
+    } catch(e) {
+      log(`falha proxy ${p.nome}: ${e.message}`);
+    }
+  }
+  throw new Error("não foi possível extrair automaticamente. use o modo manual.");
+}
+
+function abrirFonte() {
+  const id = getId(document.getElementById('url').value.trim());
+  if (id) window.open(`https://r.jina.ai/https://open.spotify.com/embed/playlist/${id}`, '_blank');
+}
+
+function extrairManual() {
+  const lista = extrairDados(document.getElementById('htmlManual').value.trim());
+  if (lista?.length) {
+    musicasGlobal = lista;
+    render();
+    document.getElementById('resCard').style.display = 'block';
+    document.getElementById('status').innerText = `${lista.length} tracks loaded!`;
+  } else mostrarToast("no tracks found in text.");
+}
+
+function atualizarContador() {
+  const sel = musicasGlobal.filter(m => m.selecionada).length;
+  const comYt = musicasGlobal.filter(m => m.selecionada && m.ytUrl).length;
+  document.getElementById('selCount').innerText = `${sel} selected (link: ${comYt})`;
+}
+
+function toggleItem(num, ev) {
+  if (ev && (ev.target.tagName === 'A' || ev.target.tagName === 'BUTTON' || ev.target.closest('button') || ev.target.dataset?.retry)) return;
+  const item = musicasGlobal.find(m => m.num === num);
+  if (item && !item.jaTenho) item.selecionada = !item.selecionada;
+  render();
+}
+
+function selecionarTodas(estado) {
+  const q = document.getElementById('busca').value.toLowerCase();
+  musicasGlobal.forEach(m => {
+    if (m.jaTenho) return;
+    if (!q || m.titulo.toLowerCase().includes(q) || m.artista.toLowerCase().includes(q)) {
+      m.selecionada = estado;
+    }
+  });
+  render();
+}
+
+function copiarLinkUnico(num, ev) {
+  if (ev) ev.stopPropagation();
+  const m = musicasGlobal.find(x => x.num === num);
+  if (!m) return;
+
+  let links = [];
+  if (m.ytUrl) links.push(m.ytUrl);
+
+  if (links.length === 0) {
+    mostrarToast("no link to copy yet!");
+    return;
+  }
+
+  navigator.clipboard.writeText(links.join('\n')).then(() => {
+    mostrarToast(`link #${m.num} copied!`);
+  });
+}
+
+function render() {
+  document.getElementById('pTitle').innerText = nomePlaylist.toLowerCase();
+  const q = document.getElementById('busca').value.toLowerCase();
+  const filtradas = musicasGlobal.filter(m =>
+    m.titulo.toLowerCase().includes(q) || m.artista.toLowerCase().includes(q)
+  );
+
+  document.getElementById('lista').innerHTML = filtradas.map(m => {
+    let badgeYt = `<span class="yt-badge" id="badge-yt-${m.num}">no link</span>`;
+    if (m.ytUrl) {
+      badgeYt = `<a href="${m.ytUrl}" target="_blank" class="yt-badge ok" onclick="event.stopPropagation()">yt link</a>`;
+    } else if (m.erroYt) {
+      badgeYt = `<span class="yt-badge err" data-retry="true" onclick="tentarUnica(${m.num}, 'yt')">error (retry)</span>`;
+    }
+
+    let ytDetailsHtml = '';
+    if (m.ytTitle && m.ytChannel) {
+      ytDetailsHtml = `
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-transform: lowercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px;">
+          <span style="color: #fff;">video:</span> ${m.ytTitle} | <span style="color: #fff;">channel:</span> ${m.ytChannel}
+        </div>
+      `;
+    }
+
+    let changeVideoBtn = '';
+    if (isAdmin && m.ytUrl) {
+      changeVideoBtn = `<button class="copy-btn" onclick="alterarVideoManual(${m.num}, event)" title="change video"><i class="ph ph-pencil-simple"></i></button>`;
+    }
+
+    const ownedBadge = m.jaTenho ? `<span class="owned-badge">owned</span>` : '';
+
+    return `
+      <li class="track-item ${m.selecionada ? 'selected' : ''} ${m.jaTenho ? 'owned' : ''}" onclick="toggleItem(${m.num}, event)">
+        <input type="checkbox" ${m.selecionada ? 'checked' : ''} ${m.jaTenho ? 'disabled' : ''} onclick="event.stopPropagation(); toggleItem(${m.num})">
+        <span class="num">${m.num}</span>
+        <div class="info" style="flex-grow: 1; overflow: hidden;">
+          <div class="title">${m.titulo}</div>
+          <div class="artist">${m.artista}</div>
+          ${ytDetailsHtml}
+        </div>
+        <div class="badges-container" style="display: flex; align-items: center; gap: 6px;">
+          ${ownedBadge}
+          ${badgeYt}
+          ${changeVideoBtn}
+          ${m.ytUrl ? `<button class="copy-btn" onclick="copiarLinkUnico(${m.num}, event)" title="copy link"><i class="ph ph-copy"></i></button>` : ''}
+        </div>
+      </li>
+    `;
+  }).join('');
+
+  atualizarContador();
+  updateToolsVisibility();
+}
+
+// ==========================================
+// YOUTUBE SEARCH LAYER
+// public mode -> r.jina.ai scrape (no api key)
+// admin mode  -> youtube data api v3 (falls back to jina on error)
+// ==========================================
+function montarTermosBusca(m) {
+  const cfg = getAdminCfg();
+  const base = `${m.titulo} ${m.artista}`.trim();
+  const termos = cfg.suffixes.map(s => `${base} ${s}`.trim()).filter(Boolean);
+
+  // empty suffix list = search without suffix
+  return termos.length > 0 ? [...new Set(termos)] : [base];
+}
+
+// The official api only runs in admin mode with the "use official youtube api" toggle on.
+function usandoApiOficial() {
+  return isAdmin && getAdminCfg().useApi;
+}
+
+// Parses the markdown returned by r.jina.ai for youtube search results.
+function parseResultadosJina(raw) {
+  if (!raw) return [];
+
+  const videoRegex = /^### \[([^\]]+)\]\((https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})[^)]*)\)/gm;
+  const channelRegex = /\[([^\]]+)\]\(https:\/\/www\.youtube\.com\/(?:channel\/[A-Za-z0-9_-]+|@[A-Za-z0-9._-]+)\)/;
+  const resultados = [];
+  const vistos = new Set();
+
+  let match;
+  while ((match = videoRegex.exec(raw)) !== null) {
+    const id = match[3];
+    if (vistos.has(id)) continue;
+
+    const trecho = raw.slice(match.index, match.index + 400);
+    const canal = trecho.match(channelRegex);
+
+    vistos.add(id);
+    resultados.push({
+      id: id,
+      title: limparTextoSpotify(match[1]).trim(),
+      channelTitle: canal ? limparTextoSpotify(canal[1]).trim() : 'youtube',
+      thumbnail: `https://i.ytimg.com/vi/${id}/default.jpg`
+    });
+  }
+
+  return resultados;
+}
+
+async function buscarResultadosApi(m) {
+  const cfg = getAdminCfg();
+  const key = getYtKey();
+
+  if (!key) throw new Error('youtube api key not configured');
+
+  for (const termo of montarTermosBusca(m)) {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${cfg.maxResults}&q=${encodeURIComponent(termo)}&key=${key}`;
+    log(`[info] [youtube api] buscando opções para: "${termo}"`);
+
+    const res = await fetchRapido(url, {}, 15000);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `http error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const resultados = (data.items || []).map(item => ({
+      id: item.id.videoId,
+      title: (item.snippet.title || '').toLowerCase(),
+      channelTitle: (item.snippet.channelTitle || '').toLowerCase(),
+      thumbnail: item.snippet.thumbnails?.default?.url || ''
+    })).filter(opt => opt.id);
+
+    if (resultados.length > 0) return resultados;
+    log(`[warn] [youtube api] sem resultados para "${termo}"; tentando o próximo sufixo...`);
+  }
+
+  return [];
+}
+
+async function buscarResultadosJina(m) {
+  const cfg = getAdminCfg();
+
+  for (const termo of montarTermosBusca(m)) {
+    const target = `${JINA_SEARCH_BASE}${encodeURIComponent(termo)}`;
+    log(`[info] [jina] buscando resultados para: "${termo}"`);
+
+    let resultados = [];
+
+    for (let tentativa = 1; tentativa <= 3; tentativa++) {
+      try {
+        // r.jina.ai may answer with a 401 warning header and still return the scraped
+        // page, so success is measured by parsed results instead of res.ok.
+        const res = await fetchRapido(target, { referrerPolicy: 'no-referrer' }, 20000);
+        const txt = await res.text();
+        resultados = parseResultadosJina(txt);
+        if (resultados.length > 0) break;
+        log(`[warn] [jina] nenhum vídeo encontrado (tentativa ${tentativa}/3)`);
+      } catch (e) {
+        log(`[warn] [jina] tentativa ${tentativa}/3 falhou: ${e.message}`);
+      }
+      if (tentativa < 3) await sleep(1500 * tentativa);
+    }
+
+    if (resultados.length > 0) return resultados.slice(0, cfg.maxResults);
+    log(`[warn] [jina] nenhum vídeo para "${termo}"; tentando o próximo sufixo...`);
+  }
+
+  return [];
+}
+
+// Backend: official api (admin + toggle on), with r.jina.ai as fallback.
+async function buscarResultados(m) {
+  if (usandoApiOficial()) {
+    try {
+      const resultados = await buscarResultadosApi(m);
+      if (resultados.length > 0) return resultados;
+      log(`[warn] [youtube api] sem resultados; caindo para jina...`);
+    } catch (err) {
+      log(`[err] youtube api falhou (${err.message}); caindo para jina...`);
+      mostrarToast(`youtube api error: ${err.message}`);
+    }
+  } else if (isAdmin) {
+    log('[info] api oficial desligada nos search params; usando r.jina.ai.');
+  }
+
+  return buscarResultadosJina(m);
+}
+
+// Busca automática em segundo plano: pega o 1º resultado silenciosamente sem abrir modals
+async function acharVideoAutomatico(m) {
+  const opcoes = await buscarResultados(m);
+  if (opcoes.length > 0) {
+    return opcoes[0];
+  }
+  return null;
+}
+
+// Abre o modal de seleção manual (Zarbig Mode) para escolher entre os 15 resultados
+async function mostrarModalZarbig(m, opcoes) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+
+    let optionsHtml = opcoes.map((opt, index) => `
+      <div style="background: #0a0a0a; border: 1px solid var(--border-color); padding: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;" data-id="${opt.id}" class="zarbig-opt-item">
+        <img src="${opt.thumbnail}" alt="thumb" style="width: 60px; height: 45px; object-fit: cover; border: 1px solid var(--border-color); flex-shrink: 0;" />
+        <div style="flex-grow: 1; overflow: hidden;">
+          <div style="color: #fff; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: lowercase;">${index + 1}. ${opt.title}</div>
+          <div style="color: var(--text-muted); font-size: 0.7rem; text-transform: lowercase;">channel: ${opt.channelTitle}</div>
+        </div>
+        <button class="btn-sec" style="width: auto; margin:0; padding: 4px 8px; font-size: 0.7rem; text-transform: lowercase;">select</button>
+      </div>
+    `).join('');
+
+    overlay.innerHTML = `
+      <div class="custom-modal-card" style="max-width: 500px; width: 90%;">
+        <h3 class="section-title" style="margin-bottom: 6px; color: #b026ff; text-transform: lowercase;">zarbig mode</h3>
+        <div class="custom-modal-msg" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-transform: lowercase;">select the correct video for: <br><strong style="color: #fff;">${m.titulo} - ${m.artista}</strong></div>
+        <div style="max-height: 350px; overflow-y: auto; margin-bottom: 14px; padding-right: 4px;">
+          ${optionsHtml || '<div style="color:var(--text-muted); text-align:center; text-transform: lowercase;">no results found</div>'}
+        </div>
+        <div class="custom-modal-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button id="modalBtnCancel" class="btn-modal-cancel" style="text-transform: lowercase;">cancel</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('.zarbig-opt-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const selectedId = el.getAttribute('data-id');
+        const selectedOpt = opcoes.find(o => o.id === selectedId);
+        overlay.remove();
+        resolve(selectedOpt || null);
+      });
+    });
+
+    overlay.querySelector('#modalBtnCancel').addEventListener('click', () => {
+      overlay.remove();
+      resolve(null);
+    });
+  });
+}
+
+// Botão de alteração manual (gatilho exclusivo do admin / Zarbig Mode)
+async function alterarVideoManual(num, ev) {
+  if (ev) ev.stopPropagation();
+  if (!isAdmin) {
+    mostrarToast('admin mode required to change videos');
+    return;
+  }
+
+  const m = musicasGlobal.find(x => x.num === num);
+  if (!m) return;
+
+  log(`manual change video requested for track #${m.num}`);
+  const opcoes = await buscarResultados(m);
+
+  if (opcoes.length === 0) {
+    mostrarToast('no results found');
+    return;
+  }
+
+  const escolhido = await mostrarModalZarbig(m, opcoes);
+  if (escolhido && escolhido.id) {
+    const usarYtMusic = document.getElementById('chkYtMusic').checked;
+    const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
+    m.ytUrl = `https://${prefixo}/watch?v=${escolhido.id}`;
+    m.ytTitle = escolhido.title;
+    m.ytChannel = escolhido.channelTitle;
+    m.erroYt = false;
+    log(`[ok] [youtube] faixa #${m.num} link encontrado (manual): ${m.ytUrl}`);
+    render();
+    mostrarToast(`track #${m.num} updated!`);
+  }
+}
+
+// Execução em lote: admin usa a api oficial, público usa r.jina.ai
+async function buscarLinksYoutube() {
+  const selecionadas = musicasGlobal.filter(m => m.selecionada && !m.jaTenho);
+  if (!selecionadas.length) return mostrarToast("select at least 1 track!");
+
+  const btn = document.getElementById('btnYt');
+  const progWrap = document.getElementById('progWrap');
+  const progBar = document.getElementById('progBar');
+  const status = document.getElementById('status');
+  const usarYtMusic = document.getElementById('chkYtMusic').checked;
+  const cfg = getAdminCfg();
+  const delayMs = isAdmin ? cfg.delayMs : Math.max(cfg.delayMs, 1000);
+
+  const viaApi = usandoApiOficial();
+  log(`[info] busca em lote via ${viaApi ? 'youtube api' : 'jina'} (${selecionadas.length} faixas, delay ${delayMs}ms)`);
+  if (!viaApi) log('[info] r.jina.ai: limite ~20 req/min no free tier.');
+
+  btn.disabled = true;
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+
+  let concluidas = 0;
+  const total = selecionadas.length;
+
+  for (let m of selecionadas) {
+    status.innerText = `processing (${concluidas}/${total}): ${m.titulo}`;
+    m.erroYt = false;
+
+    try {
+      let escolhido = null;
+
+      if (isAdmin && !cfg.autoPick) {
+        const opcoes = await buscarResultados(m);
+        if (opcoes.length > 0) escolhido = await mostrarModalZarbig(m, opcoes);
+      } else {
+        escolhido = await acharVideoAutomatico(m);
+      }
+
+      if (escolhido && escolhido.id) {
+        const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
+        m.ytUrl = `https://${prefixo}/watch?v=${escolhido.id}`;
+        m.ytTitle = escolhido.title;
+        m.ytChannel = escolhido.channelTitle;
+        log(`[ok] [youtube] faixa #${m.num} link encontrado: ${m.ytUrl}`);
+      } else if (!(isAdmin && !cfg.autoPick)) {
+        m.erroYt = true;
+      }
+    } catch(e) {
+      m.erroYt = true;
+      log(`erro fatal faixa #${m.num}: ${e.message}`);
+    }
+
+    concluidas++;
+    progBar.style.width = `${(concluidas / total) * 100}%`;
+    render();
+    await sleep(delayMs);
+  }
+
+  status.innerText = "search complete!";
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+  mostrarToast("links generated!");
+}
+
+async function tentarUnica(num, tipo) {
+  const m = musicasGlobal.find(x => x.num === num);
+  if (!m) return;
+  
+  if (tipo === 'yt') {
+    log(`=== re-tentando link faixa #${m.num} ===`);
+    const res = await acharVideoAutomatico(m);
+    if (res && res.id) { 
+      const prefixo = document.getElementById('chkYtMusic').checked ? "music.youtube.com" : "www.youtube.com";
+      m.ytUrl = `https://${prefixo}/watch?v=${res.id}`; 
+      m.ytTitle = res.title;
+      m.ytChannel = res.channelTitle;
+      m.erroYt = false;
+      log(`[ok] [youtube] faixa #${m.num} link encontrado no retry: ${m.ytUrl}`);
+    } else {
+      m.erroYt = true;
+    }
+    render();
+  }
+}
+
+async function copiarForEach() {
+  const btn = document.getElementById("btnForEach");
+  const faixas = musicasGlobal.filter(m => m.selecionada && m.ytUrl);
+
+  if (faixas.length === 0) {
+    mostrarToast("no track with generated link!");
+    return;
+  }
+
+  btn.disabled = true;
+  let i = 0;
+
+  function proximo() {
+    if (i >= faixas.length) {
+      btn.disabled = false;
+      mostrarToast("all links copied sequentially!");
+      return;
+    }
+    const m = faixas[i];
+    const url = m.ytUrl;
+    navigator.clipboard.writeText(url).then(() => {
+      mostrarToast(`copied (${i + 1}/${faixas.length}): ${m.titulo}`);
+      i++;
+      setTimeout(proximo, 1000);
+    }).catch(() => {
+      mostrarToast("failed to copy, check permissions.");
+      btn.disabled = false;
+    });
+  }
+
+  proximo();
+}
+
+function copiarApenasLinks() {
+  const urls = musicasGlobal
+    .filter(m => m.selecionada)
+    .map(m => m.ytUrl)
+    .filter(url => url); 
+
+  if (!urls.length) return mostrarToast("no links generated for selected tracks!");
+  navigator.clipboard.writeText(urls.join(',\n')).then(() => mostrarToast("links copied!"));
+}
+
+function baixarTxt() {
+  const linhas = musicasGlobal.filter(m => m.selecionada).map(m => {
+    let texto = `${m.num}. ${m.titulo} - ${m.artista}`;
+    if (m.ytUrl) texto += `\n   📺 link: ${m.ytUrl}`;
+    return texto;
+  }).join('\n\n');
+  
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([linhas], { type: 'text/plain;charset=utf-8' }));
+  a.download = `${nomePlaylist.replace(/\s+/g, '_')}_extracao.txt`;
+  a.click();
+  mostrarToast(".txt downloaded!");
+}
+
+// ==========================================
+// PLAYLIST TOOLS (public)
+// ==========================================
+function updateToolsVisibility() {
+  const toolsCard = document.getElementById('toolsCard');
+  if (!toolsCard) return;
+  toolsCard.style.display = musicasGlobal.length ? 'block' : 'none';
+}
+
+// Marca apenas as faixas que falharam.
+function selecionarFalhas() {
+  const falhas = musicasGlobal.filter(m => m.erroYt && !m.jaTenho);
+  if (!falhas.length) return mostrarToast('no failed tracks found!');
+
+  musicasGlobal.forEach(m => { m.selecionada = false; });
+  falhas.forEach(m => { m.selecionada = true; });
+
+  render();
+  mostrarToast(`checked ${falhas.length} failed tracks!`);
+}
+
+// Inverte a seleção das faixas visíveis (respeitando o filtro de busca).
+function inverterSelecao() {
+  const q = document.getElementById('busca').value.toLowerCase();
+  let alteradas = 0;
+
+  musicasGlobal.forEach(m => {
+    if (m.jaTenho) return;
+    if (q && !m.titulo.toLowerCase().includes(q) && !m.artista.toLowerCase().includes(q)) return;
+    m.selecionada = !m.selecionada;
+    alteradas++;
+  });
+
+  render();
+  mostrarToast(`inverted ${alteradas} tracks`);
+}
+
+// Re-tenta somente as faixas marcadas com erro.
+async function retentarFalhas() {
+  const falhas = musicasGlobal.filter(m => m.erroYt);
+  if (!falhas.length) return mostrarToast('no failed tracks to retry!');
+
+  const progWrap = document.getElementById('progWrap');
+  const progBar = document.getElementById('progBar');
+  const status = document.getElementById('status');
+  const usarYtMusic = document.getElementById('chkYtMusic').checked;
+  const cfg = getAdminCfg();
+  const delayMs = isAdmin ? cfg.delayMs : Math.max(cfg.delayMs, 1000);
+
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+
+  let feitas = 0;
+
+  for (const m of falhas) {
+    status.innerText = `retrying (${feitas}/${falhas.length}): ${m.titulo}`;
+
+    try {
+      const res = await acharVideoAutomatico(m);
+      if (res && res.id) {
+        const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
+        m.ytUrl = `https://${prefixo}/watch?v=${res.id}`;
+        m.ytTitle = res.title;
+        m.ytChannel = res.channelTitle;
+        m.erroYt = false;
+        log(`[ok] [retry] faixa #${m.num} link encontrado: ${m.ytUrl}`);
+      }
+    } catch (e) {
+      log(`[err] retry faixa #${m.num}: ${e.message}`);
+    }
+
+    feitas++;
+    progBar.style.width = `${(feitas / falhas.length) * 100}%`;
+    render();
+    await sleep(delayMs);
+  }
+
+  progWrap.style.display = 'none';
+  const restantes = musicasGlobal.filter(m => m.erroYt).length;
+  status.innerText = `retry complete (${falhas.length - restantes} ok, ${restantes} failed)`;
+  mostrarToast(`retried ${falhas.length} tracks`);
+}
+
+// Limpa todos os links gerados (com confirmação).
+async function resetarLinks() {
+  if (!musicasGlobal.length) return mostrarToast('no playlist loaded!');
+
+  const confirmado = await window.showCustomModal({
+    title: 'reset links',
+    message: `clear all generated links for "${nomePlaylist}"?`
+  });
+
+  if (!confirmado) return;
+
+  musicasGlobal.forEach(m => {
+    m.ytUrl = null;
+    m.ytTitle = null;
+    m.ytChannel = null;
+    m.erroYt = false;
+  });
+
+  render();
+  log('[info] all generated links reset.');
+  mostrarToast('all links reset!');
+}
+
+// Normaliza nomes de arquivos/títulos para comparar sem acento, extensão ou pontuação.
+function normalizarNome(valor) {
+  return (valor || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\.[a-z0-9]{2,5}$/i, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function nomePresente(nomes, alvo) {
+  if (!alvo) return false;
+  if (nomes.includes(alvo)) return true;
+  if (alvo.length < 8) return false;
+  return nomes.some(n => n.includes(alvo));
+}
+
+function escanearPasta() {
+  const input = document.getElementById('scanFolderInput');
+  if (input) input.click();
+}
+
+function onPastaSelecionada(event) {
+  const files = event.target.files;
+  if (!files || !files.length) return;
+
+  const nomes = [];
+  for (let i = 0; i < files.length; i++) {
+    nomes.push(files[i].name.replace(/\.[^/.]+$/, ''));
+  }
+
+  const textarea = document.getElementById('exclusionInput');
+  if (textarea) textarea.value = nomes.join('\n');
+
+  log(`[info] pasta escaneada: ${nomes.length} arquivos locais.`);
+  mostrarToast(`scanned ${nomes.length} local files`);
+
+  event.target.value = '';
+}
+
+// Marca (sem apagar nada) as faixas que já existem na biblioteca local.
+function aplicarFiltroExclusao() {
+  if (!musicasGlobal.length) return mostrarToast('no playlist loaded!');
+
+  const textarea = document.getElementById('exclusionInput');
+  const bruto = textarea ? textarea.value : '';
+  if (!bruto.trim()) return mostrarToast('paste file names or scan a folder first!');
+
+  const nomes = bruto.split(/\r?\n/).map(normalizarNome).filter(Boolean);
+  if (!nomes.length) return mostrarToast('no valid names found!');
+
+  let marcadas = 0;
+
+  musicasGlobal.forEach(m => {
+    const titulo = normalizarNome(m.titulo);
+    const completo = normalizarNome(`${m.artista} ${m.titulo}`);
+    const jaTem = nomePresente(nomes, titulo) || nomePresente(nomes, completo);
+
+    m.jaTenho = jaTem;
+    if (jaTem) {
+      m.selecionada = false;
+      marcadas++;
+    }
+  });
+
+  render();
+  log(`[info] filtro "já tenho": ${marcadas} faixas marcadas como owned.`);
+  mostrarToast(marcadas ? `marked ${marcadas} tracks as owned` : 'no owned tracks matched');
+}
+
+// Exporta a seleção como "artista - titulo | url".
+function copiarListaFormatada() {
+  const faixas = musicasGlobal.filter(m => m.selecionada && m.ytUrl);
+  if (!faixas.length) return mostrarToast('no generated links for selected tracks!');
+
+  const texto = faixas.map(m => `${m.artista} - ${m.titulo} | ${m.ytUrl}`).join('\n');
+  navigator.clipboard.writeText(texto).then(() => mostrarToast('formatted list copied!'));
+}
+
+function baixarCsv() {
+  const faixas = musicasGlobal.filter(m => m.selecionada);
+  if (!faixas.length) return mostrarToast('select at least 1 track!');
+
+  const escapar = (valor) => `"${String(valor == null ? '' : valor).replace(/"/g, '""')}"`;
+  const linhas = ['num,titulo,artista,yt_url,yt_title,yt_channel'];
+
+  faixas.forEach(m => {
+    linhas.push([m.num, m.titulo, m.artista, m.ytUrl || '', m.ytTitle || '', m.ytChannel || ''].map(escapar).join(','));
+  });
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+  a.download = `${nomePlaylist.replace(/\s+/g, '_')}_extracao.csv`;
+  a.click();
+  mostrarToast('.csv downloaded!');
+}
+</file>
+
+<file path="assets/js/sets.js">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ==========================================
+// SUPABASE CONFIGURATION
+// ==========================================
+const SUPABASE_URL = 'https://exjpfmmaaienrxrgbgqf.supabase.co/';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4anBmbW1hYWllbnJ4cmdiZ3FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODM5NjIsImV4cCI6MjEwODI1OTk2Mn0.N3jdBZobPWBETNsx8uHZYfQIZsKn5gqov3K-JhSzuuc';
+const BUCKET_NAME = 'dj-sets';
+const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// DOM Elements
+const fileInput = document.getElementById('fileInput');
+const setNameInput = document.getElementById('setNameInput');
+const fileNameDisplay = document.getElementById('fileNameDisplay');
+const dropzoneLabel = document.getElementById('dropzoneLabel');
+const btnUpload = document.getElementById('btnUpload');
+const btnDeleteAll = document.getElementById('btnDeleteAll');
+const statusDiv = document.getElementById('status');
+const listaSets = document.getElementById('listaSets');
+const audioPlayerCard = document.getElementById('audioPlayerCard');
+const audioPlayer = document.getElementById('audioPlayer');
+const playerTitle = document.getElementById('playerTitle');
+const uploadCard = document.getElementById('uploadCard');
+const btnAdminToggle = document.getElementById('btnAdminToggle');
+
+let currentFiles = [];
+let isAdmin = false;
+
+// ==========================================
+// CUSTOM MODAL POPUPS (SHARED HELPER FROM main.js)
+// ==========================================
+// showCustomModal() lives in assets/js/main.js as window.showCustomModal,
+// so every page uses the same implementation.
+
+// ==========================================
+// ADMIN MODE TOGGLE
+// ==========================================
+window.toggleAdminMode = async function() {
+  if (isAdmin) {
+    isAdmin = false;
+    uploadCard.style.display = 'none';
+    btnAdminToggle.innerHTML = '<i class="ph ph-lock"></i> admin mode';
+    mostrarToast('admin mode disabled');
+    loadSets();
+    return;
+  }
+
+  const pass = await showCustomModal({
+    title: 'admin access',
+    message: 'enter admin password to proceed:',
+    isPrompt: true,
+    placeholder: 'password...'
+  });
+
+  if (pass === null) return;
+
+  const hashed = md5(pass.trim());
+  if (hashed === ADMIN_HASH) {
+    isAdmin = true;
+    uploadCard.style.display = 'block';
+    btnAdminToggle.innerHTML = '<i class="ph ph-lock-open"></i> exit admin mode';
+    mostrarToast('login successful');
+    loadSets();
+  } else {
+    mostrarToast('invalid password');
+  }
+};
+
+// ==========================================
+// FILE INPUT INTERACTION
+// ==========================================
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (file) {
+    fileNameDisplay.innerText = file.name;
+    dropzoneLabel.classList.add('has-file');
+    
+    if (!setNameInput.value.trim()) {
+      const nomeSemExt = file.name.replace(/\.[^/.]+$/, "");
+      setNameInput.value = nomeSemExt;
+    }
+  } else {
+    resetDropzone();
+  }
+});
+
+function resetDropzone() {
+  fileInput.value = '';
+  setNameInput.value = '';
+  fileNameDisplay.innerText = 'click to select audio file';
+  dropzoneLabel.classList.remove('has-file');
+}
+
+// ==========================================
+// 1. UPLOAD SET
+// ==========================================
+btnUpload.addEventListener('click', async () => {
+  if (!isAdmin) {
+    mostrarToast('unauthorized!');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  if (!file) {
+    mostrarToast('select an audio file first!');
+    return;
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const rawCustomName = setNameInput.value.trim() || file.name.replace(/\.[^/.]+$/, "");
+
+  const safeName = rawCustomName
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 _-]/g, '')
+    .trim()
+    .replace(/\s+/g, '_');
+
+  const finalFileName = `${Date.now()}--${safeName || 'set'}.${ext}`;
+
+  btnUpload.disabled = true;
+  statusDiv.innerText = `uploading "${rawCustomName}"... please wait.`;
+
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(finalFileName, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) {
+    statusDiv.innerText = `upload error: ${error.message}`;
+    mostrarToast('failed to upload file');
+    btnUpload.disabled = false;
+    return;
+  }
+
+  statusDiv.innerText = '';
+  mostrarToast('set uploaded successfully!');
+  resetDropzone();
+  btnUpload.disabled = false;
+  loadSets();
+});
+
+// ==========================================
+// 2. LIST SETS
+// ==========================================
+async function loadSets() {
+  listaSets.innerHTML = `
+    <div class="empty-state">
+      <i class="ph ph-spinner empty-icon"></i>
+      <p>fetching your sets from cloud...</p>
+    </div>
+  `;
+
+  const { data: files, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .list('', {
+      sortBy: { column: 'created_at', order: 'desc' }
+    });
+
+  if (error) {
+    listaSets.innerHTML = `
+      <div class="empty-state">
+        <i class="ph ph-warning empty-icon"></i>
+        <p>error loading list</p>
+        <span>${error.message}</span>
+      </div>
+    `;
+    return;
+  }
+
+  currentFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
+
+  if (currentFiles.length === 0) {
+    btnDeleteAll.style.display = 'none';
+    listaSets.innerHTML = `
+      <div class="empty-state">
+        <i class="ph ph-disc empty-icon"></i>
+        <p>no sets published yet</p>
+        <span>enable admin mode above to upload your first set.</span>
+      </div>
+    `;
+    return;
+  }
+
+  btnDeleteAll.style.display = isAdmin ? 'inline-block' : 'none';
+  listaSets.innerHTML = '';
+
+  currentFiles.forEach(file => {
+    const { data: publicUrlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(file.name, {
+        download: true
+      });
+
+    const publicUrl = publicUrlData.publicUrl;
+    const sizeMB = file.metadata?.size ? (file.metadata.size / (1024 * 1024)).toFixed(2) : '0.00';
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    let displayName = file.name;
+    if (displayName.includes('--')) {
+      displayName = displayName.split('--').slice(1).join('--');
+    }
+    displayName = displayName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+
+    const li = document.createElement('li');
+    li.className = 'set-card';
+    li.innerHTML = `
+      <div class="set-left">
+        <div class="set-avatar" title="play set"><i class="ph ph-play"></i></div>
+        <div class="set-meta">
+          <div class="set-name" title="${displayName}">${displayName}</div>
+          <div class="set-details">${sizeMB} mb • ${ext}</div>
+        </div>
+      </div>
+      <div class="set-actions">
+        <button class="btn-action-play" title="play"><i class="ph ph-play"></i></button>
+        <a class="btn-action-dl" href="${publicUrl}" target="_blank" download="${displayName}.${ext}" title="download"><i class="ph ph-download-simple"></i></a>
+        <button class="btn-action-copy" title="copy download link"><i class="ph ph-link"></i></button>
+        ${isAdmin ? `<button class="btn-action-del" title="delete set"><i class="ph ph-trash"></i></button>` : ''}
+      </div>
+    `;
+
+    // Play action
+    const playHandler = () => {
+      audioPlayer.src = publicUrl;
+      playerTitle.innerText = displayName;
+      audioPlayerCard.style.display = 'block';
+      audioPlayer.play().catch(() => {});
+    };
+
+    li.querySelector('.set-avatar').addEventListener('click', playHandler);
+    li.querySelector('.btn-action-play').addEventListener('click', playHandler);
+
+    // Copy link action
+    li.querySelector('.btn-action-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(publicUrl).then(() => {
+        mostrarToast('download link copied!');
+      }).catch(() => {
+        mostrarToast('failed to copy link');
+      });
+    });
+
+    // Delete action (only if admin)
+    if (isAdmin) {
+      li.querySelector('.btn-action-del').addEventListener('click', () => deleteSet(file.name, displayName));
+    }
+
+    listaSets.appendChild(li);
+  });
+}
+
+// ==========================================
+// 3. DELETE SET
+// ==========================================
+async function deleteSet(fileName, displayName) {
+  if (!isAdmin) {
+    mostrarToast('unauthorized!');
+    return;
+  }
+
+  const confirmed = await showCustomModal({
+    title: 'delete set',
+    message: `are you sure you want to delete "${displayName}"?`
+  });
+
+  if (!confirmed) return;
+
+  mostrarToast('removing set...');
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([fileName]);
+
+  if (error) {
+    mostrarToast(`error deleting: ${error.message}`);
+    return;
+  }
+
+  mostrarToast('set removed!');
+  loadSets();
+}
+
+// ==========================================
+// 4. DELETE ALL SETS
+// ==========================================
+btnDeleteAll.addEventListener('click', async () => {
+  if (!isAdmin || currentFiles.length === 0) return;
+
+  const confirmed = await showCustomModal({
+    title: 'delete all sets',
+    message: `warning: delete all ${currentFiles.length} sets? this cannot be undone.`
+  });
+
+  if (!confirmed) return;
+
+  btnDeleteAll.disabled = true;
+  mostrarToast('deleting all sets...');
+
+  const todosNomes = currentFiles.map(f => f.name);
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove(todosNomes);
+
+  btnDeleteAll.disabled = false;
+
+  if (error) {
+    mostrarToast(`error clearing bucket: ${error.message}`);
+    return;
+  }
+
+  mostrarToast('all sets deleted!');
+  loadSets();
+});
+
+// Initialize list on load
+document.addEventListener('DOMContentLoaded', loadSets);
+</file>
+
+<file path="index.html">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0c0c0c">
+  <title>zarbig hub</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>zarbig hub</h1>
+  </header>
+
+  <main class="menu-grid">
+    <!-- Ferramenta 1: Extrator -->
+    <a href="./pages/extractor.html" class="menu-card">
+      <i class="ph ph-file-text icon"></i>
+      <h2>exxxtractor</h2>
+      <p>extract tracks from playlists</p>
+    </a>
+
+    <!-- Ferramenta 2: DJ Sets -->
+    <a href="./pages/sets.html" class="menu-card">
+      <i class="ph ph-disc icon"></i>
+      <h2>777</h2>
+      <p>manage and play dj sets</p>
+    </a>
+  </main>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
+</file>
+
+</files>
