@@ -1,2 +1,8 @@
 .aider*
 .env
+repomix-output.xml
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+tests/

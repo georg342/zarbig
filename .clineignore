@@ -1,0 +1,9 @@
+repomix-output.xml
+.env
+.aider*
+node_modules/
+*.log
+tests/
+.DS_Store
+Thumbs.db
+aider_setup.txt
