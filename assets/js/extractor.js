@@ -133,7 +133,7 @@ function salvarAdminCfg() {
     delayMs: Number.isFinite(delayMs) ? Math.min(15000, Math.max(0, delayMs)) : atual.delayMs,
     suffixes: parseSufixos(suffixInput ? suffixInput.value : '', []),
     useApi: apiInput ? apiInput.checked : atual.useApi,
-    autoPick: autoInput ? autoInput.checked : true
+    autoPick: autoInput ? autoInput.checked : atual.autoPick
   };
 
   localStorage.setItem(STORAGE_KEYS.adminCfg, JSON.stringify(cfg));
@@ -152,21 +152,21 @@ function alternarUsoApi() {
   mostrarToast(cfg.useApi ? 'youtube api enabled' : 'youtube api disabled');
 }
 
-function setAdminUI(state) {
-  isAdmin = state;
+function setAdminUI(enabled) {
+  isAdmin = enabled;
 
   const adminCard = document.getElementById('adminCard');
   const btnAdminToggle = document.getElementById('btnAdminToggle');
 
-  if (adminCard) adminCard.style.display = state ? 'block' : 'none';
+  if (adminCard) adminCard.style.display = enabled ? 'block' : 'none';
   if (btnAdminToggle) {
-    btnAdminToggle.innerHTML = state
+    btnAdminToggle.innerHTML = enabled
       ? '<i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode'
       : '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
   }
 
   // the floating gradient picker follows admin mode (helper lives in main.js)
-  if (window.setAdminBgWidget) window.setAdminBgWidget(state);
+  if (window.setAdminBgWidget) window.setAdminBgWidget(enabled);
 }
 
 window.toggleAdminMode = async function () {
@@ -205,6 +205,11 @@ window.toggleAdminMode = async function () {
 
 // Inicializa melhorias na UI dinamicamente se necessário
 document.addEventListener('DOMContentLoaded', () => {
+  if (typeof window.fetchWithTimeout !== 'function') {
+    log('[fatal] main.js not loaded');
+    return;
+  }
+
   const urlInput = document.getElementById('url');
   if (urlInput && !document.getElementById('btnClearUrl')) {
     const clearBtn = document.createElement('button');
@@ -659,19 +664,27 @@ async function mostrarModalZarbig(m, opcoes) {
 
 // Botão de alteração manual (gatilho exclusivo do admin / Zarbig Mode)
 async function alterarVideoManual(num, ev) {
+  if (window.__zbBatchRunning) { mostrarToast('already running'); return; }
+  window.__zbBatchRunning = true;
+
   if (ev) ev.stopPropagation();
   if (!isAdmin) {
+    window.__zbBatchRunning = false;
     mostrarToast('admin mode required to change videos');
     return;
   }
 
   const m = musicasGlobal.find(x => x.num === num);
-  if (!m) return;
+  if (!m) {
+    window.__zbBatchRunning = false;
+    return;
+  }
 
   log(`manual change video requested for track #${m.num}`);
   const opcoes = await buscarResultados(m);
 
   if (opcoes.length === 0) {
+    window.__zbBatchRunning = false;
     mostrarToast('no results found');
     return;
   }
@@ -688,12 +701,20 @@ async function alterarVideoManual(num, ev) {
     render();
     mostrarToast(`track #${m.num} updated!`);
   }
+
+  window.__zbBatchRunning = false;
 }
 
 // Execução em lote: admin usa a api oficial, público usa r.jina.ai
 async function buscarLinksYoutube() {
+  if (window.__zbBatchRunning) { mostrarToast('already running'); return; }
+  window.__zbBatchRunning = true;
+
   const selecionadas = musicasGlobal.filter(m => m.selecionada && !m.jaTenho);
-  if (!selecionadas.length) return mostrarToast("select at least 1 track!");
+  if (!selecionadas.length) {
+    window.__zbBatchRunning = false;
+    return mostrarToast("select at least 1 track!");
+  }
 
   const btn = document.getElementById('btnYt');
   const progWrap = document.getElementById('progWrap');
@@ -754,6 +775,7 @@ async function buscarLinksYoutube() {
   progWrap.style.display = 'none';
   btn.disabled = false;
   mostrarToast("links generated!");
+  window.__zbBatchRunning = false;
 }
 
 async function tentarUnica(num, tipo) {
@@ -778,10 +800,14 @@ async function tentarUnica(num, tipo) {
 }
 
 async function copiarForEach() {
+  if (window.__zbBatchRunning) { mostrarToast('already running'); return; }
+  window.__zbBatchRunning = true;
+
   const btn = document.getElementById("btnForEach");
   const faixas = musicasGlobal.filter(m => m.selecionada && m.ytUrl);
 
   if (faixas.length === 0) {
+    window.__zbBatchRunning = false;
     mostrarToast("no track with generated link!");
     return;
   }
@@ -792,6 +818,7 @@ async function copiarForEach() {
   function proximo() {
     if (i >= faixas.length) {
       btn.disabled = false;
+      window.__zbBatchRunning = false;
       mostrarToast("all links copied sequentially!");
       return;
     }
@@ -813,7 +840,7 @@ function copiarApenasLinks() {
     .filter(url => url); 
 
   if (!urls.length) return mostrarToast("no links generated for selected tracks!");
-  window.copyText(urls.join(',\n'), "links copied!");
+  window.copyText(urls.join('\n'), "links copied!");
 }
 
 function baixarTxt() {
@@ -869,8 +896,14 @@ function inverterSelecao() {
 
 // Re-tenta somente as faixas marcadas com erro.
 async function retentarFalhas() {
+  if (window.__zbBatchRunning) { mostrarToast('already running'); return; }
+  window.__zbBatchRunning = true;
+
   const falhas = musicasGlobal.filter(m => m.erroYt);
-  if (!falhas.length) return mostrarToast('no failed tracks to retry!');
+  if (!falhas.length) {
+    window.__zbBatchRunning = false;
+    return mostrarToast('no failed tracks to retry!');
+  }
 
   const progWrap = document.getElementById('progWrap');
   const progBar = document.getElementById('progBar');
@@ -913,6 +946,7 @@ async function retentarFalhas() {
   const restantes = musicasGlobal.filter(m => m.erroYt).length;
   status.innerText = `retry complete (${falhas.length - restantes} ok, ${restantes} failed)`;
   mostrarToast(`retried ${falhas.length} tracks`);
+  window.__zbBatchRunning = false;
 }
 
 // Limpa todos os links gerados (com confirmação).
