@@ -56,7 +56,7 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
     overlay.innerHTML = `
       <div class="custom-modal-card">
         <h3 class="section-title" id="modalTitle" style="margin-bottom: 10px;">${title}</h3>
-        <div class="custom-modal-msg">${message}</div>
+        <div class="custom-modal-msg">${window.escapeHtml(message)}</div>
         ${isPrompt ? `<input type="password" id="modalInput" class="custom-modal-input" placeholder="${placeholder}">` : ''}
         <div class="custom-modal-actions">
           <button id="modalBtnCancel" class="btn-modal-cancel">cancel</button>
@@ -68,9 +68,17 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
     document.body.appendChild(overlay);
 
     // focus returns to whatever opened the modal, so the keyboard flow continues
+    // (captured before inert applies: an inert subtree drops its focused child)
     const opener = document.activeElement;
+
+    // focus trap: the page behind the dialog goes inert while it is open, so
+    // nothing but the modal can be tabbed or clicked into. Released on close.
+    const background = [document.querySelector('main'), document.querySelector('.app-header')].filter(Boolean);
+    background.forEach((el) => el.setAttribute('inert', ''));
+
     const close = (value) => {
       document.removeEventListener('keydown', onKeydown);
+      background.forEach((el) => el.removeAttribute('inert'));
       overlay.remove();
       if (opener && typeof opener.focus === 'function') opener.focus();
       resolve(value);
