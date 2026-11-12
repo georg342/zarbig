@@ -58,15 +58,16 @@ export function onFolderSelected(event) {
   state.tracks = files.map((file, index) => buildTrack(file, index));
   state.overrides = {};
   state.filter = '';
-  state.categoryFilter = 'all';
   state.scanning = false;
   state.scanId += 1; // cancels a tag read still running for the previous folder
   logDebug(`folder: ${state.tracks.length} tracks queued, scan id ${state.scanId}`);
 
   const search = document.getElementById('trackSearch');
   if (search) search.value = '';
-  const catFilter = document.getElementById('catFilter');
-  if (catFilter) catFilter.value = 'all';
+  const filterCat = document.getElementById('filterCategoryMulti');
+  if (filterCat) filterCat.value = 'all';
+  const filterSel = document.getElementById('filterSelectedOnly');
+  if (filterSel) filterSel.checked = false;
 
   const fileLabel = document.getElementById('sorterFileName');
   if (fileLabel) fileLabel.textContent = root;

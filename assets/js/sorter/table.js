@@ -7,8 +7,10 @@ import { categoryLabel } from './categories.js';
 import { logDebug } from './debug.js';
 
 export function renderCategoryOptions() {
-  const select = document.getElementById('catFilter');
+  const select = document.getElementById('filterCategoryMulti');
   if (!select) return;
+
+  const prevSelected = Array.from(select.selectedOptions).map((o) => o.value);
 
   select.innerHTML = '<option value="all">all categories</option>';
   state.categories.forEach((cat) => {
@@ -23,15 +25,20 @@ export function renderCategoryOptions() {
   unsorted.textContent = 'unsorted';
   select.appendChild(unsorted);
 
-  const known = state.categoryFilter === 'all'
-    || state.categoryFilter === 'unsorted'
-    || state.categories.some((cat) => cat.id === state.categoryFilter);
-
-  if (!known) {
-    logDebug(`filter: unknown category "${state.categoryFilter}" — falling back to all`);
-    state.categoryFilter = 'all';
+  // restores the previous selection when it still exists, otherwise marks "all"
+  const validValues = Array.from(select.options).map((o) => o.value);
+  let restored = false;
+  if (prevSelected.length) {
+    Array.from(select.options).forEach((opt) => {
+      if (prevSelected.includes(opt.value)) {
+        opt.selected = true;
+        restored = true;
+      }
+    });
   }
-  select.value = state.categoryFilter;
+  if (!restored) select.value = 'all';
+
+  logDebug(`filter: categories → ${Array.from(select.selectedOptions).map((o) => o.value).join(', ') || 'all'}`);
 }
 
 export function compareTracks(a, b) {
@@ -71,10 +78,17 @@ export function compareTracks(a, b) {
 
 export function getVisibleTracks() {
   const needle = state.filter.trim().toLowerCase();
+  const selectedOnly = document.getElementById('filterSelectedOnly')?.checked;
+  const catFilterEl = document.getElementById('filterCategoryMulti');
+
+  // every selected option counts as a filter, except the default "all"
+  const selectedCats = catFilterEl ? Array.from(catFilterEl.selectedOptions).map((opt) => opt.value) : [];
+  const hasCatFilter = selectedCats.length > 0 && !selectedCats.includes('all');
 
   return state.tracks
     .filter((track) => {
-      if (state.categoryFilter !== 'all' && track.category !== state.categoryFilter) return false;
+      if (selectedOnly && !track.selected) return false;
+      if (hasCatFilter && !selectedCats.includes(track.category)) return false;
       if (!needle) return true;
       const haystack = `${track.meta.artist} ${track.meta.title} ${track.meta.genre} ${track.meta.key} ${track.name}`.toLowerCase();
       return haystack.includes(needle);

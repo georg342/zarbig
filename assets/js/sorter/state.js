@@ -10,7 +10,6 @@ export const state = {
   sortKey: 'index',
   sortDir: 'asc',
   filter: '',
-  categoryFilter: 'all',
   overrides: {},
   mask: DEFAULT_MASK,
   categories: cloneCategories(DEFAULT_CATEGORIES),

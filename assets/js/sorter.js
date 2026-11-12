@@ -15,7 +15,7 @@ import { initDebug, log, logWarn } from './sorter/debug.js';
 
 // critical nodes the page cannot work without: missing ones are logged so a
 // broken html edit shows up in the debug console instead of failing silently.
-const REQUIRED_NODES = ['debugLog', 'folderInput', 'trackBody', 'analyzeStatus', 'catFilter'];
+const REQUIRED_NODES = ['debugLog', 'folderInput', 'trackBody', 'analyzeStatus', 'filterCategoryMulti'];
 
 document.addEventListener('DOMContentLoaded', () => {
   initDebug();

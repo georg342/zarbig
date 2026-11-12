@@ -53,20 +53,21 @@ export function resetWorkspace() {
   state.folderName = '';
   state.overrides = {};
   state.filter = '';
-  state.categoryFilter = 'all';
   state.scanning = false;
   state.scanId += 1; // stops a loop that is still reading tags
 
   const folderInput = document.getElementById('folderInput');
   const search = document.getElementById('trackSearch');
-  const catFilter = document.getElementById('catFilter');
+  const filterCat = document.getElementById('filterCategoryMulti');
+  const filterSel = document.getElementById('filterSelectedOnly');
   const fileLabel = document.getElementById('sorterFileName');
   const dropzone = document.getElementById('sorterDropzone');
   const vdjInput = document.getElementById('vdjInput');
 
   if (folderInput) folderInput.value = '';
   if (search) search.value = '';
-  if (catFilter) catFilter.value = 'all';
+  if (filterCat) filterCat.value = 'all';
+  if (filterSel) filterSel.checked = false;
   if (fileLabel) fileLabel.textContent = 'click to select a music folder';
   if (dropzone) dropzone.classList.remove('has-file');
   if (vdjInput) vdjInput.value = '';
@@ -115,11 +116,20 @@ export function bindEvents() {
     });
   }
 
-  const catFilter = document.getElementById('catFilter');
-  if (catFilter) {
-    catFilter.addEventListener('change', () => {
-      state.categoryFilter = catFilter.value;
-      logDebug(`filter: category → ${state.categoryFilter}`);
+  const filterCat = document.getElementById('filterCategoryMulti');
+  if (filterCat) {
+    filterCat.addEventListener('change', () => {
+      logDebug(`filter: categories → ${Array.from(filterCat.selectedOptions).map((o) => o.value).join(', ') || 'none'}`);
+      renderTable();
+      updateStats();
+      renderRenamePreview();
+    });
+  }
+
+  const filterSel = document.getElementById('filterSelectedOnly');
+  if (filterSel) {
+    filterSel.addEventListener('change', () => {
+      logDebug(`filter: only selected → ${filterSel.checked}`);
       renderTable();
       updateStats();
       renderRenamePreview();

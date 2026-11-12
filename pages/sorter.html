@@ -61,13 +61,6 @@
           <span class="sorter-stat" id="catStats">0 / 0 sorted</span>
         </div>
 
-        <div class="input-group">
-          <label for="catFilter">filter by category</label>
-          <select id="catFilter" class="text-input">
-            <option value="all">all categories</option>
-          </select>
-        </div>
-
         <div id="categoryMultiSelect" class="multi-select">
           <button type="button" id="multiSelectTrigger" class="multi-select-trigger" aria-expanded="false" aria-controls="multiSelectPanel">
             <span id="multiSelectLabel">target categories (0 selected)</span>
@@ -139,6 +132,16 @@
         </div>
 
         <input type="search" id="trackSearch" class="sorter-search" aria-label="filter artist, title, genre or key" placeholder="filter artist, title, genre, key...">
+
+        <div class="filters-bar" style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-3);">
+          <select id="filterCategoryMulti" class="text-input" style="width: auto; flex: 1; min-width: 150px;" multiple size="1" aria-label="filter by category">
+            <!-- options will be injected via JS -->
+          </select>
+          <label class="switch-row" style="margin-bottom: 0; background: #0a0a0a; border: var(--border-width) solid var(--border-strong); padding: var(--space-2);">
+            <input type="checkbox" id="filterSelectedOnly">
+            <span>only selected</span>
+          </label>
+        </div>
 
         <div class="sorter-table-wrap">
           <table class="sorter-table">
