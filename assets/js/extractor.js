@@ -169,37 +169,52 @@ function setAdminUI(enabled) {
   if (window.setAdminBgWidget) window.setAdminBgWidget(enabled);
 }
 
+let __toggleLock = false;
 window.toggleAdminMode = async function () {
-  if (isAdmin) {
-    setAdminUI(false);
-    mostrarToast('admin mode disabled');
-    if (musicasGlobal.length) render();
-    return;
-  }
+  if (__toggleLock) return;
+  __toggleLock = true;
+  try {
+    console.log('[admin-debug] click', { isAdmin, md5Type: typeof md5 });
+    if (isAdmin) {
+      setAdminUI(false);
+      mostrarToast('admin mode disabled');
+      if (musicasGlobal.length) render();
+      return;
+    }
 
-  if (typeof md5 !== 'function') {
-    log('[err] library md5 não carregou; não é possível validar a senha.');
-    mostrarToast('md5 library not loaded');
-    return;
-  }
+    if (typeof md5 !== 'function') {
+      log('[err] library md5 não carregou; não é possível validar a senha.');
+      mostrarToast('md5 library not loaded');
+      return;
+    }
 
-  const pass = await window.showCustomModal({
-    title: 'admin access',
-    message: 'enter admin password to proceed:',
-    isPrompt: true,
-    placeholder: 'password...'
-  });
+    console.log('[admin-debug] opening modal');
+    const pass = await window.showCustomModal({
+      title: 'admin access',
+      message: 'enter admin password to proceed:',
+      isPrompt: true,
+      placeholder: 'password...'
+    });
 
-  if (pass === null) return;
+    console.log('[admin-debug] resolved', { isNull: pass === null, len: pass ? pass.length : null });
 
-  if (md5(pass.trim()) === ADMIN_HASH) {
-    setAdminUI(true);
-    preencherYtKey();
-    preencherAdminCfg();
-    mostrarToast('login successful');
-    if (musicasGlobal.length) render();
-  } else {
-    mostrarToast('invalid password');
+    if (pass === null) return;
+
+    console.log('[admin-debug] checking', { match: md5(pass.trim()) === ADMIN_HASH });
+
+    if (md5(pass.trim()) === ADMIN_HASH) {
+      console.log('[admin-debug] calling setAdminUI(true)');
+      setAdminUI(true);
+      console.log('[admin-debug] card display:', (document.getElementById('adminCard') || {}).style?.display);
+      preencherYtKey();
+      preencherAdminCfg();
+      mostrarToast('login successful');
+      if (musicasGlobal.length) render();
+    } else {
+      mostrarToast('invalid password');
+    }
+  } finally {
+    __toggleLock = false;
   }
 };
 

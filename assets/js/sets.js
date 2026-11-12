@@ -37,38 +37,53 @@ let isAdmin = false;
 // ==========================================
 // ADMIN MODE TOGGLE
 // ==========================================
+let __toggleLock = false;
 window.toggleAdminMode = async function() {
-  if (isAdmin) {
-    isAdmin = false;
-    if (window.setAdminBgWidget) window.setAdminBgWidget(false);
-    uploadCard.style.display = 'none';
-    btnAdminToggle.setAttribute('aria-expanded', 'false');
-    btnAdminToggle.innerHTML = '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
-    mostrarToast('admin mode disabled');
-    loadSets();
-    return;
-  }
+  if (__toggleLock) return;
+  __toggleLock = true;
+  try {
+    console.log('[admin-debug] click', { isAdmin, md5Type: typeof md5 });
+    if (isAdmin) {
+      isAdmin = false;
+      if (window.setAdminBgWidget) window.setAdminBgWidget(false);
+      uploadCard.style.display = 'none';
+      btnAdminToggle.setAttribute('aria-expanded', 'false');
+      btnAdminToggle.innerHTML = '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
+      mostrarToast('admin mode disabled');
+      loadSets();
+      return;
+    }
 
-  const pass = await showCustomModal({
-    title: 'admin access',
-    message: 'enter admin password to proceed:',
-    isPrompt: true,
-    placeholder: 'password...'
-  });
+    console.log('[admin-debug] opening modal');
+    const pass = await showCustomModal({
+      title: 'admin access',
+      message: 'enter admin password to proceed:',
+      isPrompt: true,
+      placeholder: 'password...'
+    });
 
-  if (pass === null) return;
+    console.log('[admin-debug] resolved', { isNull: pass === null, len: pass ? pass.length : null });
 
-  const hashed = md5(pass.trim());
-  if (hashed === ADMIN_HASH) {
-    isAdmin = true;
-    if (window.setAdminBgWidget) window.setAdminBgWidget(true);
-    uploadCard.style.display = 'block';
-    btnAdminToggle.setAttribute('aria-expanded', 'true');
-    btnAdminToggle.innerHTML = '<i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode';
-    mostrarToast('login successful');
-    loadSets();
-  } else {
-    mostrarToast('invalid password');
+    if (pass === null) return;
+
+    console.log('[admin-debug] checking', { match: md5(pass.trim()) === ADMIN_HASH });
+
+    const hashed = md5(pass.trim());
+    if (hashed === ADMIN_HASH) {
+      console.log('[admin-debug] calling setAdminUI(true)');
+      isAdmin = true;
+      if (window.setAdminBgWidget) window.setAdminBgWidget(true);
+      uploadCard.style.display = 'block';
+      console.log('[admin-debug] card display:', (document.getElementById('uploadCard') || {}).style?.display);
+      btnAdminToggle.setAttribute('aria-expanded', 'true');
+      btnAdminToggle.innerHTML = '<i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode';
+      mostrarToast('login successful');
+      loadSets();
+    } else {
+      mostrarToast('invalid password');
+    }
+  } finally {
+    __toggleLock = false;
   }
 };
 

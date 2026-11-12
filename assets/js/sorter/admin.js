@@ -42,38 +42,53 @@ export function setAdminUI(enabled) {
   }
 }
 
+let __toggleLock = false;
 window.toggleAdminMode = async function () {
-  if (state.isAdmin) {
-    setAdminUI(false);
-    toast('admin mode disabled');
-    return;
-  }
+  if (__toggleLock) return;
+  __toggleLock = true;
+  try {
+    console.log('[admin-debug] click', { isAdmin: state.isAdmin, md5Type: typeof window.md5 });
+    if (state.isAdmin) {
+      setAdminUI(false);
+      toast('admin mode disabled');
+      return;
+    }
 
-  // md5 comes from the blueimp cdn script, so it lives on window.
-  if (typeof window.md5 !== 'function') {
-    logWarn('admin: md5 library not available on window');
-    toast('md5 library not loaded');
-    return;
-  }
+    // md5 comes from the blueimp cdn script, so it lives on window.
+    if (typeof window.md5 !== 'function') {
+      logWarn('admin: md5 library not available on window');
+      toast('md5 library not loaded');
+      return;
+    }
 
-  const pass = await window.showCustomModal({
-    title: 'admin access',
-    message: 'enter admin password to proceed:',
-    isPrompt: true,
-    placeholder: 'password...'
-  });
+    console.log('[admin-debug] opening modal');
+    const pass = await window.showCustomModal({
+      title: 'admin access',
+      message: 'enter admin password to proceed:',
+      isPrompt: true,
+      placeholder: 'password...'
+    });
 
-  if (pass === null) {
-    logDebug('admin: password prompt cancelled');
-    return;
-  }
+    console.log('[admin-debug] resolved', { isNull: pass === null, len: pass ? pass.length : null });
 
-  if (window.md5(pass.trim()) === ADMIN_HASH) {
-    setAdminUI(true);
-    toast('login successful');
-  } else {
-    logWarn('admin: invalid password submitted');
-    toast('invalid password');
+    if (pass === null) {
+      logDebug('admin: password prompt cancelled');
+      return;
+    }
+
+    console.log('[admin-debug] checking', { match: window.md5(pass.trim()) === ADMIN_HASH });
+
+    if (window.md5(pass.trim()) === ADMIN_HASH) {
+      console.log('[admin-debug] calling setAdminUI(true)');
+      setAdminUI(true);
+      console.log('[admin-debug] card display:', (document.getElementById('adminCard') || {}).style?.display);
+      toast('login successful');
+    } else {
+      logWarn('admin: invalid password submitted');
+      toast('invalid password');
+    }
+  } finally {
+    __toggleLock = false;
   }
 };
 

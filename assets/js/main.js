@@ -96,6 +96,7 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
       input.focus();
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+          e.preventDefault();
           overlay.querySelector('#modalBtnConfirm').click();
         }
       });
