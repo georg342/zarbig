@@ -18,6 +18,8 @@
     <p>get youtube links for tracks from a spotify playlist</p>
   </header>
 
+  <div class="layout">
+  <div class="col-controls">
   <div class="card">
     <input type="url" id="url" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." />
     <button onclick="extrair()" style="margin-bottom:0;">load playlist</button>
@@ -93,6 +95,38 @@
     <button class="btn-sec" style="width: 100%;" onclick="salvarAdminCfg()"><i class="ph ph-floppy-disk"></i> save params</button>
   </div>
 
+  <!-- Ferramentas de playlist (público) -->
+  <div id="toolsCard" class="card tools-card" style="display: none;">
+    <div class="list-header">
+      <h3 class="section-title" style="margin: 0;">playlist tools</h3>
+    </div>
+
+    <h4 class="tools-subtitle">already owned filter</h4>
+    <textarea id="exclusionInput" style="height: 75px;" placeholder="paste local file names (one per line) or scan a folder..."></textarea>
+    <input type="file" id="scanFolderInput" webkitdirectory multiple style="display: none;">
+    <div class="row">
+      <button class="btn-sec" onclick="escanearPasta()"><i class="ph ph-folder-open"></i> scan folder</button>
+      <button class="btn-sec" onclick="aplicarFiltroExclusao()"><i class="ph ph-funnel"></i> uncheck owned</button>
+    </div>
+
+    <h4 class="tools-subtitle">batch tools</h4>
+    <div class="row">
+      <button class="btn-sec" onclick="selecionarFalhas()"><i class="ph ph-warning"></i> check failed</button>
+      <button class="btn-sec" onclick="inverterSelecao()"><i class="ph ph-arrows-left-right"></i> invert selection</button>
+    </div>
+    <div class="row">
+      <button class="btn-sec" onclick="retentarFalhas()"><i class="ph ph-arrows-clockwise"></i> retry failed</button>
+      <button class="btn-danger-outline" style="flex: 1; margin-bottom: 0;" onclick="resetarLinks()"><i class="ph ph-arrow-counter-clockwise"></i> reset links</button>
+    </div>
+
+    <h4 class="tools-subtitle">export</h4>
+    <div class="row">
+      <button class="btn-sec" onclick="copiarListaFormatada()"><i class="ph ph-list-numbers"></i> artist - title | link</button>
+      <button class="btn-sec" onclick="baixarCsv()"><i class="ph ph-file-csv"></i> .csv export</button>
+    </div>
+  </div>
+  </div>
+  <div class="col-results">
   <div id="status"></div>
 
   <div id="resCard" class="card" style="display:none;">
@@ -131,36 +165,7 @@
       <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple"></i> .txt export</button>
     </div>
   </div>
-
-  <!-- Ferramentas de playlist (público) -->
-  <div id="toolsCard" class="card tools-card" style="display: none;">
-    <div class="list-header">
-      <h3 class="section-title" style="margin: 0;">playlist tools</h3>
-    </div>
-
-    <h4 class="tools-subtitle">already owned filter</h4>
-    <textarea id="exclusionInput" style="height: 75px;" placeholder="paste local file names (one per line) or scan a folder..."></textarea>
-    <input type="file" id="scanFolderInput" webkitdirectory multiple style="display: none;">
-    <div class="row">
-      <button class="btn-sec" onclick="escanearPasta()"><i class="ph ph-folder-open"></i> scan folder</button>
-      <button class="btn-sec" onclick="aplicarFiltroExclusao()"><i class="ph ph-funnel"></i> uncheck owned</button>
-    </div>
-
-    <h4 class="tools-subtitle">batch tools</h4>
-    <div class="row">
-      <button class="btn-sec" onclick="selecionarFalhas()"><i class="ph ph-warning"></i> check failed</button>
-      <button class="btn-sec" onclick="inverterSelecao()"><i class="ph ph-arrows-left-right"></i> invert selection</button>
-    </div>
-    <div class="row">
-      <button class="btn-sec" onclick="retentarFalhas()"><i class="ph ph-arrows-clockwise"></i> retry failed</button>
-      <button class="btn-danger-outline" style="flex: 1; margin-bottom: 0;" onclick="resetarLinks()"><i class="ph ph-arrow-counter-clockwise"></i> reset links</button>
-    </div>
-
-    <h4 class="tools-subtitle">export</h4>
-    <div class="row">
-      <button class="btn-sec" onclick="copiarListaFormatada()"><i class="ph ph-list-numbers"></i> artist - title | link</button>
-      <button class="btn-sec" onclick="baixarCsv()"><i class="ph ph-file-csv"></i> .csv export</button>
-    </div>
+  </div>
   </div>
 
   <div style="margin: 24px 0; border-top: 1px dashed var(--border-color);"></div>
