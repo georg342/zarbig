@@ -40,6 +40,14 @@ export function compareTracks(a, b) {
 
   if (key === 'index') return (a.order - b.order) * dir;
 
+  // checkbox column: groups the unchecked rows first on asc and the checked
+  // ones first on desc, keeping the folder order inside each group.
+  if (key === 'selected') {
+    const diff = Number(Boolean(a.selected)) - Number(Boolean(b.selected));
+    if (diff !== 0) return diff * dir;
+    return (a.order - b.order) * dir;
+  }
+
   if (key === 'bpm') {
     const aBpm = parseFloat(a.meta.bpm);
     const bBpm = parseFloat(b.meta.bpm);
