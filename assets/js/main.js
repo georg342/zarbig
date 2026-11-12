@@ -110,6 +110,42 @@ window.showCustomModal = function ({ title = 'confirmation', message = '', isPro
 };
 
 // ==========================================
+// SHARED DOM / TEXT HELPERS
+// ==========================================
+
+// escapes a value for safe interpolation into innerHTML templates
+window.escapeHtml = function (value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+
+// strips characters that break downloads or local file systems
+window.sanitizeFileName = function (value) {
+  return String(value || '')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/\s+/g, ' ').trim()
+    .replace(/^[.\s]+|[.\s]+$/g, '')
+    .slice(0, 120);
+};
+
+// clipboard write with a legacy execCommand fallback (non-secure contexts)
+window.copyText = function (text, message) {
+  const done = () => window.mostrarToast && window.mostrarToast(message || 'copied');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(done).catch(() => window.mostrarToast && window.mostrarToast('copy failed'));
+  }
+  const area = document.createElement('textarea');
+  area.value = text;
+  document.body.appendChild(area);
+  area.select();
+  try { document.execCommand('copy'); done(); }
+  catch (e) { window.mostrarToast && window.mostrarToast('copy failed'); }
+  area.remove();
+};
+
+// ==========================================
 // GLOBAL BACKGROUND GRADIENT + ADMIN COLOR PICKER
 // ==========================================
 // The 3-color gradient is a global preference: it is read from localStorage as
