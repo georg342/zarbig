@@ -1,0 +1,214 @@
+/* sorter: track sorter page (folder analyze, categorize, rename preview, export). loaded by main.css last */
+
+.sorter-stat {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border: var(--border-width) dashed var(--border-color);
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.sorter-search { margin-bottom: 12px; }
+
+/* table: the wrap caps the height so the vertical scroll stays inside the block
+   (instead of scrolling the whole page), and the sticky head stays on top. */
+.sorter-table-wrap {
+  max-height: 60vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: var(--border-width) solid var(--border-color);
+  background: #0a0a0a;
+}
+
+.sorter-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.sorter-table th,
+.sorter-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: var(--border-width) solid var(--border-color);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* column widths in percent (they add up to 100%, so the table never overflows the wrap) */
+.sorter-table th:nth-child(1) { width: 8%; }   /* # */
+.sorter-table th:nth-child(2) { width: 18%; }  /* artist */
+.sorter-table th:nth-child(3) { width: 25%; }  /* title */
+.sorter-table th:nth-child(4) { width: 8%; }   /* bpm */
+.sorter-table th:nth-child(5) { width: 8%; }   /* key */
+.sorter-table th:nth-child(6) { width: 13%; }  /* genre */
+.sorter-table th:nth-child(7) { width: 20%; }  /* category */
+
+.sorter-table thead th {
+  background: #101010;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.sorter-table th.sortable { cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.sorter-table th.sortable:hover { color: var(--accent); }
+.sorter-table th.sorted { color: var(--primary); border-bottom-color: var(--primary); }
+
+.sorter-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+.sorter-table tbody tr:last-child td { border-bottom: none; }
+
+.sorter-table td.cell-title { min-width: 0; color: var(--accent); }
+.sorter-table td.cell-index { color: var(--text-muted); width: 36px; white-space: nowrap; }
+.sorter-table td.cell-muted { color: var(--text-muted); }
+
+/* [raw] badge: tag data came from the filename only */
+.tag-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #ffa500;
+  border: var(--border-width) solid #ffa500;
+  background: rgba(255, 165, 0, 0.08);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* per-row category override */
+.cat-select {
+  width: auto;
+  min-width: 150px;
+  padding: 5px 8px;
+  margin: 0;
+  font-size: 0.75rem;
+  background: #000;
+  color: var(--accent);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 0px;
+  font-family: 'Consolas', monospace;
+  text-transform: lowercase;
+  cursor: pointer;
+  outline: none;
+}
+.cat-select:hover { border-color: var(--accent); }
+.cat-select.overridden { border-color: var(--primary); color: var(--primary); }
+
+/* inside the sorter table the select must follow the column width, never push it */
+.sorter-table .cat-select { width: 100%; min-width: 0; }
+
+/* admin: mask tokens + category editor */
+.mask-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.token-chip {
+  width: auto;
+  margin: 0;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #0a0a0a;
+  border: var(--border-width) dashed var(--border-color);
+  border-radius: 0px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.token-chip:hover { color: var(--primary); border-color: var(--primary); }
+
+.category-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cat-row {
+  border: var(--border-width) solid var(--border-color);
+  background: #0a0a0a;
+  padding: 10px;
+}
+
+.cat-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cat-row-id {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  word-break: break-all;
+}
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cat-grid label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.cat-grid input {
+  width: 100%;
+  padding: 7px 9px;
+  margin-bottom: 0;
+  font-size: 0.78rem;
+  background: #000;
+  color: var(--accent);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 0px;
+  font-family: 'Consolas', monospace;
+  text-transform: lowercase;
+  outline: none;
+}
+.cat-grid input:focus { border-color: var(--accent); }
+.cat-grid .cat-full { grid-column: 1 / -1; }
+
+.cat-remove {
+  width: auto;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  color: #ff3333;
+  border-color: #ff3333;
+  background: #000;
+  border-radius: 0px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cat-remove:hover { background: rgba(255, 51, 51, 0.1); }
+
+@media (max-width: 700px) {
+  .sorter-table th,
+  .sorter-table td { padding: 6px 6px; font-size: 0.72rem; }
+
+  /* narrow screens: shrink the short columns first so the text columns keep reading room */
+  .sorter-table th:nth-child(1) { width: 10%; }   /* # */
+  .sorter-table th:nth-child(2) { width: 18%; }   /* artist */
+  .sorter-table th:nth-child(3) { width: 23%; }   /* title */
+  .sorter-table th:nth-child(4) { width: 10%; }   /* bpm */
+  .sorter-table th:nth-child(5) { width: 8%; }    /* key */
+  .sorter-table th:nth-child(6) { width: 11%; }   /* genre */
+  .sorter-table th:nth-child(7) { width: 20%; }   /* category */
+
+  .cat-grid { grid-template-columns: 1fr; }
+}
