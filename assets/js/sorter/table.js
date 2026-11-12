@@ -70,6 +70,16 @@ export function getVisibleTracks() {
     .sort(compareTracks);
 }
 
+// the tracks every action works on (exports and the rename preview): the
+// checkbox selection when there is one, otherwise the rows the current search +
+// category filter shows. the table sort is kept so {index} stays stable and the
+// numbering restarts at 01 inside the chosen subset.
+export function getActionableTracks() {
+  const sorted = [...state.tracks].sort(compareTracks);
+  const selected = sorted.filter((track) => track.selected);
+  return selected.length ? selected : getVisibleTracks();
+}
+
 export function categoryOptionsHtml(track) {
   const options = state.categories.map((cat) => {
     const selected = cat.id === track.category ? ' selected' : '';
@@ -134,7 +144,7 @@ export function updateStats() {
   const total = state.tracks.length;
   const sorted = state.tracks.filter((track) => track.category !== 'unsorted').length;
   const selected = state.tracks.filter((track) => track.selected).length;
-  const visible = getVisibleTracks().length;
+  const actionable = getActionableTracks().length;
 
   const folderStats = document.getElementById('folderStats');
   const catStats = document.getElementById('catStats');
@@ -143,6 +153,6 @@ export function updateStats() {
 
   if (folderStats) folderStats.textContent = `${total} tracks`;
   if (catStats) catStats.textContent = `${sorted} / ${total} sorted`;
-  if (exportStats) exportStats.textContent = `${visible} rows`;
+  if (exportStats) exportStats.textContent = `${actionable} rows`;
   if (selectionStats) selectionStats.textContent = `${selected} / ${total} selected`;
 }

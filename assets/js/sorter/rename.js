@@ -5,7 +5,7 @@ import { state } from './state.js';
 import { DEFAULT_MASK } from './constants.js';
 import { sanitizeFileName } from './utils.js';
 import { categoryLabel } from './categories.js';
-import { getVisibleTracks } from './table.js';
+import { getActionableTracks } from './table.js';
 
 export function renderMaskHint() {
   const hint = document.getElementById('maskHint');
@@ -50,7 +50,7 @@ export function renderRenamePreview() {
   const output = document.getElementById('renameOutput');
   if (!output) return;
 
-  const list = getVisibleTracks();
+  const list = getActionableTracks();
   if (!list.length) {
     output.value = '';
     return;

@@ -3,7 +3,7 @@
 import { state } from './state.js';
 import { downloadFile, copyText, toast } from './utils.js';
 import { categoryLabel } from './categories.js';
-import { getVisibleTracks } from './table.js';
+import { getActionableTracks } from './table.js';
 import { applyMask } from './rename.js';
 
 export function exportBaseName() {
@@ -12,7 +12,7 @@ export function exportBaseName() {
 }
 
 export function exportableTracks() {
-  const list = getVisibleTracks();
+  const list = getActionableTracks();
   if (!list.length) toast('nothing to export');
   return list;
 }

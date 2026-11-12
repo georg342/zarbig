@@ -4,15 +4,19 @@
 
 import { state } from './state.js';
 import { getVisibleTracks, renderTable, updateStats } from './table.js';
+import { renderRenamePreview } from './rename.js';
 import { toast } from './utils.js';
 
 export function getSelectedTracks() {
   return state.tracks.filter((track) => track.selected);
 }
 
+// the table + stats + rename preview all follow the selection, so every batch
+// action has to refresh the three of them.
 function refreshTable() {
   renderTable();
   updateStats();
+  renderRenamePreview();
 }
 
 export function checkVisibleTracks() {
@@ -62,6 +66,7 @@ export function onTrackSelectionChange(event) {
   const row = box.closest('tr');
   if (row) row.classList.toggle('is-selected', box.checked);
   updateStats();
+  renderRenamePreview();
 }
 
 export function bindSelectionEvents() {
