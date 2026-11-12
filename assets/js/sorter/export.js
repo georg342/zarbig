@@ -1,7 +1,7 @@
 // exports: m3u8 / csv / json downloads and the clipboard list + report.
 
 import { state } from './state.js';
-import { downloadFile, copyText, toast } from './utils.js';
+import { downloadFile, copyText, escapeHtml, toast } from './utils.js';
 import { categoryLabel } from './categories.js';
 import { getActionableTracks } from './table.js';
 import { applyMask } from './rename.js';
@@ -88,6 +88,24 @@ export function exportJSON() {
   downloadFile(`${exportBaseName()}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
   log(`export: json with ${list.length} tracks`);
   toast('json exported');
+}
+
+export function exportVDJ() {
+  const list = exportableTracks();
+  if (!list.length) return;
+
+  const lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<VirtualDJ_Database>'];
+  list.forEach((track) => {
+    // electron/webkit exposes the absolute path on the File object; a plain
+    // browser only knows the folder-relative one.
+    const path = (track.file && track.file.path) || track.relativePath || track.name;
+    lines.push(`<Song FilePath="${escapeHtml(path)}" />`);
+  });
+  lines.push('</VirtualDJ_Database>');
+
+  downloadFile(`${exportBaseName()}-vdj.xml`, lines.join('\n') + '\n', 'application/xml');
+  log(`export: virtualdj xml with ${list.length} tracks`);
+  toast('virtualdj xml exported');
 }
 
 export function copyToList() {

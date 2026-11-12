@@ -7,7 +7,7 @@ import { categoryLabel } from './categories.js';
 import { renderTable, updateStats } from './table.js';
 import { applyMaskInput, renderRenamePreview } from './rename.js';
 import { renderAll } from './render.js';
-import { exportM3U, exportCSV, exportJSON, copyToList, copyReport } from './export.js';
+import { exportM3U, exportVDJ, exportCSV, exportJSON, copyToList, copyReport } from './export.js';
 import { readTagsOnly, onFolderSelected } from './scan.js';
 import { importVdjDatabase } from './vdj.js';
 import { analyzeSelected } from './analysis.js';
@@ -156,6 +156,8 @@ export function bindEvents() {
 
   const btnExportM3U = document.getElementById('btnExportM3U');
   if (btnExportM3U) btnExportM3U.addEventListener('click', exportM3U);
+  const btnExportVdj = document.getElementById('btnExportVDJ');
+  if (btnExportVdj) btnExportVdj.addEventListener('click', exportVDJ);
   const btnExportCsv = document.getElementById('btnExportCSV');
   if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
   const btnExportJson = document.getElementById('btnExportJSON');
