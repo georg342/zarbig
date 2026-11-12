@@ -60,6 +60,30 @@
           </select>
         </div>
 
+        <div id="categoryMultiSelect" class="multi-select">
+          <button type="button" id="multiSelectTrigger" class="multi-select-trigger" aria-expanded="false" aria-controls="multiSelectPanel">
+            <span id="multiSelectLabel">target categories (0 selected)</span>
+            <i class="ph ph-caret-down"></i>
+          </button>
+          <div id="multiSelectPanel" class="multi-select-panel" hidden>
+            <div class="multi-select-actions">
+              <button type="button" id="btnSelectAllCats" class="btn-sec">select all</button>
+              <button type="button" id="btnClearAllCats" class="btn-sec">clear</button>
+            </div>
+            <div id="multiSelectList" class="multi-select-list"></div>
+          </div>
+        </div>
+
+        <button id="btnAnalyzeSelected" class="btn-primary"><i class="ph ph-sparkle"></i> analyze selected tracks</button>
+
+        <div class="row">
+          <button id="btnCheckVisible" class="btn-sec"><i class="ph ph-check-square"></i> check visible</button>
+          <button id="btnUncheckAll" class="btn-sec"><i class="ph ph-square"></i> uncheck all</button>
+        </div>
+        <div class="row">
+          <button id="btnInvertSelection" class="btn-sec"><i class="ph ph-arrows-left-right"></i> invert selection</button>
+        </div>
+
         <p class="help-text">rules read genre, bpm, key and title. category cells can be overridden by hand. edit the rules in admin mode.</p>
       </div>
 
@@ -95,8 +119,9 @@
 
       <!-- tracks -->
       <div class="card">
-        <div class="list-header">
+        <div class="list-header tracks-header">
           <h3 class="section-title" style="margin: 0;">4. tracks</h3>
+          <span class="sorter-stat" id="selectionStats">0 / 0 selected</span>
           <span class="admin-badge" id="adminBadge" style="display: none;"><i class="ph ph-lock-open"></i> admin</span>
         </div>
 
@@ -106,6 +131,7 @@
           <table class="sorter-table">
             <thead>
               <tr>
+                <th class="cell-check" aria-label="select"></th>
                 <th data-sort="index" class="sortable">#</th>
                 <th data-sort="artist" class="sortable">artist</th>
                 <th data-sort="title" class="sortable">title</th>
@@ -138,6 +164,21 @@
           <h3 class="section-title" style="margin: 0;">admin config</h3>
           <span class="admin-badge"><i class="ph ph-lock-open"></i> admin</span>
         </div>
+
+        <div class="admin-subtitle">ai mode (deepseek)</div>
+
+        <label class="switch-row" for="chkAiMode">
+          <input type="checkbox" id="chkAiMode">
+          <span>categorize with deepseek instead of the local rules</span>
+        </label>
+
+        <div class="input-group">
+          <label for="deepseekKeyInput">deepseek api key (memory only)</label>
+          <input type="password" id="deepseekKeyInput" class="text-input" autocomplete="off"
+            autocapitalize="off" spellcheck="false" placeholder="sk-...">
+        </div>
+
+        <p class="help-text">the key lives in memory only: never saved to this browser, wiped on reload, on page restore and when admin mode closes. only the selected tracks and the checked categories are sent.</p>
 
         <div class="admin-subtitle">rename mask</div>
 

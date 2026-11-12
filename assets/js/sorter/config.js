@@ -24,6 +24,7 @@ export function loadConfig() {
       .map((cat) => ({
         id: slugify(cat.id),
         label: String(cat.label || cat.id).trim() || slugify(cat.id),
+        description: String(cat.description || '').trim(),
         minBpm: cat.minBpm === null || cat.minBpm === '' ? null : Number(cat.minBpm),
         maxBpm: cat.maxBpm === null || cat.maxBpm === '' ? null : Number(cat.maxBpm),
         keywords: Array.isArray(cat.keywords)
@@ -66,6 +67,7 @@ export function normalizeCategoryList(list) {
     clean.push({
       id,
       label: String(cat.label || id).trim() || id,
+      description: String(cat.description || '').trim(),
       minBpm: toBpm(cat.minBpm),
       maxBpm: toBpm(cat.maxBpm),
       keywords: (cat.keywords || [])

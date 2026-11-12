@@ -3,9 +3,11 @@
 
 import { renderCategoryOptions, renderTable, updateStats } from './table.js';
 import { renderMaskHint, renderRenamePreview } from './rename.js';
+import { renderCategoryMultiSelect } from './multiSelect.js';
 
 export function renderAll() {
   renderCategoryOptions();
+  renderCategoryMultiSelect();
   renderTable();
   updateStats();
   renderMaskHint();

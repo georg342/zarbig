@@ -11,6 +11,12 @@
 
 .sorter-search { margin-bottom: 12px; }
 
+/* three items live in this header (title + selected badge + admin badge) */
+.tracks-header {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* table: the wrap caps the height so the vertical scroll stays inside the block
    (instead of scrolling the whole page), and the sticky head stays on top. */
 .sorter-table-wrap {
@@ -38,13 +44,14 @@
 }
 
 /* column widths in percent (they add up to 100%, so the table never overflows the wrap) */
-.sorter-table th:nth-child(1) { width: 8%; }   /* # */
-.sorter-table th:nth-child(2) { width: 18%; }  /* artist */
-.sorter-table th:nth-child(3) { width: 25%; }  /* title */
-.sorter-table th:nth-child(4) { width: 8%; }   /* bpm */
-.sorter-table th:nth-child(5) { width: 8%; }   /* key */
-.sorter-table th:nth-child(6) { width: 13%; }  /* genre */
-.sorter-table th:nth-child(7) { width: 20%; }  /* category */
+.sorter-table th:nth-child(1) { width: 4%; }   /* select */
+.sorter-table th:nth-child(2) { width: 5%; }   /* # */
+.sorter-table th:nth-child(3) { width: 17%; }  /* artist */
+.sorter-table th:nth-child(4) { width: 22%; }  /* title */
+.sorter-table th:nth-child(5) { width: 8%; }   /* bpm */
+.sorter-table th:nth-child(6) { width: 7%; }   /* key */
+.sorter-table th:nth-child(7) { width: 12%; }  /* genre */
+.sorter-table th:nth-child(8) { width: 25%; }  /* category */
 
 .sorter-table thead th {
   background: #101010;
@@ -197,18 +204,154 @@
 }
 .cat-remove:hover { background: rgba(255, 51, 51, 0.1); }
 
+/* selection: per-row checkbox column + the batch buttons above the table */
+.sorter-table th.cell-check,
+.sorter-table td.cell-check {
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.sorter-table input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  border-radius: 0px;
+}
+
+.sorter-table tbody tr.is-selected { background: rgba(0, 255, 102, 0.06); }
+.sorter-table tbody tr.is-selected td.cell-title { color: var(--primary); }
+
+/* extra ai categories that did not become the main one */
+.cat-extra {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* [ai] badge: category pinned by the deepseek pass */
+.ai-badge {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(0, 255, 102, 0.08);
+}
+
+/* target categories multi-select (custom dropdown, neo-brutalism) */
+.multi-select {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.multi-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 9px 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  text-align: left;
+  color: var(--primary);
+  background: #000;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 0px;
+  cursor: pointer;
+}
+.multi-select-trigger:hover,
+.multi-select-trigger[aria-expanded="true"] { border-color: var(--primary); }
+.multi-select-trigger i { font-size: 0.9rem; flex-shrink: 0; }
+
+.multi-select-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #0a0a0a;
+  border: var(--border-width) solid var(--primary);
+}
+.multi-select-panel[hidden] { display: none; }
+
+.multi-select-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: var(--border-width) solid var(--border-color);
+}
+.multi-select-actions .btn-sec { width: auto; flex: 1; padding: 5px 8px; font-size: 0.7rem; margin: 0; }
+
+.multi-select-list {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.multi-select-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: var(--border-width) solid var(--border-color);
+  cursor: pointer;
+}
+.multi-select-item:last-child { border-bottom: none; }
+.multi-select-item:hover { background: rgba(255, 255, 255, 0.03); }
+
+.multi-select-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  border-radius: 0px;
+}
+
+.multi-select-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.multi-select-name { font-size: 0.78rem; color: var(--accent); }
+.multi-select-desc { font-size: 0.68rem; line-height: 1.4; color: var(--text-muted); }
+.multi-select-empty { margin: 0; padding: 10px; font-size: 0.72rem; color: var(--text-muted); }
+
+/* admin: ai mode switch */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.switch-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  border-radius: 0px;
+}
+
 @media (max-width: 700px) {
   .sorter-table th,
   .sorter-table td { padding: 6px 6px; font-size: 0.72rem; }
 
   /* narrow screens: shrink the short columns first so the text columns keep reading room */
-  .sorter-table th:nth-child(1) { width: 10%; }   /* # */
-  .sorter-table th:nth-child(2) { width: 18%; }   /* artist */
-  .sorter-table th:nth-child(3) { width: 23%; }   /* title */
-  .sorter-table th:nth-child(4) { width: 10%; }   /* bpm */
-  .sorter-table th:nth-child(5) { width: 8%; }    /* key */
-  .sorter-table th:nth-child(6) { width: 11%; }   /* genre */
-  .sorter-table th:nth-child(7) { width: 20%; }   /* category */
+  .sorter-table th:nth-child(1) { width: 5%; }   /* select */
+  .sorter-table th:nth-child(2) { width: 6%; }   /* # */
+  .sorter-table th:nth-child(3) { width: 17%; }  /* artist */
+  .sorter-table th:nth-child(4) { width: 20%; }  /* title */
+  .sorter-table th:nth-child(5) { width: 9%; }   /* bpm */
+  .sorter-table th:nth-child(6) { width: 8%; }   /* key */
+  .sorter-table th:nth-child(7) { width: 11%; }  /* genre */
+  .sorter-table th:nth-child(8) { width: 24%; }  /* category */
 
   .cat-grid { grid-template-columns: 1fr; }
 }

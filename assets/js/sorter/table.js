@@ -90,7 +90,7 @@ export function renderTable() {
     const message = state.tracks.length
       ? 'nothing matches this filter.'
       : 'no tracks yet — pick a folder to start.';
-    body.innerHTML = `<tr><td colspan="7" class="cell-muted">${message}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="cell-muted">${message}</td></tr>`;
     updateSortHeaders();
     return;
   }
@@ -98,16 +98,22 @@ export function renderTable() {
   const rows = list.map((track, position) => {
     const override = state.overrides[track.id];
     const rawBadge = track.tagSource === 'filename' ? '<span class="tag-badge">raw</span>' : '';
+    const aiBadge = track.categorySource === 'ai' ? '<span class="tag-badge ai-badge">ai</span>' : '';
     const selectClass = override ? 'cat-select overridden' : 'cat-select';
+    const extra = (track.categories || []).filter((id) => id !== track.category);
+    const extraHtml = extra.length
+      ? `<div class="cat-extra">${extra.map((id) => escapeHtml(categoryLabel(id))).join(' · ')}</div>`
+      : '';
 
-    return `<tr data-id="${escapeHtml(track.id)}">
+    return `<tr data-id="${escapeHtml(track.id)}" class="${track.selected ? 'is-selected' : ''}">
+      <td class="cell-check"><input type="checkbox" data-select="${escapeHtml(track.id)}"${track.selected ? ' checked' : ''} aria-label="select track"></td>
       <td class="cell-index">${position + 1}</td>
       <td>${escapeHtml(track.meta.artist)}</td>
-      <td class="cell-title">${escapeHtml(track.meta.title)}${rawBadge}</td>
+      <td class="cell-title">${escapeHtml(track.meta.title)}${rawBadge}${aiBadge}</td>
       <td class="${track.meta.bpm ? '' : 'cell-muted'}">${escapeHtml(track.meta.bpm || '—')}</td>
       <td class="${track.meta.key ? '' : 'cell-muted'}">${escapeHtml(track.meta.key || '—')}</td>
       <td class="${track.meta.genre ? '' : 'cell-muted'}">${escapeHtml(track.meta.genre || '—')}</td>
-      <td><select class="${selectClass}" data-track="${escapeHtml(track.id)}">${categoryOptionsHtml(track)}</select></td>
+      <td><select class="${selectClass}" data-track="${escapeHtml(track.id)}">${categoryOptionsHtml(track)}</select>${extraHtml}</td>
     </tr>`;
   });
 
@@ -127,13 +133,16 @@ export function updateSortHeaders() {
 export function updateStats() {
   const total = state.tracks.length;
   const sorted = state.tracks.filter((track) => track.category !== 'unsorted').length;
+  const selected = state.tracks.filter((track) => track.selected).length;
   const visible = getVisibleTracks().length;
 
   const folderStats = document.getElementById('folderStats');
   const catStats = document.getElementById('catStats');
   const exportStats = document.getElementById('exportStats');
+  const selectionStats = document.getElementById('selectionStats');
 
   if (folderStats) folderStats.textContent = `${total} tracks`;
   if (catStats) catStats.textContent = `${sorted} / ${total} sorted`;
   if (exportStats) exportStats.textContent = `${visible} rows`;
+  if (selectionStats) selectionStats.textContent = `${selected} / ${total} selected`;
 }

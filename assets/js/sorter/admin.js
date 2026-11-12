@@ -5,10 +5,12 @@ import { state } from './state.js';
 import { ADMIN_HASH, DEFAULT_CATEGORIES, DEFAULT_MASK, MASK_TOKENS, cloneCategories } from './constants.js';
 import { toast } from './utils.js';
 import { normalizeCategoryList, saveConfig } from './config.js';
-import { recategorizeAll } from './categories.js';
+import { pruneCategoryRefs } from './categories.js';
 import { renderAll } from './render.js';
 import { applyMaskInput, renderMaskHint, renderRenamePreview } from './rename.js';
 import { renderCategoryEditor } from './adminCategories.js';
+import { resetAiMode } from './ai.js';
+import { renderCategoryMultiSelect } from './multiSelect.js';
 
 export function setAdminUI(enabled) {
   state.isAdmin = enabled;
@@ -31,6 +33,9 @@ export function setAdminUI(enabled) {
   if (enabled) {
     renderMaskEditor();
     renderCategoryEditor();
+  } else {
+    // leaving admin mode always drops the ephemeral deepseek key + toggle.
+    resetAiMode();
   }
 }
 
@@ -111,14 +116,11 @@ export function commitConfig() {
   state.mask = mask;
   state.categories = clean.length ? clean : cloneCategories(DEFAULT_CATEGORIES);
 
-  Object.keys(state.overrides).forEach((trackId) => {
-    const stillExists = state.categories.some((cat) => cat.id === state.overrides[trackId]);
-    if (!stillExists) delete state.overrides[trackId];
-  });
-
-  recategorizeAll();
+  // overrides + ai pins pointing to removed categories are dropped too.
+  pruneCategoryRefs();
   renderMaskEditor();
   renderCategoryEditor();
+  renderCategoryMultiSelect();
   renderAll();
 
   const saved = saveConfig();

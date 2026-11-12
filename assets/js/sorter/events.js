@@ -8,7 +8,10 @@ import { renderTable, updateStats } from './table.js';
 import { applyMaskInput, renderRenamePreview } from './rename.js';
 import { renderAll } from './render.js';
 import { exportM3U, exportCSV, exportJSON, copyToList, copyReport } from './export.js';
-import { analyzeTracks, onFolderSelected } from './scan.js';
+import { readTagsOnly, onFolderSelected } from './scan.js';
+import { analyzeSelected } from './analysis.js';
+import { bindSelectionEvents } from './selection.js';
+import { bindMultiSelect } from './multiSelect.js';
 import { commitConfig, resetMask } from './admin.js';
 import { addCategory, resetCategories } from './adminCategories.js';
 
@@ -26,6 +29,10 @@ export function onCategoryChange(event) {
   }
 
   track.category = select.value;
+  track.categories = select.value === 'unsorted' ? [] : [select.value];
+  track.categorySource = state.overrides[track.id]
+    ? 'manual'
+    : (track.autoCategory === 'unsorted' ? 'none' : 'rule');
   renderTable();
   updateStats();
   renderRenamePreview();
@@ -65,7 +72,13 @@ export function bindEvents() {
   if (folderInput) folderInput.addEventListener('change', onFolderSelected);
 
   const scanBtn = document.getElementById('btnScan');
-  if (scanBtn) scanBtn.addEventListener('click', analyzeTracks);
+  if (scanBtn) scanBtn.addEventListener('click', readTagsOnly);
+
+  const analyzeBtn = document.getElementById('btnAnalyzeSelected');
+  if (analyzeBtn) analyzeBtn.addEventListener('click', analyzeSelected);
+
+  bindSelectionEvents();
+  bindMultiSelect();
 
   const resetBtn = document.getElementById('btnReset');
   if (resetBtn) resetBtn.addEventListener('click', resetWorkspace);

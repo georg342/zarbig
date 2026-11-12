@@ -14,5 +14,7 @@ export const state = {
   overrides: {},
   mask: DEFAULT_MASK,
   categories: cloneCategories(DEFAULT_CATEGORIES),
+  // ids checked in the category multi-select dropdown (the analysis pool)
+  targetCategories: [],
   isAdmin: false
 };

@@ -4,8 +4,9 @@
 import { state } from './state.js';
 import { DEFAULT_CATEGORIES, cloneCategories } from './constants.js';
 import { escapeHtml, toast } from './utils.js';
-import { recategorizeAll } from './categories.js';
+import { pruneCategoryRefs } from './categories.js';
 import { renderAll } from './render.js';
+import { renderCategoryMultiSelect } from './multiSelect.js';
 
 export function categoryRowHtml(cat, index) {
   return `<div class="cat-row" data-index="${index}">
@@ -29,6 +30,10 @@ export function categoryRowHtml(cat, index) {
       <div>
         <label>max bpm</label>
         <input type="text" inputmode="numeric" data-field="maxBpm" data-cat="${index}" value="${cat.maxBpm === null ? '' : cat.maxBpm}">
+      </div>
+      <div class="cat-full">
+        <label>description (multi-select + ai)</label>
+        <input type="text" data-field="description" data-cat="${index}" value="${escapeHtml(cat.description || '')}" placeholder="optional — falls back to bpm + keywords">
       </div>
       <div class="cat-full">
         <label>keywords (comma separated)</label>
@@ -94,7 +99,10 @@ export async function removeCategory(index) {
   if (!ok) return;
 
   state.categories.splice(index, 1);
+  pruneCategoryRefs();
   renderCategoryEditor();
+  renderCategoryMultiSelect();
+  renderAll();
   toast('category removed');
 }
 
@@ -109,12 +117,14 @@ export function addCategory() {
   state.categories.push({
     id,
     label: 'new category',
+    description: '',
     minBpm: null,
     maxBpm: null,
     keywords: []
   });
 
   renderCategoryEditor();
+  renderCategoryMultiSelect();
   toast('category added');
 }
 
@@ -127,8 +137,9 @@ export async function resetCategories() {
 
   state.categories = cloneCategories(DEFAULT_CATEGORIES);
   state.overrides = {};
-  recategorizeAll();
+  pruneCategoryRefs();
   renderCategoryEditor();
+  renderCategoryMultiSelect();
   renderAll();
   toast('default categories restored');
 }
