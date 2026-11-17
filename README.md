@@ -1,9 +1,11 @@
 # zarbig
 
-hub pessoal de dj/tools. duas ferramentas em html/css/js puro, sem build.
+hub pessoal de dj/tools. quatro ferramentas em html/css/js puro, sem build.
 
 - `pages/extractor.html` — extrai links do youtube a partir de playlists do spotify.
 - `pages/sets.html` — gerencia, reproduz e distribui dj sets (supabase storage).
+- `pages/sorter.html` — analisa, categoriza, renomeia e exporta uma pasta de música local.
+- `pages/files.html` — upload, download e exclusão de qualquer arquivo (admin only).
 
 ## como rodar
 
@@ -23,21 +25,26 @@ depois abra <http://localhost:8000>.
 
 ```
 .
-├── index.html              # hub com os dois cards
+├── index.html              # hub com os quatro cards
 ├── manifest.json           # manifest pwa
 ├── pages/
 │   ├── extractor.html
-│   └── sets.html
+│   ├── sets.html
+│   ├── sorter.html
+│   └── files.html
 └── assets/
     ├── css/
     │   ├── main.css        # entry point: só @imports (não coloque regras aqui)
     │   ├── base.css        # tokens, reset, body, inputs e textarea
     │   ├── components.css  # header, card, help, botões, toast, modal, audio player
-    │   └── pages.css       # regras específicas: hub, extractor, dj sets
+    │   ├── pages.css       # regras específicas: hub, extractor, dj sets, file share
+    │   └── sorter.css      # regras específicas do track sorter
     └── js/
         ├── main.js         # utils globais (window.mostrarToast, window.fetchWithTimeout, window.showCustomModal)
         ├── extractor.js
-        └── sets.js         # es module (importa o supabase via cdn)
+        ├── sets.js         # es module (importa o supabase via cdn)
+        ├── files.js        # es module: file share (admin only, pasta files/ do bucket)
+        └── sorter/         # módulos do track sorter
 ```
 
 - ordem de carga do css: `base` → `components` → `pages`, definida no `assets/css/main.css`.
@@ -91,6 +98,13 @@ depois abra <http://localhost:8000>.
 - lista os sets, reproduz no player fixo e copia o link público;
 - excluir um set ou limpar o bucket exige **admin mode** (senha digitada → md5 comparado com `ADMIN_HASH`).
 
+### file share (`pages/files.html`)
+
+- ferramenta inteira **admin only**: sem senha, a página mostra apenas o aviso `admin mode required`;
+- upload de qualquer tipo de arquivo (limite de 50 mb do plano free) para a pasta `files/` do bucket `dj-sets`;
+- lista com download, cópia do link público, exclusão individual e `delete all`, tudo dentro do admin mode;
+- o bucket precisa aceitar os tipos enviados: `allowed mime types` vazio nas configurações do bucket.
+
 ## configuração
 
 | o quê | onde |
@@ -99,6 +113,7 @@ depois abra <http://localhost:8000>.
 | parâmetros de busca | `localStorage.zb_admin_cfg` (salvos pelo card `admin tools`: `maxResults`, `delayMs`, `suffixes[]`, `useApi`, `autoPick`) |
 | supabase url / anon key | `assets/js/sets.js:6-7` |
 | bucket | `assets/js/sets.js:8` (`dj-sets`) |
+| pasta do file share | `assets/js/files.js` (`PREFIX` = `files`) |
 | hash da senha admin | `assets/js/sets.js:9` e `assets/js/extractor.js:2` (`ADMIN_HASH`, md5) |
 | gradiente global de fundo | `localStorage.zb_bg_gradient` (`{ c1, c2, c3 }`); default em `assets/css/base.css` (`--bg-grad-1..3`), editável pelo widget flutuante que aparece no **admin mode** de qualquer página |
 
