@@ -199,7 +199,8 @@ async function loadSets() {
     return;
   }
 
-  currentFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder');
+  // folders (id === null) are skipped: 'files/' belongs to the file share page
+  currentFiles = files.filter(f => f.name !== '.emptyFolderPlaceholder' && f.id !== null);
 
   if (currentFiles.length === 0) {
     btnDeleteAll.style.display = 'none';

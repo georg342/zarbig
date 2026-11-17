@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0c0c0c">
+  <meta name="description" content="upload, download and share any file from cloud storage.">
+  <title>zarbig - file share</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">skip to content</a>
+
+  <header class="app-header sets-header">
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left" aria-hidden="true"></i> back to hub</a>
+    <h1><i class="ph ph-files" aria-hidden="true"></i> file share</h1>
+    <p>any file, cloud storage</p>
+  </header>
+
+  <main id="main">
+    <!-- Locked state: the whole tool is admin-only -->
+    <section id="lockScreen" class="card admin-lock" aria-labelledby="lockTitle">
+      <i class="ph ph-lock-key admin-lock-icon" aria-hidden="true"></i>
+      <h2 id="lockTitle" class="section-title">admin mode required</h2>
+      <p>this tool is admin-only. enter admin mode to upload, download and delete files.</p>
+      <button id="btnAdminUnlock" class="btn-primary" type="button" onclick="toggleAdminMode()" aria-expanded="false" aria-controls="toolContent"><i class="ph ph-lock" aria-hidden="true"></i> admin mode</button>
+    </section>
+
+    <!-- Tool: injected/shown only with admin authenticated -->
+    <div id="toolContent" class="layout" style="display: none;">
+      <div class="col-results">
+        <div class="card">
+          <div class="list-header">
+            <h3 class="section-title">available files</h3>
+            <button id="btnDeleteAll" class="btn-danger-outline" style="display: none;"><i class="ph ph-trash" aria-hidden="true"></i> delete all</button>
+          </div>
+
+          <ul id="fileList" class="sets-list">
+            <!-- Injected via JS -->
+          </ul>
+        </div>
+      </div>
+      <div class="col-controls">
+
+        <!-- Admin mode toggle -->
+        <div style="margin-bottom: 12px; text-align: center;">
+          <button id="btnAdminToggle" class="btn-sec" type="button" onclick="toggleAdminMode()" aria-expanded="true" aria-controls="uploadCard"><i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode</button>
+        </div>
+
+        <div id="uploadCard" class="card">
+          <div class="list-header">
+            <h3 class="section-title">new file upload</h3>
+          </div>
+
+          <!-- Custom file name (optional) -->
+          <div class="input-group">
+            <label for="fileNameInput">file name (optional)</label>
+            <input type="text" id="fileNameInput" class="text-input" aria-describedby="fileNameHelp" placeholder="ex: project assets v2">
+          </div>
+          <p class="help-text file-share-help" id="fileNameHelp">leave it empty to reuse the file name. a timestamp is always prepended to keep names unique.</p>
+
+          <!-- Dropzone: any file type -->
+          <label for="fileInput" class="file-dropzone" id="dropzoneLabel">
+            <i class="ph ph-folder-open drop-icon" aria-hidden="true"></i>
+            <span id="fileNameDisplay" class="drop-title">click to select any file</span>
+            <span class="drop-hint">any file type, up to 50 mb</span>
+            <input type="file" id="fileInput" class="sr-only">
+          </label>
+
+          <button id="btnUpload" class="btn-primary"><i class="ph ph-rocket" aria-hidden="true"></i> upload file</button>
+          <div id="status" class="status-msg" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../assets/js/main.js"></script>
+  <script type="module" src="../assets/js/files.js"></script>
+</body>
+</html>
