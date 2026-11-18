@@ -75,6 +75,16 @@
           </div>
         </div>
 
+        <div class="input-group">
+          <label for="categorizeMode">categorize mode</label>
+          <select id="categorizeMode" class="text-input">
+            <option value="genre">genre (jina lookup)</option>
+            <option value="presets">presets (local rules)</option>
+            <option value="hybrid">hybrid (genre + ai fallback)</option>
+            <option value="ai">ai taxonomy (deepseek)</option>
+          </select>
+        </div>
+
         <button id="btnAnalyzeSelected" class="btn-primary"><i class="ph ph-sparkle" aria-hidden="true"></i> analyze selected tracks</button>
 
         <div class="row">
@@ -85,7 +95,7 @@
           <button id="btnInvertSelection" class="btn-sec"><i class="ph ph-arrows-left-right" aria-hidden="true"></i> invert selection</button>
         </div>
 
-        <p class="help-text">rules read genre, bpm, key and title. category cells can be overridden by hand. edit the rules in admin mode.</p>
+        <p class="help-text">genre mode uses beatport + bandcamp through r.jina.ai. presets read local genre, bpm and key. hybrid sends only unresolved tracks to deepseek. category cells can be overridden by hand.</p>
       </div>
 
       <!-- 3. export -->
@@ -188,18 +198,19 @@
 
         <div class="admin-subtitle">ai mode (deepseek)</div>
 
-        <label class="switch-row" for="chkAiMode">
-          <input type="checkbox" id="chkAiMode">
-          <span>categorize with deepseek instead of the local rules</span>
-        </label>
-
         <div class="input-group">
           <label for="deepseekKeyInput">deepseek api key (memory only)</label>
           <input type="password" id="deepseekKeyInput" class="text-input" autocomplete="off"
             autocapitalize="off" spellcheck="false" placeholder="sk-...">
         </div>
 
-        <p class="help-text">the key lives in memory only: never saved to this browser, wiped on reload, on page restore and when admin mode closes. only the selected tracks and the checked categories are sent.</p>
+        <p class="help-text">the key lives in memory only: never saved to this browser, wiped on reload, on page restore and when admin mode closes. only hybrid and ai taxonomy send tracks to deepseek.</p>
+
+        <div class="admin-subtitle">metadata lookup (jina)</div>
+
+        <button id="btnLookupMetadata" class="btn-sec"><i class="ph ph-globe" aria-hidden="true"></i> fetch metadata (jina)</button>
+
+        <p class="help-text">beatport + bandcamp via r.jina.ai — no api token. ~20 requests/min; artist queries are cached. only selected tracks are looked up.</p>
 
         <div class="admin-subtitle">rename mask</div>
 

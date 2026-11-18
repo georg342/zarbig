@@ -11,6 +11,39 @@ export const LEGACY_DEEPSEEK_KEY_STORAGE = 'zb_deepseek_key';
 export const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/chat/completions';
 export const DEEPSEEK_MODEL = 'deepseek-chat';
 export const DEEPSEEK_BATCH_SIZE = 20;
+export const DEEPSEEK_MAX_TAXONOMY_TRACKS = 120;
+export const DEEPSEEK_TIMEOUT_MS = 120000;
+
+// public metadata lookup through r.jina.ai (no api token). the free tier is
+// rate limited to roughly 20 requests per minute, so the queue waits 3.1s
+// between calls. the timeout is generous because the proxy fetches the page.
+export const JINA_BASE = 'https://r.jina.ai/';
+export const LOOKUP_DELAY_MS = 3100;
+export const LOOKUP_TIMEOUT_MS = 60000;
+export const LOOKUP_RETRIES = 1;
+export const MAX_CATEGORIES_PER_TRACK = 3;
+
+// local categorization default: jina lookup + genre categories, no deepseek.
+export const DEFAULT_CATEGORIZE_MODE = 'genre';
+export const CATEGORIZE_MODES = ['genre', 'presets', 'hybrid', 'ai'];
+
+// words that make a bandcamp tag/id3 genre worth turning into a category.
+// bandcamp tags are uploader tags, so a plain location tag ("berlin") must not
+// become a genre category.
+export const GENRE_HINTS = [
+  'house', 'techno', 'trance', 'bass', 'breaks', 'breakbeat', 'ambient',
+  'downtempo', 'electro', 'disco', 'garage', 'dubstep', 'drum', 'jungle',
+  'hardcore', 'industrial', 'acid', 'minimal', 'progressive', 'melodic',
+  'psy', 'rave', 'club', 'afro', 'amapiano', 'latin', 'pop', 'hip hop',
+  'r&b', 'funk', 'soul', 'jazz', 'experimental', 'hardgroove', 'schranz',
+  'groove', 'mainstage', 'indie', 'organic', 'deep tech', 'dub'
+];
+
+// generic tags that would put every track in the same bucket.
+export const NON_GENRE_TAGS = [
+  'electronic', 'electronica', 'music', 'edm', 'dj', 'dance', 'album',
+  'single', 'ep', 'track', 'remix', 'original mix', 'extended mix'
+];
 
 export const DEFAULT_MASK = '{artist} - {title}';
 export const MASK_PRESETS = {

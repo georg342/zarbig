@@ -1,7 +1,7 @@
 // dom events + workspace reset. bindEvents() runs once on init.
 
 import { state } from './state.js';
-import { MASK_PRESETS } from './constants.js';
+import { MASK_PRESETS, MAX_CATEGORIES_PER_TRACK } from './constants.js';
 import { setStatus, toast, setProgress, hideProgress } from './utils.js';
 import { categoryLabel } from './categories.js';
 import { renderTable, updateStats } from './table.js';
@@ -10,10 +10,11 @@ import { renderAll } from './render.js';
 import { exportM3U, exportVDJ, exportCSV, exportJSON, copyToList, copyReport } from './export.js';
 import { readTagsOnly, onFolderSelected } from './scan.js';
 import { importVdjDatabase } from './vdj.js';
-import { analyzeSelected } from './analysis.js';
+import { analyzeSelected, lookupSelectedMetadata } from './analysis.js';
 import { bindSelectionEvents } from './selection.js';
 import { bindMultiSelect } from './multiSelect.js';
 import { commitConfig, resetMask } from './admin.js';
+import { setCategorizeMode } from './ai.js';
 import { addCategory, resetCategories } from './adminCategories.js';
 import { log, logDebug } from './debug.js';
 
@@ -35,8 +36,17 @@ export function onCategoryChange(event) {
     logDebug(`override: "${track.meta.artist} - ${track.meta.title}" → ${select.value} (auto was ${track.autoCategory})`);
   }
 
+  const previousCategories = (track.categories || []).slice();
   track.category = select.value;
-  track.categories = select.value === 'unsorted' ? [] : [select.value];
+  if (select.value === 'unsorted') {
+    track.categories = [];
+  } else {
+    const keepExtras = previousCategories.length > 1
+      ? previousCategories.filter((id) => id !== select.value)
+      : [];
+    track.categories = [select.value, ...keepExtras]
+      .slice(0, MAX_CATEGORIES_PER_TRACK);
+  }
   track.categorySource = state.overrides[track.id]
     ? 'manual'
     : (track.autoCategory === 'unsorted' ? 'none' : 'rule');
@@ -99,6 +109,17 @@ export function bindEvents() {
 
   const analyzeBtn = document.getElementById('btnAnalyzeSelected');
   if (analyzeBtn) analyzeBtn.addEventListener('click', analyzeSelected);
+
+  const categorizeMode = document.getElementById('categorizeMode');
+  if (categorizeMode) {
+    setCategorizeMode(categorizeMode.value);
+    categorizeMode.addEventListener('change', () => {
+      logDebug(`analyze: mode → ${setCategorizeMode(categorizeMode.value)}`);
+    });
+  }
+
+  const lookupBtn = document.getElementById('btnLookupMetadata');
+  if (lookupBtn) lookupBtn.addEventListener('click', lookupSelectedMetadata);
 
   bindSelectionEvents();
   bindMultiSelect();

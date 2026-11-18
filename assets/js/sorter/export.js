@@ -46,7 +46,7 @@ export function exportCSV() {
   const list = exportableTracks();
   if (!list.length) return;
 
-  const header = ['artist', 'title', 'bpm', 'key', 'genre', 'category', 'file'];
+  const header = ['artist', 'title', 'bpm', 'key', 'genre', 'category', 'categories', 'file'];
   const rows = list.map((track) => [
     track.meta.artist,
     track.meta.title,
@@ -54,6 +54,7 @@ export function exportCSV() {
     track.meta.key,
     track.meta.genre,
     track.category,
+    (track.categories && track.categories.length ? track.categories : [track.category]).join(' | '),
     track.relativePath || track.name
   ].map(csvCell).join(','));
 
@@ -79,6 +80,8 @@ export function exportJSON() {
     categories: track.categories && track.categories.length ? track.categories : [track.category],
     autoCategory: track.autoCategory,
     categorySource: track.categorySource,
+    lookup: track.lookup || null,
+    lookupStatus: track.lookupStatus || 'none',
     overridden: Boolean(state.overrides[track.id]),
     tagSource: track.tagSource,
     file: track.relativePath || track.name,
@@ -100,12 +103,17 @@ export function exportVDJ() {
   const nameInput = document.getElementById('vdjPlaylistName');
   const customName = sanitizeFileName(nameInput ? nameInput.value.trim() : '');
 
-  // group tracks by category
+  // group tracks by every category, so a multi-category track lands in all of
+  // its playlists instead of only the primary one.
   const groups = new Map();
   list.forEach((track) => {
-    const cat = track.category || 'unsorted';
-    if (!groups.has(cat)) groups.set(cat, []);
-    groups.get(cat).push(track);
+    const categories = Array.isArray(track.categories) && track.categories.length
+      ? track.categories
+      : [track.category || 'unsorted'];
+    new Set(categories).forEach((cat) => {
+      if (!groups.has(cat)) groups.set(cat, []);
+      groups.get(cat).push(track);
+    });
   });
 
   let fileCount = 0;
@@ -172,16 +180,23 @@ export function copyReport() {
 
   const groups = new Map();
   list.forEach((track) => {
-    if (!groups.has(track.category)) groups.set(track.category, []);
-    groups.get(track.category).push(track);
+    const categories = Array.isArray(track.categories) && track.categories.length
+      ? track.categories
+      : [track.category || 'unsorted'];
+    const primary = categories[0] || 'unsorted';
+    if (!groups.has(primary)) groups.set(primary, []);
+    groups.get(primary).push({ track, extras: categories.slice(1) });
   });
 
   const blocks = [];
-  groups.forEach((tracks, category) => {
-    blocks.push(`## ${categoryLabel(category)} (${tracks.length})`);
-    tracks.forEach((track) => {
-      const extras = [track.meta.bpm ? `${track.meta.bpm} bpm` : '', track.meta.key].filter(Boolean).join(' / ');
-      blocks.push(`- ${track.meta.artist} - ${track.meta.title}${extras ? ` (${extras})` : ''}`);
+  groups.forEach((entries, category) => {
+    blocks.push(`## ${categoryLabel(category)} (${entries.length})`);
+    entries.forEach(({ track, extras }) => {
+      const meta = [track.meta.bpm ? `${track.meta.bpm} bpm` : '', track.meta.key].filter(Boolean).join(' / ');
+      const also = extras.length
+        ? ` (also: ${extras.map((id) => categoryLabel(id)).join(', ')})`
+        : '';
+      blocks.push(`- ${track.meta.artist} - ${track.meta.title}${meta ? ` (${meta})` : ''}${also}`);
     });
     blocks.push('');
   });

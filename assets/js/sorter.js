@@ -1,6 +1,6 @@
 // track sorter: scans a local music folder, reads tags, assigns dj categories,
-// previews a rename mask and exports the result. the only network call is the
-// opt-in deepseek pass (admin ai mode) with an in-memory api key.
+// previews a rename mask and exports the result. network calls are opt-in:
+// jina metadata lookup and the deepseek pass (admin ai modes).
 // this file is only the entry point — the split parts live in ./sorter/.
 
 import { state } from './sorter/state.js';
@@ -15,7 +15,7 @@ import { initDebug, log, logWarn } from './sorter/debug.js';
 
 // critical nodes the page cannot work without: missing ones are logged so a
 // broken html edit shows up in the debug console instead of failing silently.
-const REQUIRED_NODES = ['debugLog', 'folderInput', 'trackBody', 'analyzeStatus', 'filterCategoryMulti'];
+const REQUIRED_NODES = ['debugLog', 'folderInput', 'trackBody', 'analyzeStatus', 'filterCategoryMulti', 'categorizeMode'];
 
 document.addEventListener('DOMContentLoaded', () => {
   initDebug();

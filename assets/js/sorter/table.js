@@ -88,7 +88,10 @@ export function getVisibleTracks() {
   return state.tracks
     .filter((track) => {
       if (selectedOnly && !track.selected) return false;
-      if (hasCatFilter && !selectedCats.includes(track.category)) return false;
+      const trackCategories = Array.isArray(track.categories) && track.categories.length
+        ? track.categories
+        : [track.category];
+      if (hasCatFilter && !trackCategories.some((id) => selectedCats.includes(id))) return false;
       if (!needle) return true;
       const haystack = `${track.meta.artist} ${track.meta.title} ${track.meta.genre} ${track.meta.key} ${track.name}`.toLowerCase();
       return haystack.includes(needle);
@@ -135,6 +138,7 @@ export function renderTable() {
     const override = state.overrides[track.id];
     const rawBadge = track.tagSource === 'filename' ? '<span class="tag-badge">raw</span>' : '';
     const aiBadge = track.categorySource === 'ai' ? '<span class="tag-badge ai-badge">ai</span>' : '';
+    const genreBadge = track.categorySource === 'genre' ? '<span class="tag-badge genre-badge">genre</span>' : '';
     const selectClass = override ? 'cat-select overridden' : 'cat-select';
     const extra = (track.categories || []).filter((id) => id !== track.category);
     const extraHtml = extra.length
@@ -145,7 +149,7 @@ export function renderTable() {
       <td class="cell-check"><input type="checkbox" data-select="${escapeHtml(track.id)}"${track.selected ? ' checked' : ''} aria-label="select track"></td>
       <td class="cell-index">${position + 1}</td>
       <td>${escapeHtml(track.meta.artist)}</td>
-      <td class="cell-title">${escapeHtml(track.meta.title)}${rawBadge}${aiBadge}</td>
+      <td class="cell-title">${escapeHtml(track.meta.title)}${rawBadge}${aiBadge}${genreBadge}</td>
       <td class="${track.meta.bpm ? '' : 'cell-muted'}">${escapeHtml(track.meta.bpm || '—')}</td>
       <td class="${track.meta.key ? '' : 'cell-muted'}">${escapeHtml(track.meta.key || '—')}</td>
       <td class="${track.meta.genre ? '' : 'cell-muted'}">${escapeHtml(track.meta.genre || '—')}</td>

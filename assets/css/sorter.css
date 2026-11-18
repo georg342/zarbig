@@ -244,6 +244,13 @@
   background: rgba(0, 255, 102, 0.08);
 }
 
+/* [genre] badge: category created by the beatport/bandcamp metadata pass */
+.genre-badge {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* target categories multi-select (custom dropdown, neo-brutalism) */
 .multi-select {
   position: relative;

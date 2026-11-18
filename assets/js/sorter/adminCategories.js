@@ -10,9 +10,13 @@ import { renderCategoryMultiSelect } from './multiSelect.js';
 import { log, logDebug } from './debug.js';
 
 export function categoryRowHtml(cat, index) {
+  const source = cat.source === 'ai' || cat.source === 'genre' ? cat.source : '';
+  const sourceBadge = source
+    ? `<span class="tag-badge ${source === 'ai' ? 'ai-badge' : 'genre-badge'}">${source}</span>`
+    : '';
   return `<div class="cat-row" data-index="${index}">
     <div class="cat-row-head">
-      <span class="cat-row-id">${escapeHtml(cat.id)}</span>
+      <span class="cat-row-id">${escapeHtml(cat.id)}${sourceBadge}</span>
       <button type="button" class="cat-remove" data-remove="${index}" title="remove category" aria-label="remove category"><i class="ph ph-trash" aria-hidden="true"></i></button>
     </div>
     <div class="cat-grid">

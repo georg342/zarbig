@@ -28,6 +28,8 @@ export function buildTrack(file, index) {
     selected: true,
     tagSource: 'none',
     tagsRead: false,
+    lookup: null,
+    lookupStatus: 'none',
     autoCategory: 'unsorted',
     category: 'unsorted',
     categories: [],

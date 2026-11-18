@@ -6,6 +6,13 @@ import { state } from './state.js';
 import { slugify } from './utils.js';
 import { log, logDebug, logWarn } from './debug.js';
 
+// categories created by the genre pass or by the deepseek pass keep their
+// origin so the admin editor can show the right badge after a reload.
+function cleanCategorySource(value) {
+  const source = String(value || '').trim().toLowerCase();
+  return source === 'ai' || source === 'genre' ? source : '';
+}
+
 export function loadConfig() {
   let stored = null;
   let raw = null;
@@ -33,6 +40,7 @@ export function loadConfig() {
         id: slugify(cat.id),
         label: String(cat.label || cat.id).trim() || slugify(cat.id),
         description: String(cat.description || '').trim(),
+        source: cleanCategorySource(cat.source),
         minBpm: cat.minBpm === null || cat.minBpm === '' ? null : Number(cat.minBpm),
         maxBpm: cat.maxBpm === null || cat.maxBpm === '' ? null : Number(cat.maxBpm),
         keywords: Array.isArray(cat.keywords)
@@ -82,6 +90,7 @@ export function normalizeCategoryList(list) {
       id,
       label: String(cat.label || id).trim() || id,
       description: String(cat.description || '').trim(),
+      source: cleanCategorySource(cat.source),
       minBpm: toBpm(cat.minBpm),
       maxBpm: toBpm(cat.maxBpm),
       keywords: (cat.keywords || [])

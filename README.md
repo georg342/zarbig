@@ -92,7 +92,19 @@ depois abra <http://localhost:8000>.
 
 **admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), limpeza das chaves do spotify, os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
 
-### sets (`pages/sets.html`)
+### track sorter (`pages/sorter.html`)
+
+- carrega uma pasta local, lê tags (jsmediatags), importa `database.xml` do virtualdj e categoriza só quando você clica em **analyze selected tracks**;
+- `categorize mode`:
+  - `genre (jina lookup)` — padrão; busca cada faixa selecionada no beatport e, se não achar, no bandcamp através de `r.jina.ai` (sem token de api; ~20 req/min; cache por artista/faixa). preenche genre/bpm/key/label e cria categorias pelo gênero/tag, até 3 por faixa;
+  - `presets (local rules)` — regras locais de keyword + bpm;
+  - `hybrid (genre + ai fallback)` — faz o lookup e manda para o deepseek só as faixas que ficaram sem gênero;
+  - `ai taxonomy (deepseek)` — a ia define as categorias e distribui as faixas (1–3 por faixa, mesmo artista na mesma categoria salvo divergência forte);
+- **admin mode:** a chave deepseek fica só em memória (nunca em `localStorage`/`sessionStorage`), é limpa no reload/restore e ao sair do admin; o botão `fetch metadata (jina)` roda só o lookup; categorias criadas por ia/gênero aparecem no editor com badge e podem ser salvas no config;
+- **export:** o `.m3u8` por categoria inclui a faixa em **todas** as playlists das categorias dela; o `.csv` ganha a coluna `categories`; o `.json` inclui `categories` e o objeto `lookup`; o relatório mostra a categoria primária + `also:`;
+- limites: beatport/bandcamp via `r.jina.ai` é scrape de terceiro (pode falhar/limitar), e a api do deepseek **não navega na internet** — só usa o conhecimento do modelo e os metadados do lookup.
+
+
 
 - upload de áudio para o bucket — nome final: `<timestamp>--<nome_normalizado>.<ext>`;
 - lista os sets, reproduz no player fixo e copia o link público;
