@@ -137,10 +137,27 @@
 /* the chip is a button: same hard inversion as every other button */
 .token-chip:hover { background: var(--primary); color: #000; border-color: var(--primary); }
 
+.admin-subtitle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin: var(--space-4) 0 var(--space-2) 0;
+}
+.admin-subtitle-row .admin-subtitle { margin: 0; }
+
 .category-editor {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: min(45vh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) #0a0a0a;
+  padding-right: var(--space-1);
   margin-bottom: var(--space-3);
 }
 
@@ -148,7 +165,9 @@
   border: var(--border-width) solid var(--border-color);
   background: #0a0a0a;
   padding: 10px;
+  min-width: 0;
 }
+.cat-row:focus-within { border-color: var(--accent); }
 
 .cat-row-head {
   display: flex;

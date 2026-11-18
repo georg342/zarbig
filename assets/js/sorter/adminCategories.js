@@ -52,6 +52,11 @@ export function renderCategoryEditor() {
   const editor = document.getElementById('categoryEditor');
   if (!editor) return;
 
+  const count = document.getElementById('categoryCount');
+  if (count) {
+    count.textContent = `${state.categories.length} ${state.categories.length === 1 ? 'category' : 'categories'}`;
+  }
+
   if (!state.categories.length) {
     editor.innerHTML = '<p class="help-text">no categories yet — add one below.</p>';
     return;

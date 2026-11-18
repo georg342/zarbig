@@ -8,6 +8,7 @@ import { readTrackTags } from './scan.js';
 import { applyGenreAnalysis, autoCategoryFor, tracksWithoutGenre } from './categories.js';
 import { lookupTracks } from './lookup.js';
 import { activeCategoryIds } from './multiSelect.js';
+import { renderCategoryEditor } from './adminCategories.js';
 import {
   assignUnresolvedWithAi,
   categorizeWithAiTaxonomy,
@@ -23,6 +24,10 @@ async function ensureTags(tracks) {
   logDebug('analyze: selected tracks still missing tags — reading first');
   setStatus('reading tags...');
   return readTrackTags(tracks);
+}
+
+function refreshAdminCategories() {
+  if (state.isAdmin) renderCategoryEditor();
 }
 
 function applyRuleAnalysis(tracks, categoryIds) {
@@ -99,6 +104,7 @@ async function runGenreMode(tracks) {
 
   const categorized = applyGenreAnalysis(tracks);
   renderAll();
+  refreshAdminCategories();
   setStatus(`genre mode — ${stats.resolved} resolved by metadata, ${categorized} categorized.`);
   toast(`${categorized} tracks categorized by genre`);
   log(`genre: done — ${categorized} / ${tracks.length} tracks categorized`);
@@ -113,6 +119,7 @@ async function runHybridMode(tracks) {
 
   const categorized = applyGenreAnalysis(tracks);
   renderAll();
+  refreshAdminCategories();
   const unresolved = tracksWithoutGenre(tracks);
 
   if (!unresolved.length) {
@@ -143,6 +150,7 @@ async function runHybridMode(tracks) {
 
     hideProgress();
     renderAll();
+    refreshAdminCategories();
     setStatus(`hybrid mode — ${categorized} by genre, ${aiCategorized}/${unresolved.length} unresolved categorized by ai.`);
     toast(`${aiCategorized} unresolved tracks categorized by ai`);
   } catch (err) {
@@ -168,6 +176,7 @@ async function runAiTaxonomy(tracks) {
 
     hideProgress();
     renderAll();
+    refreshAdminCategories();
     setStatus(`ai taxonomy — ${categorized}/${tracks.length} selected tracks categorized.`);
     toast(`ai categorized ${categorized} tracks`);
   } catch (err) {

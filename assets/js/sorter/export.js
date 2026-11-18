@@ -93,6 +93,27 @@ export function exportJSON() {
   toast('json exported');
 }
 
+// base path is the root folder where the tracks live. the uploaded folder name
+// is stripped from relativePath so the exported playlist does not repeat it.
+export function stripUploadRoot(path, rootFolder) {
+  const cleanPath = String(path || '').replace(/\//g, '\\').replace(/^\\+/, '');
+  const root = String(rootFolder || '').trim();
+  if (!root) return cleanPath;
+
+  const parts = cleanPath.split('\\');
+  if (parts.length > 1 && parts[0].toLowerCase() === root.toLowerCase()) {
+    return parts.slice(1).join('\\');
+  }
+  return cleanPath;
+}
+
+export function buildVdjPath(track, basePath) {
+  const relative = stripUploadRoot(track.relativePath || track.name || '', state.folderName);
+  const root = String(basePath || '').trim().replace(/\//g, '\\').replace(/\\+$/, '');
+  if (!root) return relative;
+  return `${root}\\${relative.replace(/^[\\/]+/, '')}`;
+}
+
 export function exportVDJ() {
   const list = exportableTracks();
   if (!list.length) return;
@@ -102,6 +123,8 @@ export function exportVDJ() {
 
   const nameInput = document.getElementById('vdjPlaylistName');
   const customName = sanitizeFileName(nameInput ? nameInput.value.trim() : '');
+  const categoryOnlyInput = document.getElementById('chkCategoryOnlyName');
+  const categoryOnly = Boolean(categoryOnlyInput && categoryOnlyInput.checked);
 
   // group tracks by every category, so a multi-category track lands in all of
   // its playlists instead of only the primary one.
@@ -122,38 +145,23 @@ export function exportVDJ() {
     const lines = ['#EXTM3U'];
 
     tracks.forEach((track) => {
-      let path = track.file && track.file.path ? track.file.path : track.relativePath;
-      // normalize to backslash
-      path = path.replace(/\//g, '\\');
-
-      if (basePath) {
-        const baseClean = basePath.replace(/[\\\/]+$/, '');
-        const pathClean = path.replace(/^[\\\/]+/, '');
-        const lastBaseFolder = baseClean.split('\\').pop();
-        let dedupePath = pathClean;
-
-        if (lastBaseFolder) {
-          const escapedFolder = lastBaseFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const reg = new RegExp(`^${escapedFolder}\\\\`, 'i');
-          if (reg.test(dedupePath)) {
-            dedupePath = dedupePath.replace(reg, '');
-          }
-        }
-        path = baseClean + '\\' + dedupePath;
-      }
+      const path = buildVdjPath(track, basePath);
 
       // no escapeHtml here — the m3u needs the raw text
       lines.push(`#EXTINF:-1,${track.meta.artist} - ${track.meta.title}`);
       lines.push(path);
     });
 
+    const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     let fileName = '';
-    if (customName) {
+    if (categoryOnly) {
+      // category-only filenames: no timestamp prefix, no custom name.
+      fileName = `${safeCategory}.m3u8`;
+    } else if (customName) {
       // the custom name wins; the category suffix only shows up with more than one group
-      const suffix = groups.size > 1 ? `-${category.replace(/[^a-z0-9]/gi, '_').toLowerCase()}` : '';
+      const suffix = groups.size > 1 ? `-${safeCategory}` : '';
       fileName = `${customName}${suffix}.m3u8`;
     } else {
-      const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       fileName = `${exportBaseName()}-${safeCategory}.m3u8`;
     }
 
@@ -161,7 +169,7 @@ export function exportVDJ() {
     fileCount++;
   });
 
-  log(`export: ${fileCount} vdj m3u8 files (one per category) with base path: ${basePath || 'none'}${customName ? `, custom name: ${customName}` : ''}`);
+  log(`export: ${fileCount} vdj m3u8 files (one per category) with base path: ${basePath || 'none'}${customName ? `, custom name: ${customName}` : ''}${categoryOnly ? ', category-only names' : ''}`);
   toast(`${fileCount} playlists exported!`);
 }
 

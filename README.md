@@ -101,7 +101,7 @@ depois abra <http://localhost:8000>.
   - `hybrid (genre + ai fallback)` — faz o lookup e manda para o deepseek só as faixas que ficaram sem gênero;
   - `ai taxonomy (deepseek)` — a ia define as categorias e distribui as faixas (1–3 por faixa, mesmo artista na mesma categoria salvo divergência forte);
 - **admin mode:** a chave deepseek fica só em memória (nunca em `localStorage`/`sessionStorage`), é limpa no reload/restore e ao sair do admin; o botão `fetch metadata (jina)` roda só o lookup; categorias criadas por ia/gênero aparecem no editor com badge e podem ser salvas no config;
-- **export:** o `.m3u8` por categoria inclui a faixa em **todas** as playlists das categorias dela; o `.csv` ganha a coluna `categories`; o `.json` inclui `categories` e o objeto `lookup`; o relatório mostra a categoria primária + `also:`;
+- **export:** o `.m3u8` por categoria inclui a faixa em **todas** as playlists das categorias dela; o `.csv` ganha a coluna `categories`; o `.json` inclui `categories` e o objeto `lookup`; o relatório mostra a categoria primária + `also:`; no virtualdj, o `base path` é a pasta raiz das tracks (o nome da pasta enviada é removido do path) e a opção `category name only` remove o prefixo `zarbig-sorted-<data>` dos nomes;
 - limites: beatport/bandcamp via `r.jina.ai` é scrape de terceiro (pode falhar/limitar), e a api do deepseek **não navega na internet** — só usa o conhecimento do modelo e os metadados do lookup.
 
 

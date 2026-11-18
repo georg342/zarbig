@@ -107,15 +107,21 @@
 
         <button id="btnExportM3U" class="btn-primary"><i class="ph ph-playlist" aria-hidden="true"></i> export .m3u8</button>
         <div class="input-group" style="margin-top: 8px; margin-bottom: 8px;">
-          <label for="vdjPlaylistName">playlist name (leave empty to use category names)</label>
-          <input type="text" id="vdjPlaylistName" class="text-input" placeholder="ex: my_set_2026">
+          <label for="vdjPlaylistName">playlist name (optional)</label>
+          <input type="text" id="vdjPlaylistName" class="text-input" placeholder="ex: my_set_2026" autocomplete="off" spellcheck="false">
         </div>
 
+        <label class="switch-row" for="chkCategoryOnlyName">
+          <input type="checkbox" id="chkCategoryOnlyName">
+          <span>category name only (no timestamp prefix)</span>
+        </label>
+
         <button id="btnExportVDJ" class="btn-sec" style="margin-top: 8px;" disabled><i class="ph ph-list-dashes" aria-hidden="true"></i> virtualdj playlists (.m3u8) per category</button>
-        <div class="input-group" style="margin-top: 8px; margin-bottom: 0;">
-          <label for="vdjBasePath">base path (xml only)</label>
-          <input type="text" id="vdjBasePath" class="text-input" placeholder="ex: C:\Users\Nome\Music\tracks">
+        <div class="input-group" style="margin-top: 8px; margin-bottom: 8px;">
+          <label for="vdjBasePath">base path (track root folder)</label>
+          <input type="text" id="vdjBasePath" class="text-input" placeholder="ex: D:\Music\tracks" autocomplete="off" spellcheck="false">
         </div>
+        <p class="help-text">base path is the root folder of the tracks. the uploaded folder name is removed from every exported path. category name only ignores the custom name.</p>
 
         <div class="export-row">
           <button id="btnExportCSV" class="btn-sec"><i class="ph ph-table" aria-hidden="true"></i> .csv</button>
@@ -226,9 +232,12 @@
           <button id="btnResetMask" class="btn-sec"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> default</button>
         </div>
 
-        <div class="admin-subtitle">category presets</div>
+        <div class="admin-subtitle-row">
+          <div class="admin-subtitle">category presets</div>
+          <span class="sorter-stat" id="categoryCount" aria-live="polite">0 categories</span>
+        </div>
 
-        <div id="categoryEditor" class="category-editor"></div>
+        <div id="categoryEditor" class="category-editor" role="group" aria-label="category presets" tabindex="0"></div>
 
         <div class="row">
           <button id="btnAddCategory" class="btn-sec"><i class="ph ph-plus" aria-hidden="true"></i> add category</button>
