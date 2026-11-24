@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 AGENT_NAME = "zarbig-yt-agent"
 HOST = "127.0.0.1"
 PORT = 8787
@@ -38,6 +38,8 @@ DEFAULT_FOLDER = Path.home() / "Downloads" / "zarbig"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 PROGRESS = re.compile(r"\[download\]\s+(\d+(?:\.\d+)?)%")
+DEFAULT_WORKERS = 3
+MAX_WORKERS = 6
 
 BASE_DIR = Path(__file__).resolve().parent
 BIN_DIR = BASE_DIR / "bin"
@@ -155,11 +157,6 @@ def parse_progress(line):
         return None
 
 
-def is_archive_skip(line):
-    low = line.lower()
-    return "has already been recorded in the archive" in low or "has already been downloaded" in low
-
-
 def read_print_file(path):
     """Last non empty line of --print-to-file after_move:filepath."""
     try:
@@ -177,6 +174,48 @@ def cleanup_partial(folder):
                 item.unlink()
             except OSError:
                 pass
+
+
+# ==========================================
+# ARCHIVE (agent owned: check before spawning, write after success)
+# ==========================================
+# yt-dlp reads and writes this file itself, but three parallel processes would
+# race on it and drop entries. The agent is the only writer now, and the skip is
+# decided before spawning yt-dlp, so an already downloaded track returns in
+# milliseconds instead of paying a full process start.
+def archive_path(folder):
+    return Path(folder) / "archive.txt"
+
+
+def ler_archive(folder):
+    ids = set()
+    try:
+        text = archive_path(folder).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ids
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) == 2:
+            ids.add(parts[1])
+    return ids
+
+
+def video_id_from_url(url):
+    try:
+        return (parse_qs(urlparse(url).query).get("v") or [""])[0]
+    except ValueError:
+        return ""
+
+
+def registrar_no_archive(folder, video_id, lock):
+    if not video_id:
+        return
+    with lock:
+        try:
+            with archive_path(folder).open("a", encoding="utf-8") as handler:
+                handler.write(f"youtube {video_id}\n")
+        except OSError as exc:
+            print(f"[warn] archive write failed: {exc}")
 
 
 # ==========================================
@@ -198,11 +237,16 @@ def build_track_cmd(url, folder, cfg, print_file):
         "--embed-thumbnail",
         "--newline",
         "--no-mtime",
+        "--no-overwrites",
+        "--retries", "5",
+        "--fragment-retries", "5",
+        "--retry-sleep", "fragment:exp=1:20",
+        "--throttled-rate", "100K",
+        "-N", "1",
         "-P", str(folder),
         "-o", "%(artist,uploader)s - %(title)s.%(ext)s",
         "--windows-filenames",
         "--trim-filenames", "120",
-        "--download-archive", str(folder / "archive.txt"),
         "--no-simulate",
         "--print-to-file", "after_move:filepath", str(print_file),
     ]
@@ -216,6 +260,12 @@ def build_track_cmd(url, folder, cfg, print_file):
 
 def download_track(index, item, folder, cfg, print_file):
     """Runs one yt-dlp process and returns the item result for the page."""
+    video_id = video_id_from_url(item["url"])
+
+    # already downloaded: the agent archive answers without spawning yt-dlp
+    if JOB.archive_has(video_id):
+        return {"state": "skipped", "file": None, "ext": None, "error": None}
+
     try:
         print_file.unlink()
     except OSError:
@@ -247,13 +297,12 @@ def download_track(index, item, folder, cfg, print_file):
         except OSError:
             pass
 
-    JOB.set_proc(proc)
+    JOB.add_proc(proc)
     timer = threading.Timer(timeout, kill)
     timer.daemon = True
     timer.start()
 
     errors = []
-    skipped = False
     try:
         for raw in proc.stdout or []:
             line = raw.rstrip()
@@ -262,8 +311,6 @@ def download_track(index, item, folder, cfg, print_file):
             percent = parse_progress(line)
             if percent is not None:
                 JOB.progress(index, percent)
-            if is_archive_skip(line):
-                skipped = True
             if "error" in line.lower():
                 errors.append(line[:300])
                 if len(errors) > 5:
@@ -271,16 +318,14 @@ def download_track(index, item, folder, cfg, print_file):
     finally:
         timer.cancel()
         code = proc.wait()
-        JOB.set_proc(None)
+        JOB.remove_proc(proc)
 
     filepath = read_print_file(print_file)
     if filepath and Path(filepath).is_file() and Path(filepath).stat().st_size > 1024:
         # the audio exists: a failed metadata/cover embed stays a warning
+        JOB.archive_add(video_id)
         return {"state": "done", "file": filepath,
                 "ext": Path(filepath).suffix.lstrip(".").lower(), "error": None}
-
-    if skipped:
-        return {"state": "skipped", "file": None, "ext": None, "error": None}
 
     cleanup_partial(folder)
     if state["timeout"]:
@@ -302,7 +347,10 @@ class Job:
         self.cancel = False
         self.folder = None
         self.cfg = {}
-        self.proc = None
+        self.procs = set()
+        self.archive = set()
+        self.archive_lock = threading.Lock()
+        self.workers = DEFAULT_WORKERS
 
     def start(self, entries, folder, cfg):
         with self.lock:
@@ -315,21 +363,42 @@ class Job:
             self.cancel = False
             self.folder = folder
             self.cfg = cfg
+            self.workers = min(MAX_WORKERS, max(1, int(cfg.get("workers") or DEFAULT_WORKERS)))
+            self.procs = set()
+            self.archive = ler_archive(folder)
             self.items = [dict(entry, state="queued", ext=None, file=None,
                                error=None, progress=0) for entry in entries]
         threading.Thread(target=self._run, daemon=True).start()
         return True
 
     def _run(self):
-        tmp = BASE_DIR / "print.txt"
-        for index, item in enumerate(list(self.items)):
-            if self.cancel:
-                break
-            self.mark(index, {"state": "downloading"})
-            result = download_track(index, item, self.folder, self.cfg, tmp)
-            self.mark(index, result)
-            with self.lock:
-                self.done += 1
+        """Worker pool: N tracks in parallel, one yt-dlp process each."""
+        pendentes = list(range(len(self.items)))
+        fila = threading.Lock()
+
+        def worker(numero):
+            # one print file per worker: sharing a single one would race
+            tmp = BASE_DIR / f"print-{numero}.txt"
+            while True:
+                if self.cancel:
+                    return
+                with fila:
+                    if not pendentes:
+                        return
+                    index = pendentes.pop(0)
+                self.mark(index, {"state": "downloading"})
+                result = download_track(index, self.items[index], self.folder, self.cfg, tmp)
+                self.mark(index, result)
+                with self.lock:
+                    self.done += 1
+
+        threads = [threading.Thread(target=worker, args=(numero,), daemon=True)
+                   for numero in range(self.workers)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
         with self.lock:
             self.state = "cancelled" if self.cancel else "done"
 
@@ -343,15 +412,30 @@ class Job:
             if 0 <= index < len(self.items):
                 self.items[index]["progress"] = round(percent, 1)
 
-    def set_proc(self, proc):
+    def add_proc(self, proc):
         with self.lock:
-            self.proc = proc
+            self.procs.add(proc)
+
+    def remove_proc(self, proc):
+        with self.lock:
+            self.procs.discard(proc)
+
+    def archive_has(self, video_id):
+        with self.lock:
+            return bool(video_id) and video_id in self.archive
+
+    def archive_add(self, video_id):
+        if not video_id:
+            return
+        registrar_no_archive(self.folder, video_id, self.archive_lock)
+        with self.lock:
+            self.archive.add(video_id)
 
     def cancel_job(self):
         with self.lock:
             self.cancel = True
-            proc = self.proc
-        if proc is not None:
+            procs = list(self.procs)
+        for proc in procs:
             try:
                 proc.kill()
             except OSError:
@@ -364,6 +448,7 @@ class Job:
                 "state": self.state,
                 "done": self.done,
                 "total": self.total,
+                "workers": self.workers,
                 "items": [dict(item) for item in self.items],
             }
 

@@ -1,7 +1,11 @@
 const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default youtube data api key (public search uses jina)
 const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
-const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links', playlistUrl: 'zb_playlist_url' };
+// free reader key, generated without an account: public by design. a key stored
+// in localStorage (admin field) replaces it when this one expires or is throttled
+const JINA_API_KEY = 'jina_29ee2a28f4a2424c863683cdf95f0378KkKqsO0sHQGlvNRUc8eenCQLH3dh';
+const JINA_TIMEOUT_MS = 15000;
+const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links', playlistUrl: 'zb_playlist_url', jinaKey: 'zb_jina_key' };
 const DEFAULT_SUFFIXES = ['topic', 'official audio'];
 const COOKIE_BROWSERS = ['chrome', 'edge', 'firefox'];
 const DEFAULT_ADMIN_CFG = {
@@ -14,7 +18,8 @@ const DEFAULT_ADMIN_CFG = {
   dlTimeoutS: 300,
   useCookies: false,
   cookieBrowser: 'chrome',
-  autoDownload: false
+  autoDownload: false,
+  searchWorkers: 6
 };
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -527,6 +532,7 @@ function getAdminCfg() {
     const delayMs = parseInt(parsed.delayMs, 10);
     const dlBatchSize = parseInt(parsed.dlBatchSize, 10);
     const dlTimeoutS = parseInt(parsed.dlTimeoutS, 10);
+    const searchWorkers = parseInt(parsed.searchWorkers, 10);
 
     return {
       maxResults: Number.isFinite(maxResults) ? Math.min(50, Math.max(1, maxResults)) : DEFAULT_ADMIN_CFG.maxResults,
@@ -539,7 +545,8 @@ function getAdminCfg() {
       dlTimeoutS: Number.isFinite(dlTimeoutS) ? Math.min(1800, Math.max(60, dlTimeoutS)) : DEFAULT_ADMIN_CFG.dlTimeoutS,
       useCookies: parsed.useCookies === true,
       cookieBrowser: COOKIE_BROWSERS.includes(parsed.cookieBrowser) ? parsed.cookieBrowser : DEFAULT_ADMIN_CFG.cookieBrowser,
-      autoDownload: parsed.autoDownload === true
+      autoDownload: parsed.autoDownload === true,
+      searchWorkers: Number.isFinite(searchWorkers) ? Math.min(10, Math.max(1, searchWorkers)) : DEFAULT_ADMIN_CFG.searchWorkers
     };
   } catch (e) {
     return { ...DEFAULT_ADMIN_CFG };
@@ -553,6 +560,93 @@ function getYtKey() {
     return YOUTUBE_API_KEY;
   }
 }
+
+// ==========================================
+// JINA KEY + REQUEST BUDGET
+// ==========================================
+// r.jina.ai answers ~20 req/min anonymous and 500 req/min with a (free) key.
+// The key below is the project default; the admin field overrides it locally.
+const ZB_JINA = { janela: [], keyInvalida: false };
+
+function getJinaKey() {
+  try {
+    return (localStorage.getItem(STORAGE_KEYS.jinaKey) || JINA_API_KEY || '').trim();
+  } catch (e) {
+    return JINA_API_KEY;
+  }
+}
+
+function jinaHeaders() {
+  const headers = { 'X-Timeout': '15', 'X-Return-Format': 'markdown' };
+  const key = ZB_JINA.keyInvalida ? '' : getJinaKey();
+  if (key) headers.Authorization = `Bearer ${key}`;
+  return headers;
+}
+
+function jinaRpm() {
+  return ZB_JINA.keyInvalida || !getJinaKey() ? 20 : 500;
+}
+
+function preencherJinaKey() {
+  const input = document.getElementById('jinaApiKeyInput');
+  if (input) input.value = getJinaKey();
+}
+
+function salvarJinaKey() {
+  const input = document.getElementById('jinaApiKeyInput');
+  const valor = input ? input.value.trim() : '';
+  if (!valor) {
+    mostrarToast('empty key, nothing to save!');
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEYS.jinaKey, valor);
+  ZB_JINA.keyInvalida = false;
+  mostrarToast('jina api key saved!');
+}
+
+function limparJinaKey() {
+  localStorage.removeItem(STORAGE_KEYS.jinaKey);
+  ZB_JINA.keyInvalida = false;
+  preencherJinaKey();
+  mostrarToast('jina api key reset to default');
+}
+
+function jinaRequestsNaJanela() {
+  const agora = Date.now();
+  ZB_JINA.janela = ZB_JINA.janela.filter(t => agora - t < 60000);
+  return ZB_JINA.janela.length;
+}
+
+// Sliding window: never send more than the budget allows in 60s.
+async function jinaAguardarVaga() {
+  for (;;) {
+    if (jinaRequestsNaJanela() < jinaRpm()) {
+      ZB_JINA.janela.push(Date.now());
+      return;
+    }
+    await sleep(1000);
+  }
+}
+
+// Runs `tarefa` over `itens` with N workers; per item order is kept.
+async function rodarComPool(itens, concorrencia, tarefa) {
+  if (!itens.length) return;
+
+  let proximo = 0;
+  const total = Math.min(Math.max(1, Number(concorrencia) || 1), itens.length);
+
+  const workers = Array.from({ length: total }, async () => {
+    for (;;) {
+      const indice = proximo++;
+      if (indice >= itens.length) return;
+      await tarefa(itens[indice], indice);
+    }
+  });
+
+  await Promise.all(workers);
+}
+
 
 function preencherYtKey() {
   const input = document.getElementById('ytApiKeyInput');
@@ -583,6 +677,11 @@ function preencherAdminCfg() {
 
   const autoDlInput = document.getElementById('cfgAutoDownload');
   if (autoDlInput) autoDlInput.checked = cfg.autoDownload;
+
+  const searchWorkersInput = document.getElementById('cfgSearchWorkers');
+  if (searchWorkersInput) searchWorkersInput.value = cfg.searchWorkers;
+
+  preencherJinaKey();
 }
 
 function salvarYtKey() {
@@ -616,12 +715,14 @@ function salvarAdminCfg() {
   const dlCookiesInput = document.getElementById('cfgDlCookies');
   const dlBrowserInput = document.getElementById('cfgDlBrowser');
   const autoDlInput = document.getElementById('cfgAutoDownload');
+  const searchWorkersInput = document.getElementById('cfgSearchWorkers');
   const atual = getAdminCfg();
 
   const maxResults = parseInt(maxInput ? maxInput.value : '', 10);
   const delayMs = parseInt(delayInput ? delayInput.value : '', 10);
   const dlBatchSize = parseInt(dlBatchInput ? dlBatchInput.value : '', 10);
   const dlTimeoutS = parseInt(dlTimeoutInput ? dlTimeoutInput.value : '', 10);
+  const searchWorkers = parseInt(searchWorkersInput ? searchWorkersInput.value : '', 10);
 
   const cfg = {
     maxResults: Number.isFinite(maxResults) ? Math.min(50, Math.max(1, maxResults)) : atual.maxResults,
@@ -633,7 +734,8 @@ function salvarAdminCfg() {
     dlTimeoutS: Number.isFinite(dlTimeoutS) ? Math.min(1800, Math.max(60, dlTimeoutS)) : atual.dlTimeoutS,
     useCookies: dlCookiesInput ? dlCookiesInput.checked : atual.useCookies,
     cookieBrowser: dlBrowserInput && COOKIE_BROWSERS.includes(dlBrowserInput.value) ? dlBrowserInput.value : atual.cookieBrowser,
-    autoDownload: autoDlInput ? autoDlInput.checked : atual.autoDownload
+    autoDownload: autoDlInput ? autoDlInput.checked : atual.autoDownload,
+    searchWorkers: Number.isFinite(searchWorkers) ? Math.min(10, Math.max(1, searchWorkers)) : atual.searchWorkers
   };
 
   localStorage.setItem(STORAGE_KEYS.adminCfg, JSON.stringify(cfg));
@@ -831,6 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   preencherUrlPlaylist();
   preencherYtKey();
+  preencherJinaKey();
 
   const scanInput = document.getElementById('scanFolderInput');
   if (scanInput) scanInput.addEventListener('change', onPastaSelecionada);
@@ -1370,12 +1473,12 @@ function montarTermosBusca(m) {
   const cfg = getAdminCfg();
   const base = `${m.titulo} ${m.artista}`.trim();
 
-  // public mode always searches the two defaults (admin can edit/remove them);
-  // the bare "title artist" query stays first as the art track probe
-  const sufixos = isAdmin ? cfg.suffixes : DEFAULT_SUFFIXES;
-  const comSufixo = sufixos.map(s => `${base} ${s}`.trim()).filter(Boolean);
+  // topic first: it is the query that surfaces the "- Topic" art tracks. The bare
+  // "title artist" query only comes back when the admin emptied the suffix list.
+  const sufixos = isAdmin && cfg.suffixes.length ? cfg.suffixes : DEFAULT_SUFFIXES;
+  const termos = sufixos.map(s => `${base} ${s}`.trim()).filter(Boolean);
 
-  return [...new Set([base, ...comSufixo])];
+  return [...new Set(termos.length ? termos : [base])];
 }
 
 // The official api only runs in admin mode with the "use official youtube api" toggle on.
@@ -1426,14 +1529,7 @@ async function buscarResultadosApi(m) {
 
   if (!key) throw new Error('youtube api key not configured');
 
-  const termos = montarTermosBusca(m);
-
-  for (let i = 0; i < termos.length; i++) {
-    const termo = termos[i];
-    // the first (bare) query only accepts art tracks; the suffixes keep the old
-    // behaviour, so a missing art track falls back to the usual pick
-    const apenasArtTrack = i === 0 && termos.length > 1;
-
+  for (const termo of montarTermosBusca(m)) {
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${cfg.maxResults}&q=${encodeURIComponent(termo)}&key=${key}`;
     log(`[info] [youtube api] buscando opções para: "${termo}"`);
 
@@ -1452,9 +1548,7 @@ async function buscarResultadosApi(m) {
       thumbnail: item.snippet.thumbnails?.default?.url || ''
     })).filter(opt => opt.id);
     // keyword filter, then the artist gate: a candidate without the artist is out
-    const validos = filtrarPorArtista(m, filtrarResultados(brutos));
-    const ordenados = priorizarArtTracks(validos);
-    const resultados = apenasArtTrack ? ordenados.filter(opt => opt.artTrack) : ordenados;
+    const resultados = priorizarArtTracks(filtrarPorArtista(m, filtrarResultados(brutos)));
 
     if (resultados.length > 0) return resultados;
     if (brutos.length > 0) {
@@ -1469,14 +1563,8 @@ async function buscarResultadosApi(m) {
 
 async function buscarResultadosJina(m) {
   const cfg = getAdminCfg();
-  const termos = montarTermosBusca(m);
 
-  for (let i = 0; i < termos.length; i++) {
-    const termo = termos[i];
-    // bare query first: only art tracks count there, the suffixes keep the old
-    // behaviour as the fallback when the bare query finds none
-    const apenasArtTrack = i === 0 && termos.length > 1;
-
+  for (const termo of montarTermosBusca(m)) {
     const target = `${JINA_SEARCH_BASE}${encodeURIComponent(termo)}`;
     log(`[info] [jina] buscando resultados para: "${termo}"`);
 
@@ -1484,22 +1572,36 @@ async function buscarResultadosJina(m) {
 
     for (let tentativa = 1; tentativa <= 3; tentativa++) {
       try {
-        // r.jina.ai may answer with a 401 warning header and still return the scraped
-        // page, so success is measured by parsed results instead of res.ok.
-        const res = await fetchRapido(target, { referrerPolicy: 'no-referrer' }, 20000);
+        // budget first: never send more than the tier allows in 60s
+        await jinaAguardarVaga();
+
+        // r.jina.ai may answer with a warning page and still return 200, so
+        // success is measured by parsed results instead of res.ok
+        const res = await fetchRapido(target, {
+          referrerPolicy: 'no-referrer',
+          headers: jinaHeaders()
+        }, JINA_TIMEOUT_MS);
+
+        if (res.status === 401 || res.status === 403) {
+          if (!ZB_JINA.keyInvalida) {
+            ZB_JINA.keyInvalida = true;
+            log('[warn] [jina] key recusada (401/403); seguindo sem chave (~20 rpm).');
+          }
+        }
+
         const txt = await res.text();
         const brutos = parseResultadosJina(txt);
         if (brutos.length > 0) {
           // keyword filter, then the artist gate; the "- topic" channel is the art
           // track signal available here (the scrape carries no description)
           const validos = filtrarPorArtista(m, filtrarResultados(brutos));
-          const ordenados = priorizarArtTracks(validos);
-          resultados = apenasArtTrack ? ordenados.filter(opt => opt.artTrack) : ordenados;
+          resultados = priorizarArtTracks(validos);
           if (resultados.length === 0) {
             log(`[info] [jina] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título/artista.`);
           }
           break;
         }
+        // empty parse is a jina failure, not an absent song: retry
         log(`[warn] [jina] nenhum vídeo encontrado (tentativa ${tentativa}/3)`);
       } catch (e) {
         log(`[warn] [jina] tentativa ${tentativa}/3 falhou: ${e.message}`);
@@ -1698,14 +1800,20 @@ async function buscarLinksYoutube() {
   if (!viaApi) log('[info] r.jina.ai: limite ~20 req/min no free tier.');
 
   btn.disabled = true;
-
-  let concluidas = 0;
-  const total = selecionadas.length;
-  zbProgressoMostrar('links', 'generating links', `0/${total}`);
   descartesFiltro = 0;
 
-  for (let m of selecionadas) {
-    status.innerText = `processing (${concluidas}/${total}): ${m.titulo}`;
+  const total = selecionadas.length;
+  const concorrencia = Math.min(Math.max(1, Number(cfg.searchWorkers) || 6), 10);
+  // the admin modal path is interactive, so it stays one track at a time
+  const paralelo = isAdmin && !cfg.autoPick ? 1 : concorrencia;
+  let concluidas = 0;
+
+  zbProgressoMostrar('links', 'generating links', `0/${total} · ${paralelo} parallel`);
+
+  log(`[info] busca em lote via ${viaApi ? 'youtube api' : 'jina'} (${total} faixas, ${paralelo} em paralelo, delay ${delayMs}ms)`);
+  if (!viaApi) log(`[info] r.jina.ai: ${jinaRpm()} req/min disponíveis (${getJinaKey() ? 'com chave' : 'sem chave'}).`);
+
+  await rodarComPool(selecionadas, paralelo, async (m) => {
     m.erroYt = false;
 
     try {
@@ -1725,16 +1833,19 @@ async function buscarLinksYoutube() {
       } else if (!(isAdmin && !cfg.autoPick)) {
         m.erroYt = true;
       }
-    } catch(e) {
+    } catch (e) {
       m.erroYt = true;
       log(`erro fatal faixa #${m.num}: ${e.message}`);
     }
 
     concluidas++;
-    zbProgressoAtualizar('links', (concluidas / total) * 100, `${concluidas}/${total} · ${m.titulo}`);
+    zbProgressoAtualizar('links', (concluidas / total) * 100,
+      `${concluidas}/${total} · ${paralelo}p · ${jinaRequestsNaJanela()}/${jinaRpm()} rpm`);
+    status.innerText = `searching ${concluidas}/${total}...`;
     render();
-    await sleep(delayMs);
-  }
+
+    if (delayMs > 0) await sleep(delayMs);
+  });
 
   status.innerText = "search complete!";
   zbProgressoEsconder('links');

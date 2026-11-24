@@ -81,7 +81,9 @@ depois abra <http://localhost:8000>.
 | público | `r.jina.ai` (scrape de `youtube.com/results?search_query=`) | sem chave; ~20 req/min no free tier; 3 tentativas com backoff |
 | admin | youtube data api v3 | `maxResults`, `delay`, lista de `suffix` e `auto-pick` configuráveis; o toggle `use official youtube api` desliga a api e força `r.jina.ai`; se a api falhar ou vier vazia, cai automaticamente para `r.jina.ai` |
 
-**query suffix (lista):** o padrão é `topic` + `official audio`, nessa ordem — `topic` primeiro é o que acha o art track. no modo público a busca sempre usa os dois; só o admin pode editar/remover. os termos são tentados em ordem até aparecer um candidato aprovado. lista vazia (admin) = busca sem sufixo.
+**query suffix (lista):** o padrão é `topic` + `official audio`, nessa ordem — `topic` primeiro é o que acha o art track, então a query crua (`título artista`) não é mais disparada. no modo público a busca sempre usa os dois; só o admin pode editar/remover (lista vazia = volta para a query crua). os termos são tentados em ordem até aparecer um candidato aprovado.
+
+**jina + paralelismo:** a busca usa `r.jina.ai` com a key pública embutida (~500 req/min; sem chave cai para ~20) e **6 buscas em paralelo** (admin: `parallel searches`, 1..10). termos do mesmo track continuam sequenciais; o paralelismo é entre tracks. o `#status` mostra `6p · 120/500 rpm`. se a key falhar (401/403) o código segue sem chave e avisa no log.
 
 **auto-pick:** escolhe só entre candidatos aprovados — todo pedaço do nome do artista (créditos separados por vírgula, cada um quebrado por espaço) precisa estar no título **ou** no canal, e o título do spotify precisa bater. entre os aprovados, art track primeiro. **se nada passa, a faixa fica failed** (nada de link aleatório). link já salvo no cache não é revalidado; o badge amarelo avisa quando artista/título não batem.
 
@@ -104,7 +106,7 @@ o download das faixas roda fora do navegador: cors e falta de filesystem impedem
 1. no card `local agent`, baixe `zarbig-yt-agent.zip` (asset de release);
 2. rode `start.bat`: na primeira vez baixa `yt-dlp`, `deno` e `ffmpeg` (~300 MB) em `%LOCALAPPDATA%\zarbig-yt-agent` e imprime o token (também copiado para a área de transferência);
 3. `paste token` na página → status vira `online`;
-4. `download` baixa **todas** as faixas marcadas que já têm link, em lotes encadeados (o tamanho do lote é só o pedido ao agente), um arquivo por faixa, com metadados quando o youtube fornece;
+4. `download` baixa **todas** as faixas marcadas que já têm link, em lotes encadeados e **3 downloads em paralelo** no agente (1 fragmento por arquivo), um arquivo por faixa, com metadados quando o youtube fornece. o agente mantém o `archive.txt` (checa antes de subir o yt-dlp) e a linha mostra `dl 42%` piscando;
 5. `folder` troca a pasta de destino (padrão `%USERPROFILE%\Downloads\zarbig`, salva em `localStorage.zb_dl_folder`).
 
 formato: `-x --audio-format best`, ou seja, `.opus` quando a fonte é opus; se só existir aac o arquivo sai `.m4a` e a linha mostra o formato com aviso. `archive.txt` na pasta evita baixar de novo. mobile e safari ficam desabilitados (o agente roda na máquina do visitante).

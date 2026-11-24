@@ -551,7 +551,7 @@ async function acompanharDownload(jobId) {
   atualizarBarraDownload(feitos, zbDl.alvo, true,
     `batch ${zbDl.lote}/${zbDl.lotes} · ${feitos}/${zbDl.alvo}${atual && atual.title ? ` · ${atual.title}` : ''}`);
   definirStatusDownload(dados.state === 'running'
-    ? `batch ${zbDl.lote}/${zbDl.lotes}: ${done}/${total}`
+    ? `batch ${zbDl.lote}/${zbDl.lotes} · ${dados.workers || 3}w: ${done}/${total}`
     : `batch ${dados.state}`);
 
   if (dados.state === 'running') {
@@ -578,16 +578,21 @@ function aplicarStatusItens(items) {
     const m = musicasGlobal.find(t => t.num === item.num);
     if (!m) return;
 
-    const estadoAnterior = m.dl ? m.dl.state : null;
+    const anterior = m.dl || {};
+    const progresso = Number(item.progress) || 0;
+    const bucketAntes = Math.floor((Number(anterior.progress) || 0) / 10);
+    const bucketAgora = Math.floor(progresso / 10);
+
     m.dl = {
       state: item.state || 'queued',
       ext: item.ext || null,
       file: item.file || null,
-      error: item.error || null
+      error: item.error || null,
+      progress: progresso
     };
 
-    // only state transitions repaint the row: polling runs once per second
-    if (estadoAnterior !== m.dl.state) atualizarBadgeDl(m);
+    // repaint on state change or every 10%: polling runs once per second
+    if (anterior.state !== m.dl.state || bucketAntes !== bucketAgora) atualizarBadgeDl(m);
   });
 }
 
@@ -733,7 +738,9 @@ window.zbDlBadgeHtml = function (m) {
   }
 
   if (dl.state === 'downloading') {
-    return `<span id="${id}" class="dl-badge is-downloading" title="downloading">dl...</span>`;
+    const pct = Math.round(Number(dl.progress) || 0);
+    const rotulo = pct > 0 ? `dl ${pct}%` : 'dl…';
+    return `<span id="${id}" class="dl-badge is-downloading" title="downloading ${pct}%">${rotulo}</span>`;
   }
 
   return `<span id="${id}" class="dl-badge" title="queued">dl</span>`;
