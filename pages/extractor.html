@@ -51,6 +51,25 @@
     <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode. the official spotify api only stores the credentials for now.</p>
   </div>
 
+  <!-- Agente local de download -->
+  <div id="agentCard" class="card agent-card">
+    <div class="list-header">
+      <h3 class="section-title">local agent</h3>
+      <span id="agentStatus" class="agent-status">offline</span>
+    </div>
+    <a class="btn-sec" href="https://github.com/georg342/zarbig/releases/latest/download/zarbig-yt-agent.zip" download><i class="ph ph-download-simple" aria-hidden="true"></i> download agent (.zip)</a>
+    <div class="input-group" style="margin-top: 12px;">
+      <label for="agentTokenInput">token</label>
+      <input type="text" id="agentTokenInput" class="text-input" placeholder="token printed by start.bat" autocomplete="off" spellcheck="false" oninput="salvarTokenAgente(this.value)">
+    </div>
+    <div class="row row-split">
+      <button type="button" id="btnPasteToken" class="btn-sec" onclick="colarTokenAgente()"><i class="ph ph-clipboard-text" aria-hidden="true"></i> paste token</button>
+      <button type="button" id="btnConnectAgent" class="btn-sec" onclick="conectarAgente()"><i class="ph ph-plug" aria-hidden="true"></i> connect</button>
+    </div>
+    <p class="help-text" id="agentHelp">run start.bat once, then paste the token. the token changes every start.</p>
+    <p class="help-text">audio only, saved by the local agent. personal use; respect the youtube terms of service.</p>
+  </div>
+
   <!-- Botão / Toggle Admin Mode -->
   <div style="margin-bottom: 12px; text-align: center;">
     <button id="btnAdminToggle" class="btn-sec" onclick="toggleAdminMode()"><i class="ph ph-lock" aria-hidden="true"></i> admin mode</button>
@@ -88,6 +107,31 @@
       </div>
     </div>
     <p class="help-text">pause between tracks, in milliseconds. public mode never goes below 1000 (r.jina.ai allows ~20 requests/min).</p>
+
+    <h4 class="admin-subtitle">download</h4>
+    <div class="row">
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label for="cfgDlBatch">tracks per batch</label>
+        <input type="text" id="cfgDlBatch" class="text-input" inputmode="numeric" value="50">
+      </div>
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label for="cfgDlTimeout">timeout (s)</label>
+        <input type="text" id="cfgDlTimeout" class="text-input" inputmode="numeric" value="300">
+      </div>
+    </div>
+    <div class="yt-music-toggle" style="margin-top: 14px;">
+      <input type="checkbox" id="cfgDlCookies">
+      <label for="cfgDlCookies">use browser cookies</label>
+    </div>
+    <div class="input-group" style="margin-top: 10px;">
+      <label for="cfgDlBrowser">cookie browser</label>
+      <select id="cfgDlBrowser" class="text-input">
+        <option value="chrome">chrome</option>
+        <option value="edge">edge</option>
+        <option value="firefox">firefox</option>
+      </select>
+    </div>
+    <p class="help-text">age restricted videos need cookies: the agent borrows them from the chosen browser.</p>
 
     <div class="input-group" style="margin-top: 14px;">
       <label for="cfgSuffix">query suffix</label>
@@ -178,6 +222,12 @@
       <button id="btnForEach" class="btn-sec" onclick="copiarForEach()"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> auto copy (3s)</button>
       <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple" aria-hidden="true"></i> .txt export</button>
     </div>
+
+    <div class="row row-split" style="margin-top: 10px;">
+      <button type="button" id="btnDl" class="btn-sec" onclick="iniciarDownload()"><i class="ph ph-hard-drives" aria-hidden="true"></i> download selected</button>
+      <button type="button" id="btnDlFolder" class="btn-sec" onclick="escolherPastaDownload()"><i class="ph ph-folder" aria-hidden="true"></i> folder</button>
+    </div>
+    <p class="help-text" id="dlFolderInfo">pick a download folder before the first run.</p>
   </div>
   </div>
   </main>
@@ -196,6 +246,7 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/extractor-download.js"></script>
   <script src="../assets/js/extractor.js"></script>
 </body>
 </html>

@@ -51,6 +51,31 @@
   .layout.stretch-results .track-item.skeleton { flex: 1 1 0; min-height: 34px; }
 }
 
+/* extractor: local agent card + download badges */
+.agent-card { border: var(--border-width-bold) solid var(--border-strong); }
+.agent-status {
+  font-size: var(--text-xs);
+  padding: 3px var(--space-2);
+  color: var(--text-muted);
+  border: var(--border-width) solid var(--border-strong);
+}
+.agent-status.is-online { color: var(--primary); border-color: var(--primary); }
+.agent-card.is-unsupported .help-text { color: var(--warning); }
+.agent-card.is-unsupported .btn-sec { opacity: 0.5; }
+/* per row download state: text is the saved format, tooltip carries the detail */
+.dl-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 26px; padding: 4px 7px; font-size: var(--text-xs);
+  color: var(--text-muted); background: #000;
+  border: var(--border-width) solid var(--border-strong);
+}
+.dl-badge.ok { color: var(--primary); border-color: var(--primary); }
+.dl-badge.warn { color: var(--warning); border-color: var(--warning); background: var(--warning-soft); }
+.dl-badge.err { color: var(--danger); border-color: var(--danger); }
+/* first run folder notice: opt-out checkbox inside the modal */
+.dl-notice-check { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0; font-size: var(--text-sm); color: var(--text-muted); cursor: pointer; }
+.dl-notice-check input { width: var(--check-size); height: var(--check-size); accent-color: var(--primary); margin: 0; }
+
 /* extractor: destructive link (wipes the whole saved-link cache) */
 .link-btn-danger { color: var(--danger); }
 .link-btn-danger:hover { color: var(--danger); border-color: var(--danger); }

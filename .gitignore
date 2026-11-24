@@ -6,4 +6,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 tests/
-repomix-output.xml
+agent/bin/
+agent/tmp/
+agent/print.txt
+__pycache__/

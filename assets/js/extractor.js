@@ -3,7 +3,18 @@ const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
 const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links', playlistUrl: 'zb_playlist_url' };
 const DEFAULT_SUFFIXES = ['official audio', 'topic'];
-const DEFAULT_ADMIN_CFG = { maxResults: 15, delayMs: 1000, suffixes: DEFAULT_SUFFIXES, useApi: true, autoPick: true };
+const COOKIE_BROWSERS = ['chrome', 'edge', 'firefox'];
+const DEFAULT_ADMIN_CFG = {
+  maxResults: 15,
+  delayMs: 1000,
+  suffixes: DEFAULT_SUFFIXES,
+  useApi: true,
+  autoPick: true,
+  dlBatchSize: 50,
+  dlTimeoutS: 300,
+  useCookies: false,
+  cookieBrowser: 'chrome'
+};
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -315,6 +326,8 @@ function getAdminCfg() {
     const parsed = JSON.parse(raw);
     const maxResults = parseInt(parsed.maxResults, 10);
     const delayMs = parseInt(parsed.delayMs, 10);
+    const dlBatchSize = parseInt(parsed.dlBatchSize, 10);
+    const dlTimeoutS = parseInt(parsed.dlTimeoutS, 10);
 
     return {
       maxResults: Number.isFinite(maxResults) ? Math.min(50, Math.max(1, maxResults)) : DEFAULT_ADMIN_CFG.maxResults,
@@ -322,7 +335,11 @@ function getAdminCfg() {
       // `suffix` (old single string) is still read and migrated into the list.
       suffixes: parseSufixos(parsed.suffixes !== undefined ? parsed.suffixes : parsed.suffix, DEFAULT_ADMIN_CFG.suffixes),
       useApi: parsed.useApi !== false,
-      autoPick: parsed.autoPick !== false
+      autoPick: parsed.autoPick !== false,
+      dlBatchSize: Number.isFinite(dlBatchSize) ? Math.min(200, Math.max(1, dlBatchSize)) : DEFAULT_ADMIN_CFG.dlBatchSize,
+      dlTimeoutS: Number.isFinite(dlTimeoutS) ? Math.min(1800, Math.max(60, dlTimeoutS)) : DEFAULT_ADMIN_CFG.dlTimeoutS,
+      useCookies: parsed.useCookies === true,
+      cookieBrowser: COOKIE_BROWSERS.includes(parsed.cookieBrowser) ? parsed.cookieBrowser : DEFAULT_ADMIN_CFG.cookieBrowser
     };
   } catch (e) {
     return { ...DEFAULT_ADMIN_CFG };
@@ -349,12 +366,20 @@ function preencherAdminCfg() {
   const suffixInput = document.getElementById('cfgSuffix');
   const apiInput = document.getElementById('cfgUseApi');
   const autoInput = document.getElementById('cfgAutoPick');
+  const dlBatchInput = document.getElementById('cfgDlBatch');
+  const dlTimeoutInput = document.getElementById('cfgDlTimeout');
+  const dlCookiesInput = document.getElementById('cfgDlCookies');
+  const dlBrowserInput = document.getElementById('cfgDlBrowser');
 
   if (maxInput) maxInput.value = cfg.maxResults;
   if (delayInput) delayInput.value = cfg.delayMs;
   if (suffixInput) suffixInput.value = cfg.suffixes.join('\n');
   if (apiInput) apiInput.checked = cfg.useApi;
   if (autoInput) autoInput.checked = cfg.autoPick;
+  if (dlBatchInput) dlBatchInput.value = cfg.dlBatchSize;
+  if (dlTimeoutInput) dlTimeoutInput.value = cfg.dlTimeoutS;
+  if (dlCookiesInput) dlCookiesInput.checked = cfg.useCookies;
+  if (dlBrowserInput) dlBrowserInput.value = cfg.cookieBrowser;
 }
 
 function salvarYtKey() {
@@ -396,17 +421,27 @@ function salvarAdminCfg() {
   const suffixInput = document.getElementById('cfgSuffix');
   const apiInput = document.getElementById('cfgUseApi');
   const autoInput = document.getElementById('cfgAutoPick');
+  const dlBatchInput = document.getElementById('cfgDlBatch');
+  const dlTimeoutInput = document.getElementById('cfgDlTimeout');
+  const dlCookiesInput = document.getElementById('cfgDlCookies');
+  const dlBrowserInput = document.getElementById('cfgDlBrowser');
   const atual = getAdminCfg();
 
   const maxResults = parseInt(maxInput ? maxInput.value : '', 10);
   const delayMs = parseInt(delayInput ? delayInput.value : '', 10);
+  const dlBatchSize = parseInt(dlBatchInput ? dlBatchInput.value : '', 10);
+  const dlTimeoutS = parseInt(dlTimeoutInput ? dlTimeoutInput.value : '', 10);
 
   const cfg = {
     maxResults: Number.isFinite(maxResults) ? Math.min(50, Math.max(1, maxResults)) : atual.maxResults,
     delayMs: Number.isFinite(delayMs) ? Math.min(15000, Math.max(0, delayMs)) : atual.delayMs,
     suffixes: parseSufixos(suffixInput ? suffixInput.value : '', []),
     useApi: apiInput ? apiInput.checked : atual.useApi,
-    autoPick: autoInput ? autoInput.checked : atual.autoPick
+    autoPick: autoInput ? autoInput.checked : atual.autoPick,
+    dlBatchSize: Number.isFinite(dlBatchSize) ? Math.min(200, Math.max(1, dlBatchSize)) : atual.dlBatchSize,
+    dlTimeoutS: Number.isFinite(dlTimeoutS) ? Math.min(1800, Math.max(60, dlTimeoutS)) : atual.dlTimeoutS,
+    useCookies: dlCookiesInput ? dlCookiesInput.checked : atual.useCookies,
+    cookieBrowser: dlBrowserInput && COOKIE_BROWSERS.includes(dlBrowserInput.value) ? dlBrowserInput.value : atual.cookieBrowser
   };
 
   localStorage.setItem(STORAGE_KEYS.adminCfg, JSON.stringify(cfg));
@@ -611,6 +646,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(agendarSyncResultsCap).catch(() => {});
   }
+
+  // download agent lives in extractor-download.js (same globals, own file)
+  if (window.zbInitDownloadAgent) window.zbInitDownloadAgent();
 });
 
 function limparUrlSpotify() {
@@ -691,6 +729,7 @@ function criarObjetoMusica(num, tit, art) {
     ytChannel: null,
     ytArt: false,
     artistaOk: true,
+    dl: null,
     erroYt: false 
   };
 }
@@ -1064,9 +1103,11 @@ function render() {
     const avisoArtista = (m.ytUrl && m.artistaOk === false)
       ? `<span class="artist-warn" role="img" aria-label="artist not found in the video" title="artist not found in the video"><i class="ph ph-warning" aria-hidden="true"></i></span>`
       : '';
+    // download state lives in extractor-download.js: one hook keeps it out of here
+    const dlBadge = window.zbDlBadgeHtml ? window.zbDlBadgeHtml(m) : '';
 
     return `
-      <li class="track-item ${m.selecionada ? 'selected' : ''} ${m.jaTenho ? 'owned' : ''}" onclick="toggleItem(${m.num}, event)">
+      <li id="track-${m.num}" class="track-item ${m.selecionada ? 'selected' : ''} ${m.jaTenho ? 'owned' : ''}" onclick="toggleItem(${m.num}, event)">
         <input type="checkbox" ${m.selecionada ? 'checked' : ''} ${m.jaTenho ? 'disabled' : ''} onclick="event.stopPropagation(); toggleItem(${m.num})">
         <span class="num">${m.num}</span>
         <div class="info" style="flex-grow: 1; overflow: hidden;">
@@ -1075,6 +1116,7 @@ function render() {
           ${ytDetailsHtml}
         </div>
         <div class="badges-container" style="display: flex; align-items: center; gap: 6px;">
+          ${dlBadge}
           ${ownedBadge}
           ${avisoArtista}
           ${artBadge}

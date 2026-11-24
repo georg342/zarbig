@@ -92,6 +92,20 @@ depois abra <http://localhost:8000>.
 
 **admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), limpeza das chaves do spotify, os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
 
+### agente local de download (`agent/`)
+
+o download das faixas roda fora do navegador: cors e falta de filesystem impedem que a página chame o youtube e grave arquivos. o agente é um servidor python local (`127.0.0.1:8787`) que executa o `yt-dlp` e salva **só o áudio** em disco.
+
+1. no card `local agent`, baixe `zarbig-yt-agent.zip` (asset de release);
+2. rode `start.bat`: na primeira vez baixa `yt-dlp`, `deno` e `ffmpeg` (~300 MB) em `%LOCALAPPDATA%\zarbig-yt-agent` e imprime o token (também copiado para a área de transferência);
+3. `paste token` na página → status vira `online`;
+4. `download selected` baixa as faixas marcadas que já têm link, um arquivo por faixa, com metadados quando o youtube fornece;
+5. `folder` troca a pasta de destino (padrão `%USERPROFILE%\Downloads\zarbig`, salva em `localStorage.zb_dl_folder`).
+
+formato: `-x --audio-format best`, ou seja, `.opus` quando a fonte é opus; se só existir aac o arquivo sai `.m4a` e a linha mostra o formato com aviso. `archive.txt` na pasta evita baixar de novo. mobile e safari ficam desabilitados (o agente roda na máquina do visitante).
+
+api: `GET /health`, `GET /status`, `POST /download`, `POST /cancel`, `POST /folder/pick`; token em `X-Token`, cors restrito à origem do pages e a loopback. client em `assets/js/extractor-download.js`.
+
 ### track sorter (`pages/sorter.html`)
 
 - carrega uma pasta local, lê tags (jsmediatags), importa `database.xml` do virtualdj e categoriza só quando você clica em **analyze selected tracks**;
