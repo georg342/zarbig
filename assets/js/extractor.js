@@ -123,21 +123,101 @@ function lerKeywordsExclusao() {
   }
 }
 
-function preencherKeywordsExclusao() {
+// ---- pill editor: one pill per keyword, added on enter/comma ----
+function renderPillsKeywords() {
+  const box = document.getElementById('kwPillsBox');
   const input = document.getElementById('cfgExcludeKeywords');
-  if (input) input.value = keywordsExclusao.join(', ');
+  if (!box || !input) return;
+
+  box.querySelectorAll('.pill').forEach(pill => pill.remove());
+
+  keywordsExclusao.forEach(kw => {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    pill.textContent = kw;
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'pill-x';
+    remove.setAttribute('aria-label', `remove ${kw}`);
+    remove.innerHTML = '<i class="ph ph-x" aria-hidden="true"></i>';
+    remove.addEventListener('click', () => removerKeywordsExclusao(kw));
+
+    pill.appendChild(remove);
+    box.insertBefore(pill, input);
+  });
 }
 
 function salvarKeywordsExclusao() {
-  const input = document.getElementById('cfgExcludeKeywords');
-  if (!input) return;
-
-  keywordsExclusao = parseKeywordsExclusao(input.value);
   try {
     localStorage.setItem(STORAGE_KEYS.excludeKeywords, keywordsExclusao.join(', '));
   } catch (e) {
     log('[warn] não foi possível salvar as keywords de exclusão.');
   }
+}
+
+function adicionarKeywordsExclusao(texto) {
+  const novas = parseKeywordsExclusao(texto);
+  if (!novas.length) return false;
+
+  let mudou = false;
+  novas.forEach(kw => {
+    if (keywordsExclusao.includes(kw)) return;
+    keywordsExclusao.push(kw);
+    mudou = true;
+  });
+
+  if (mudou) {
+    salvarKeywordsExclusao();
+    renderPillsKeywords();
+  }
+  return mudou;
+}
+
+function removerKeywordsExclusao(kw) {
+  const antes = keywordsExclusao.length;
+  keywordsExclusao = keywordsExclusao.filter(item => item !== kw);
+  if (keywordsExclusao.length === antes) return;
+
+  salvarKeywordsExclusao();
+  renderPillsKeywords();
+
+  // the clicked x disappears with the pill: keep the keyboard flow on the field
+  const input = document.getElementById('cfgExcludeKeywords');
+  if (input) input.focus();
+}
+
+// commits what is typed: enter, comma, blur or a multi value paste
+function kwCommitInput() {
+  const input = document.getElementById('cfgExcludeKeywords');
+  if (!input || !input.value.trim()) return;
+
+  const texto = input.value;
+  input.value = '';
+  adicionarKeywordsExclusao(texto);
+}
+
+function kwKeydown(ev) {
+  if (ev.key === 'Enter' || ev.key === ',') {
+    ev.preventDefault();
+    kwCommitInput();
+    return;
+  }
+
+  // backspace on an empty field removes the last pill
+  if (ev.key === 'Backspace' && !ev.target.value && keywordsExclusao.length) {
+    ev.preventDefault();
+    removerKeywordsExclusao(keywordsExclusao[keywordsExclusao.length - 1]);
+  }
+}
+
+function kwPaste(ev) {
+  const dados = ev.clipboardData || window.clipboardData;
+  const texto = dados ? dados.getData('text') : '';
+  if (!texto || !/[,;\n]/.test(texto)) return;
+
+  ev.preventDefault();
+  adicionarKeywordsExclusao(texto);
 }
 
 // ==========================================
@@ -481,19 +561,6 @@ function limparYtKey() {
   mostrarToast('youtube api key reset to default');
 }
 
-function limparChavesSpotify() {
-  localStorage.removeItem('sp_cid');
-  localStorage.removeItem('sp_csec');
-
-  const cid = document.getElementById('cid');
-  const csec = document.getElementById('csec');
-  if (cid) cid.value = '';
-  if (csec) csec.value = '';
-
-  log('[admin] spotify keys cleared.');
-  mostrarToast('spotify keys cleared');
-}
-
 function salvarAdminCfg() {
   const maxInput = document.getElementById('cfgMaxResults');
   const delayInput = document.getElementById('cfgDelay');
@@ -706,7 +773,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   keywordsExclusao = lerKeywordsExclusao();
   linksCache = lerLinkCache();
-  preencherKeywordsExclusao();
+  renderPillsKeywords();
+  const pillsBox = document.getElementById('kwPillsBox');
+  if (pillsBox) {
+    // clicking the empty area of the box behaves like focusing the field
+    pillsBox.addEventListener('click', (ev) => {
+      if (ev.target !== pillsBox) return;
+      const campo = document.getElementById('cfgExcludeKeywords');
+      if (campo) campo.focus();
+    });
+  }
   preencherUrlPlaylist();
   preencherYtKey();
 
@@ -740,10 +816,6 @@ function limparUrlSpotify() {
 
 function limparLog() { document.getElementById('debugLog').value = ''; }
 function copiarLog() { window.copyText(document.getElementById('debugLog').value, "log copied!"); }
-function salvarChaves() {
-  localStorage.setItem('sp_cid', document.getElementById('cid').value.trim());
-  localStorage.setItem('sp_csec', document.getElementById('csec').value.trim());
-}
 function toggleBox(id) {
   const b = document.getElementById(id);
   if (!b) return;
@@ -1396,7 +1468,22 @@ async function buscarResultados(m) {
   return buscarResultadosJina(m);
 }
 
-// Busca automática em segundo plano: pega o 1º resultado silenciosamente sem abrir modals
+// Priority shared by the automatic pick (public always, admin with auto-pick on):
+// an art track whose video really carries the spotify artist and title wins, then
+// any candidate that passes both checks, then the first art track, then #1.
+function escolherMelhorResultado(m, opcoes) {
+  if (!opcoes || !opcoes.length) return null;
+
+  const completo = opcoes.find(o => ehArtTrack(o) && artistaNoVideo(m, o) && tituloNoVideo(m, o));
+  if (completo) return completo;
+
+  const valido = opcoes.find(o => artistaNoVideo(m, o) && tituloNoVideo(m, o));
+  if (valido) return valido;
+
+  return opcoes.find(o => ehArtTrack(o)) || opcoes[0];
+}
+
+// Busca automática em segundo plano: pega o melhor resultado sem abrir modals
 async function acharVideoAutomatico(m) {
   // a track already resolved before (same playlist or not) skips the search
   const emCache = lerLinkYt(m);
@@ -1405,11 +1492,7 @@ async function acharVideoAutomatico(m) {
     return emCache;
   }
 
-  const opcoes = await buscarResultados(m);
-  if (opcoes.length > 0) {
-    return opcoes[0];
-  }
-  return null;
+  return escolherMelhorResultado(m, await buscarResultados(m));
 }
 
 // Abre o modal de seleção manual (Zarbig Mode) para escolher entre os 15 resultados

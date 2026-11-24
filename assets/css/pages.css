@@ -141,6 +141,60 @@
   margin: 0;
   accent-color: var(--primary);
 }
+/* exclude keywords: pill editor (input lives inside the box, pills before it) */
+.pill-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px;
+  background: #0a0a0a;
+  border: var(--border-width) solid var(--border-color);
+  cursor: text;
+}
+.pill-box:focus-within { border-color: var(--primary); }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 7px;
+  font-size: var(--text-xs);
+  color: var(--accent);
+  background: #000;
+  border: var(--border-width) solid var(--border-strong);
+}
+.pill-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.pill-x:hover { color: var(--danger); }
+/* input[type="text"] in base.css is (0,1,1): the pill field needs the box class to
+   beat it and drop the border/background, otherwise it draws a second box inside */
+.pill-box .pill-input {
+  flex: 1 1 90px;
+  min-width: 90px;
+  width: auto;
+  margin: 0;
+  padding: 4px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
 
 /* extractor: local agent card + download badges */
 .agent-card { border: var(--border-width-bold) solid var(--border-strong); }
@@ -151,6 +205,28 @@
   border: var(--border-width) solid var(--border-strong);
 }
 .agent-status.is-online { color: var(--primary); border-color: var(--primary); }
+.agent-head-right { display: flex; align-items: center; gap: var(--space-2); }
+/* collapse arrow: 32x28 icon button, hard borders + inverted hover */
+.agent-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 28px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--accent);
+  background: #000;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.1s linear, color 0.1s linear, border-color 0.1s linear, transform 0.1s linear;
+}
+.agent-toggle:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+.agent-toggle:active { transform: scale(0.97); }
 .agent-card.is-unsupported .help-text { color: var(--warning); }
 .agent-card.is-unsupported .btn-sec { opacity: 0.5; }
 /* per row download state: text is the saved format, tooltip carries the detail */

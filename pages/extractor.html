@@ -39,7 +39,6 @@
     <input type="url" id="url" aria-label="spotify playlist link" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." oninput="salvarUrlPlaylist()" />
     <button type="button" onclick="extrair()" style="margin-bottom:0;">load playlist</button>
     <button type="button" class="link-btn" onclick="toggleBox('manualBox')" aria-expanded="false" aria-controls="manualBox"><i class="ph ph-wrench" aria-hidden="true"></i> manual mode</button>
-    <button type="button" class="link-btn" onclick="toggleBox('apiBox')" aria-expanded="false" aria-controls="apiBox"><i class="ph ph-gear" aria-hidden="true"></i> official spotify api (+100 tracks)</button>
     
     <div id="manualBox">
       <button class="btn-sec" style="margin-bottom:8px; width:100%;" onclick="abrirFonte()">1. open raw data in browser</button>
@@ -47,39 +46,41 @@
       <button class="btn-sec" style="width:100%;" onclick="extrairManual()">3. process pasted text</button>
     </div>
 
-    <div id="apiBox">
-      <input type="text" id="cid" aria-label="spotify client id" placeholder="client id" oninput="salvarChaves()" />
-      <input type="password" id="csec" aria-label="spotify client secret" placeholder="client secret" oninput="salvarChaves()" />
-    </div>
-
     <button type="button" class="link-btn link-btn-danger" onclick="limparCacheLinks()"><i class="ph ph-broom" aria-hidden="true"></i> clear saved links</button>
 
     <div class="input-group" style="margin-top: 14px;">
       <label for="cfgExcludeKeywords">exclude title keywords</label>
-      <input type="text" id="cfgExcludeKeywords" class="text-input" placeholder="ex: live, remix, cover, sped up" autocomplete="off" spellcheck="false" oninput="salvarKeywordsExclusao()">
+      <div class="pill-box" id="kwPillsBox">
+        <input type="text" id="cfgExcludeKeywords" class="pill-input" placeholder="add a word + enter" autocomplete="off" spellcheck="false" onkeydown="kwKeydown(event)" onpaste="kwPaste(event)" onblur="kwCommitInput()">
+      </div>
     </div>
-    <p class="help-text">comma separated, case-insensitive. videos with any of these words in the title are skipped in public and admin mode.</p>
+    <p class="help-text">press enter or comma to add a word. matching ignores case and accents; videos with any of these words in the title are skipped in public and admin mode.</p>
 
-    <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode. the official spotify api only stores the credentials for now.</p>
+    <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode.</p>
   </div>
 
   <!-- Agente local de download -->
   <div id="agentCard" class="card agent-card">
     <div class="list-header">
       <h3 class="section-title">local agent</h3>
-      <span id="agentStatus" class="agent-status">offline</span>
+      <div class="agent-head-right">
+        <span id="agentStatus" class="agent-status">offline</span>
+        <button type="button" id="btnAgentToggle" class="agent-toggle" aria-expanded="false" aria-controls="agentBody" aria-label="expand local agent" onclick="toggleAgentBody()"><i class="ph ph-caret-down" aria-hidden="true"></i></button>
+      </div>
     </div>
-    <a class="btn-sec" href="https://github.com/georg342/zarbig/releases/latest/download/zarbig-yt-agent.zip" download><i class="ph ph-download-simple" aria-hidden="true"></i> download agent (.zip)</a>
-    <div class="input-group" style="margin-top: 12px;">
-      <label for="agentTokenInput">token</label>
-      <input type="text" id="agentTokenInput" class="text-input" placeholder="token printed by start.bat" autocomplete="off" spellcheck="false" oninput="salvarTokenAgente(this.value)">
+    <div id="agentBody" hidden>
+      <a class="btn-sec" href="https://github.com/georg342/zarbig/releases/latest/download/zarbig-yt-agent.zip" download><i class="ph ph-download-simple" aria-hidden="true"></i> download agent (.zip)</a>
+      <div class="input-group" style="margin-top: 12px;">
+        <label for="agentTokenInput">token</label>
+        <input type="text" id="agentTokenInput" class="text-input" placeholder="token printed by start.bat" autocomplete="off" spellcheck="false" oninput="salvarTokenAgente(this.value)">
+      </div>
+      <div class="row row-split">
+        <button type="button" id="btnPasteToken" class="btn-sec" onclick="colarTokenAgente()"><i class="ph ph-clipboard-text" aria-hidden="true"></i> paste token</button>
+        <button type="button" id="btnConnectAgent" class="btn-sec" onclick="conectarAgente()"><i class="ph ph-plug" aria-hidden="true"></i> connect</button>
+      </div>
+      <p class="help-text" id="agentHelp">run start.bat once, then paste the token. the token changes every start.</p>
+      <p class="help-text">audio only, saved by the local agent. personal use; respect the youtube terms of service.</p>
     </div>
-    <div class="row row-split">
-      <button type="button" id="btnPasteToken" class="btn-sec" onclick="colarTokenAgente()"><i class="ph ph-clipboard-text" aria-hidden="true"></i> paste token</button>
-      <button type="button" id="btnConnectAgent" class="btn-sec" onclick="conectarAgente()"><i class="ph ph-plug" aria-hidden="true"></i> connect</button>
-    </div>
-    <p class="help-text" id="agentHelp">run start.bat once, then paste the token. the token changes every start.</p>
-    <p class="help-text">audio only, saved by the local agent. personal use; respect the youtube terms of service.</p>
   </div>
 
   <!-- Botão / Toggle Admin Mode -->
@@ -104,7 +105,6 @@
       <button class="btn-sec" onclick="salvarYtKey()"><i class="ph ph-floppy-disk" aria-hidden="true"></i> save key</button>
       <button class="btn-sec" onclick="limparYtKey()"><i class="ph ph-eraser" aria-hidden="true"></i> clear key</button>
     </div>
-    <button class="btn-danger-outline" style="width: 100%; margin-bottom: 0;" onclick="limparChavesSpotify()"><i class="ph ph-trash" aria-hidden="true"></i> clear spotify keys</button>
 
     <!-- Parâmetros de busca -->
     <h4 class="admin-subtitle">search params</h4>
@@ -159,7 +159,7 @@
 
     <div class="yt-music-toggle">
       <input type="checkbox" id="cfgAutoPick" checked>
-      <label for="cfgAutoPick">auto-pick first result</label>
+      <label for="cfgAutoPick">auto-pick</label>
     </div>
     <button class="btn-sec" style="width: 100%;" onclick="salvarAdminCfg()"><i class="ph ph-floppy-disk" aria-hidden="true"></i> save params</button>
   </div>

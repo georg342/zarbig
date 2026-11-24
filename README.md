@@ -82,6 +82,10 @@ depois abra <http://localhost:8000>.
 
 **query suffix (lista):** vale nos dois modos, inclusive no público. o padrão é `official audio` + `official video`: os termos são tentados em ordem até aparecer um vídeo, então só cai para o próximo sufixo quando o anterior não retorna nada. lista vazia = busca sem sufixo.
 
+**auto-pick:** quando ligado, escolhe o melhor candidato nesta ordem: art track com o artista e o título do spotify no vídeo → qualquer candidato com artista + título → primeiro art track → primeiro resultado. link já salvo no cache não é revalidado (o badge amarelo de alerta avisa quando artista/título não batem).
+
+**exclude title keywords:** campo de pills — digite e tecle `enter` ou `,` para virar uma pill, `X` remove, `backspace` com o campo vazio apaga a última. a comparação ignora caixa e acento.
+
 **delay (ms):** pausa entre faixas na geração em lote (e no `retry failed`); o modo público nunca desce de 1000ms. cada tentativa de sufixo é uma requisição, então listas longas + delay baixo estouram o limite do `r.jina.ai`.
 
 **playlist tools (público, aparecem após carregar uma playlist):**
@@ -90,7 +94,7 @@ depois abra <http://localhost:8000>.
 - **batch tools** — `check failed` (marca só as faixas com erro), `invert selection`, `retry failed` (re-tenta apenas as que falharam) e `reset links` (limpa os links gerados, com confirmação);
 - **export** — copia `artista - titulo | url` da seleção ou baixa um `.csv` (`num,titulo,artista,yt_url,yt_title,yt_channel`).
 
-**admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), limpeza das chaves do spotify, os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
+**admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`), os parâmetros do agente de download (lote, timeout, cookies) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
 
 ### agente local de download (`agent/`)
 
@@ -148,6 +152,5 @@ api: `GET /health`, `GET /status`, `POST /download`, `POST /cancel`, `POST /fold
 - **as chaves vivem no front-end.** a anon key e a youtube api key são públicas por natureza: restrinja referrer/quota no google cloud e use rls/policies no bucket do supabase.
 - `r.jina.ai` e `api.allorigins.win` são proxies de terceiros: podem falhar, limitar requisições ou mudar o formato. quando isso acontecer, use o modo manual.
 - a busca pública de links usa `r.jina.ai` e está limitada a ~20 req/min no free tier; o delay mínimo nesse modo é 1s e a lista de sufixos também vale aqui (cada sufixo tentado é 1 requisição).
-- o bloco "official spotify api (+100 tracks)" apenas salva `client id`/`client secret` no `localStorage` (`sp_cid`/`sp_csec`); a extração atual não consome esses valores.
 - `.env` está no `.gitignore` e não é lido pelo app (só chaves locais de ia).
 - sem service worker: `sw.js` e `old.html` foram removidos na refatoração.

@@ -90,6 +90,44 @@ function marcarAvisoVisto() {
 }
 
 // ==========================================
+// AGENT CARD COLLAPSE
+// ==========================================
+// The card is setup only: the header keeps the status, the arrow opens the body.
+// First visit (no token yet) opens by itself, after that the choice is remembered.
+const ZB_AGENT_OPEN_KEY = 'zb_agent_open';
+
+function agenteAbertoNoDom() {
+  const body = document.getElementById('agentBody');
+  return !!(body && !body.hidden);
+}
+
+function setAgenteAberto(aberto, persistir = true) {
+  const body = document.getElementById('agentBody');
+  const btn = document.getElementById('btnAgentToggle');
+
+  if (body) body.hidden = !aberto;
+
+  if (btn) {
+    btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+    btn.setAttribute('aria-label', aberto ? 'collapse local agent' : 'expand local agent');
+    const icon = btn.querySelector('i');
+    if (icon) icon.className = aberto ? 'ph ph-caret-up' : 'ph ph-caret-down';
+  }
+
+  if (persistir) {
+    try {
+      localStorage.setItem(ZB_AGENT_OPEN_KEY, aberto ? '1' : '0');
+    } catch (e) {
+      // storage blocked: the card just starts collapsed next time
+    }
+  }
+}
+
+function toggleAgentBody() {
+  setAgenteAberto(!agenteAbertoNoDom());
+}
+
+// ==========================================
 // AGENT CLIENT
 // ==========================================
 async function chamarAgente(path, options = {}) {
@@ -611,6 +649,14 @@ function atualizarBadgeDl(m) {
 window.zbInitDownloadAgent = function () {
   const campo = document.getElementById('agentTokenInput');
   if (campo) campo.value = tokenAgente();
+
+  let estadoAgente = null;
+  try {
+    estadoAgente = localStorage.getItem(ZB_AGENT_OPEN_KEY);
+  } catch (e) {
+    estadoAgente = null;
+  }
+  setAgenteAberto(estadoAgente === '1' || (estadoAgente === null && !tokenAgente()), false);
 
   renderFolderInfo();
   renderAgentStatus();
