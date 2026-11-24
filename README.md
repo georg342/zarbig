@@ -83,7 +83,7 @@ depois abra <http://localhost:8000>.
 
 **query suffix (lista):** o padrão é `topic` + `official audio`, nessa ordem — `topic` primeiro é o que acha o art track, então a query crua (`título artista`) não é mais disparada. no modo público a busca sempre usa os dois; só o admin pode editar/remover (lista vazia = volta para a query crua). os termos são tentados em ordem até aparecer um candidato aprovado.
 
-**jina + paralelismo:** a busca usa `r.jina.ai` com a key pública embutida (~500 req/min; sem chave cai para ~20) e **6 buscas em paralelo** (admin: `parallel searches`, 1..10). termos do mesmo track continuam sequenciais; o paralelismo é entre tracks. o `#status` mostra `6p · 120/500 rpm`. se a key falhar (401/403) o código segue sem chave e avisa no log.
+**jina + paralelismo:** a busca usa `r.jina.ai` com a key pública embutida (~500 req/min; sem chave cai para ~20) e **6 buscas em paralelo** (admin: `parallel searches`, 1..10). termos do mesmo track continuam sequenciais; o paralelismo é entre tracks. o `#status` mostra `6p · 120/500 rpm`. se a key falhar (401/403) o código segue sem chave e avisa no log. o campo `jina api key` fica no card público (salva em `localStorage.zb_jina_key`) e `reset to default` volta para a chave embutida.
 
 **auto-pick:** escolhe só entre candidatos aprovados — todo pedaço do nome do artista (créditos separados por vírgula, cada um quebrado por espaço) precisa estar no título **ou** no canal, e o título do spotify precisa bater. entre os aprovados, art track primeiro. **se nada passa, a faixa fica failed** (nada de link aleatório). link já salvo no cache não é revalidado; o badge amarelo avisa quando artista/título não batem.
 
