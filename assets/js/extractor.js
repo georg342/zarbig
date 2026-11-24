@@ -4,7 +4,7 @@ const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?sear
 // free reader key, generated without an account: public by design. a key stored
 // in localStorage (admin field) replaces it when this one expires or is throttled
 const JINA_API_KEY = 'jina_29ee2a28f4a2424c863683cdf95f0378KkKqsO0sHQGlvNRUc8eenCQLH3dh';
-const JINA_TIMEOUT_MS = 15000;
+const JINA_TIMEOUT_MS = 25000;
 const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links', playlistUrl: 'zb_playlist_url', jinaKey: 'zb_jina_key' };
 const DEFAULT_SUFFIXES = ['topic', 'official audio'];
 const COOKIE_BROWSERS = ['chrome', 'edge', 'firefox'];
@@ -85,6 +85,16 @@ function zbProgressoEsconder(tipo) {
   barra.classList.remove('is-active');
   barra.setAttribute('aria-hidden', 'true');
 }
+
+// The retry badge is a span (same pattern as the other row badges): give it the
+// keyboard path Enter/Space so it is not pointer-only.
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  const alvo = ev.target.closest('[data-retry]');
+  if (!alvo) return;
+  ev.preventDefault();
+  alvo.click();
+});
 
 let musicasGlobal = [];
 let nomePlaylist = "playlist";
@@ -1128,7 +1138,7 @@ async function buscarPaginaSpoti(id, token, offset) {
   const res = await fetchRapido(url, {
     headers: { 'Authorization': `Bearer ${token}`, 'app-platform': 'WebPlayer' },
     referrerPolicy: 'no-referrer'
-  }, 15000);
+  }, 25000);
 
   if (!res.ok) throw new Error(`pathfinder http ${res.status}`);
 
@@ -1398,7 +1408,9 @@ function render() {
     if (m.ytUrl) {
       badgeYt = `<a href="${m.ytUrl}" target="_blank" class="yt-badge ok" onclick="event.stopPropagation()">yt link</a>`;
     } else if (m.erroYt) {
-      badgeYt = `<span class="yt-badge err" data-retry="true" onclick="tentarUnica(${m.num}, 'yt')">error (retry)</span>`;
+      // hover report: every term tried and why nothing was accepted
+      const relatorio = Array.isArray(m.diag) && m.diag.length ? m.diag.join('\n') : 'search failed';
+      badgeYt = `<span class="yt-badge err" id="badge-yt-${m.num}" data-retry="true" role="button" tabindex="0" title="${window.escapeHtml(relatorio)}" aria-label="retry search: ${window.escapeHtml(relatorio)}" onclick="tentarUnica(${m.num}, 'yt')">error (retry)</span>`;
     }
 
     let ytDetailsHtml = '';
@@ -1533,7 +1545,7 @@ async function buscarResultadosApi(m) {
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${cfg.maxResults}&q=${encodeURIComponent(termo)}&key=${key}`;
     log(`[info] [youtube api] buscando opções para: "${termo}"`);
 
-    const res = await fetchRapido(url, {}, 15000);
+    const res = await fetchRapido(url, {}, 25000);
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.error?.message || `http error ${res.status}`);
@@ -1553,8 +1565,10 @@ async function buscarResultadosApi(m) {
     if (resultados.length > 0) return resultados;
     if (brutos.length > 0) {
       log(`[info] [youtube api] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título/artista; tentando o próximo sufixo...`);
+      registrarDiag(m, `${termo}: ${brutos.length} vídeos, 0 válidos`);
       continue;
     }
+    registrarDiag(m, `${termo}: 0 vídeos`);
     log(`[warn] [youtube api] sem resultados para "${termo}"; tentando o próximo sufixo...`);
   }
 
@@ -1569,6 +1583,7 @@ async function buscarResultadosJina(m) {
     log(`[info] [jina] buscando resultados para: "${termo}"`);
 
     let resultados = [];
+    let vistos = 0;
 
     for (let tentativa = 1; tentativa <= 3; tentativa++) {
       try {
@@ -1592,6 +1607,7 @@ async function buscarResultadosJina(m) {
         const txt = await res.text();
         const brutos = parseResultadosJina(txt);
         if (brutos.length > 0) {
+          vistos = brutos.length;
           // keyword filter, then the artist gate; the "- topic" channel is the art
           // track signal available here (the scrape carries no description)
           const validos = filtrarPorArtista(m, filtrarResultados(brutos));
@@ -1610,14 +1626,24 @@ async function buscarResultadosJina(m) {
     }
 
     if (resultados.length > 0) return resultados.slice(0, cfg.maxResults);
+    registrarDiag(m, `${termo}: ${vistos ? `${vistos} vídeos, 0 válidos` : '0 vídeos'}`);
     log(`[warn] [jina] nenhum vídeo para "${termo}"; tentando o próximo sufixo...`);
   }
 
   return [];
 }
 
+// Mini report shown on the failed badge hover: one line per term tried.
+function registrarDiag(m, linha) {
+  if (!m) return;
+  if (!Array.isArray(m.diag)) m.diag = [];
+  if (m.diag.length < 5) m.diag.push(linha);
+}
+
 // Backend: official api (admin + toggle on), with r.jina.ai as fallback.
 async function buscarResultados(m) {
+  m.diag = [];
+
   if (usandoApiOficial()) {
     try {
       const resultados = await buscarResultadosApi(m);
@@ -1659,6 +1685,7 @@ async function acharVideoAutomatico(m) {
   const escolhido = escolherMelhorResultado(m, await buscarResultados(m));
   if (!escolhido) {
     m.erroYt = true;
+    registrarDiag(m, 'nenhum candidato passou em artista + título');
     log(`[warn] faixa #${m.num} sem candidato aprovado (artista/título).`);
   }
 
@@ -1889,16 +1916,22 @@ async function tentarUnica(num, tipo) {
   
   if (tipo === 'yt') {
     log(`=== re-tentando link faixa #${m.num} ===`);
-    await prepararRetry(m);
-    const res = await acharVideoAutomatico(m);
-    if (res && res.id) { 
-      aplicarLinkYt(m, res, document.getElementById('chkYtMusic').checked);
-      log(`[ok] [youtube] faixa #${m.num} link encontrado no retry: ${m.ytUrl}`);
-      enfileirarDownloadAuto(m);
-    } else {
-      m.erroYt = true;
+    zbProgressoMostrar('links', 'retrying track', `#${m.num} · ${m.titulo}`);
+
+    try {
+      await prepararRetry(m);
+      const res = await acharVideoAutomatico(m);
+      if (res && res.id) {
+        aplicarLinkYt(m, res, document.getElementById('chkYtMusic').checked);
+        log(`[ok] [youtube] faixa #${m.num} link encontrado no retry: ${m.ytUrl}`);
+        enfileirarDownloadAuto(m);
+      } else {
+        m.erroYt = true;
+      }
+    } finally {
+      zbProgressoEsconder('links');
+      render();
     }
-    render();
   }
 }
 
