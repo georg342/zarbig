@@ -404,25 +404,36 @@ window.toggleAdminMode = async function () {
 // ==========================================
 // The controls column decides how long the page is. Its height is measured with
 // the stretch class off (otherwise offsetHeight already reports the stretched
-// row) and cached in --results-cap, which pages.css uses as the card max-height.
-// The cap never goes below the card's fixed chrome + a usable list, otherwise the
-// buttons under the list would be cut. No observer that measures its own target:
-// that is what produced the "resizeobserver loop" error.
+// row). --list-h then caps the track list at (column height - fixed chrome), so
+// only the list scrolls: the filter above and the buttons below stay visible and
+// the card itself never scrolls. No observer that measures its own target: that
+// is what produced the "resizeobserver loop" error.
 const MIN_LIST_HEIGHT = 120;
 
-// Height of everything in the card except the track list (padding, header,
-// search, selection row, toggle, help text, buttons).
+// Height taken by everything except the list body: card border/padding, header,
+// search, selection row, toggle, help text and buttons, plus the list margins.
+// Summed from the children because the card is stretched: (card height - list
+// height) would count the leftover space as chrome.
 function medirChromeResCard() {
   const card = document.getElementById('resCard');
   const list = document.getElementById('lista');
   if (!card || !list) return 0;
 
-  const displayAnterior = list.style.display;
-  list.style.display = 'none';
-  const chrome = card.scrollHeight;
-  list.style.display = displayAnterior;
+  const cs = getComputedStyle(card);
+  const num = (valor) => parseFloat(valor) || 0;
 
-  return chrome;
+  let total = num(cs.borderTopWidth) + num(cs.borderBottomWidth)
+    + num(cs.paddingTop) + num(cs.paddingBottom);
+
+  Array.from(card.children).forEach(el => {
+    const st = getComputedStyle(el);
+    if (st.display === 'none') return;
+
+    total += num(st.marginTop) + num(st.marginBottom);
+    if (el !== list) total += el.getBoundingClientRect().height;
+  });
+
+  return total;
 }
 
 function syncResultsCap() {
@@ -430,15 +441,22 @@ function syncResultsCap() {
   const controls = document.querySelector('.col-controls');
   if (!main || !controls) return;
 
+  const chrome = medirChromeResCard();
+
+  // the column height is only its own content with the stretch class off,
+  // otherwise offsetHeight already reports the stretched grid row
   const esticado = main.classList.contains('stretch-results');
   if (esticado) main.classList.remove('stretch-results');
-
-  const altura = Math.max(controls.offsetHeight, medirChromeResCard() + MIN_LIST_HEIGHT);
-
-  main.style.setProperty('--results-cap', `${altura}px`);
+  const alturaColuna = controls.offsetHeight;
   main.classList.add('stretch-results');
 
-  // the panel height changed: the ghost rows follow it
+  // the card gets exactly the column height, with a floor that keeps the fixed
+  // chrome plus a usable list; the list takes whatever is left and scrolls
+  const alturaCartao = Math.max(alturaColuna, chrome + MIN_LIST_HEIGHT);
+
+  main.style.setProperty('--card-h', `${alturaCartao}px`);
+
+  // the list height changed: the ghost rows follow it
   fitPlaceholderRows();
 }
 
@@ -531,9 +549,6 @@ async function extrair() {
   const url = document.getElementById('url').value.trim();
   const status = document.getElementById('status');
   const id = getId(url);
-  // status lives in the results card header now, so the card has to be visible
-  // for the pre-load messages (invalid link / extracting / error).
-  document.getElementById('resCard').style.display = 'block';
   if (!id) return status.innerText = "invalid link.";
 
   nomePlaylist = "playlist";
@@ -757,7 +772,6 @@ function aplicarPlaylistSpoti(dados) {
   musicasGlobal = dados.faixas.map((f, i) => criarObjetoMusica(i + 1, f.titulo, f.artista));
   render();
   document.getElementById('status').innerText = `${musicasGlobal.length} tracks loaded!`;
-  document.getElementById('resCard').style.display = 'block';
 }
 
 async function semApi(id) {
@@ -800,7 +814,6 @@ async function semApi(id) {
         musicasGlobal = dados;
         render();
         document.getElementById('status').innerText = `${dados.length} tracks loaded!`;
-        document.getElementById('resCard').style.display = 'block';
         log(`sucesso! ${dados.length} músicas extraídas.`);
         return;
       }
@@ -821,7 +834,6 @@ function extrairManual() {
   if (lista?.length) {
     musicasGlobal = lista;
     render();
-    document.getElementById('resCard').style.display = 'block';
     document.getElementById('status').innerText = `${lista.length} tracks loaded!`;
   } else mostrarToast("no tracks found in text.");
 }

@@ -29,21 +29,22 @@
   .layout > .col-controls, .layout > .col-results { grid-column: auto; grid-row: auto; }
 }
 
-/* extractor: the results card fills the controls column (the page length is set
-   by that column) and never grows past that height: extra content stays inside
-   the card instead of spilling over the debug console. --results-cap is the
-   measured controls height (script), with the card kept in the flow so its own
-   height can never push the page any lower */
+/* extractor: the results card fills the controls column exactly and never
+   scrolls. Only the track list scrolls; the filter/checks above it and the
+   buttons below it stay put. --card-h is the measured column height (with a floor
+   that keeps the buttons visible), and the list takes whatever space is left, so
+   temporary rows (progress bars) shrink the list instead of pushing them out */
 @media (min-width: 1025px) {
   .layout.stretch-results { align-items: stretch; }
   .layout.stretch-results > .col-results { display: flex; }
   .layout.stretch-results > .col-results > .card {
     flex: 1; display: flex; flex-direction: column;
-    max-height: var(--results-cap, none); overflow-y: auto; overflow-x: hidden;
+    height: var(--card-h, auto);
   }
-  /* the list always keeps room for a few rows and scrolls on its own, so the
-     buttons below it are never pushed out of the card */
-  .layout.stretch-results .track-list { flex: 1; min-height: 120px; max-height: none; display: flex; flex-direction: column; }
+  .layout.stretch-results .track-list {
+    flex: 1; min-height: 0; max-height: none; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
   .layout.stretch-results .track-item { flex: 0 0 auto; }
   /* ghost rows share whatever height the list ends up with, so the box never
      shows a half empty block under the last placeholder */
