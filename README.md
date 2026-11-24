@@ -69,7 +69,8 @@ depois abra <http://localhost:8000>.
 1. cola o link da playlist do spotify;
 2. o app busca `open.spotify.com/embed/playlist/<id>` através de proxies (`r.jina.ai` e, se falhar, `api.allorigins.win`) e faz o parse das faixas;
 3. seleciona as faixas e gera os links do youtube (ou do youtube music, conforme o toggle);
-4. exporta: copiar todos os links, copiar 1 por vez (intervalo de 3s) ou baixar `.txt`.
+4. na barra de ferramentas acima da lista (ícones, nome completo no hover): `only selected tracks` (fica ligado), `check failed`, `invert selection`, `check visible`, `uncheck all`; a barra só aparece com playlist carregada;
+5. exporta pelos `playlist tools`: `artista - titulo | link`, `.csv`, `yt/ytm links`, `auto copy (3s)` e `.txt`.
 
 **modo manual:** "open raw data in browser" abre a página via `r.jina.ai`; cole o texto no campo e clique em "process pasted text".
 
@@ -91,8 +92,8 @@ depois abra <http://localhost:8000>.
 **playlist tools (público, aparecem após carregar uma playlist):**
 
 - **already owned filter** — cole os nomes dos arquivos locais (ou use "scan folder") e clique em "uncheck owned"; as faixas encontradas ganham o badge `owned`, são desmarcadas e ficam protegidas de seleção/geração;
-- **batch tools** — `check failed` (marca só as faixas com erro), `invert selection`, `retry failed` (re-tenta apenas as que falharam) e `reset links` (limpa os links gerados, com confirmação);
-- **export** — copia `artista - titulo | url` da seleção ou baixa um `.csv` (`num,titulo,artista,yt_url,yt_title,yt_channel`).
+- **batch tools** — `retry failed` (re-tenta apenas as que falharam) e `reset links` (limpa os links gerados, com confirmação);
+- **export** — `artista - titulo | link` (copia), `.csv` (`num,titulo,artista,yt_url,yt_title,yt_channel`), `yt/ytm links`, `auto copy (3s)` e `.txt`.
 
 **admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`), os parâmetros do agente de download (lote, timeout, cookies) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
 

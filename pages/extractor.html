@@ -38,6 +38,8 @@
   <div class="card">
     <input type="url" id="url" aria-label="spotify playlist link" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." oninput="salvarUrlPlaylist()" />
     <button type="button" onclick="extrair()" style="margin-bottom:0;">load playlist</button>
+    <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode.</p>
+    
     <button type="button" class="link-btn" onclick="toggleBox('manualBox')" aria-expanded="false" aria-controls="manualBox"><i class="ph ph-wrench" aria-hidden="true"></i> manual mode</button>
     
     <div id="manualBox">
@@ -56,13 +58,12 @@
     </div>
     <p class="help-text">press enter or comma to add a word. matching ignores case and accents; videos with any of these words in the title are skipped in public and admin mode.</p>
 
-    <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode.</p>
   </div>
 
   <!-- Agente local de download -->
   <div id="agentCard" class="card agent-card">
     <div class="list-header">
-      <h3 class="section-title">local agent</h3>
+      <h3 class="section-title">download agent</h3>
       <div class="agent-head-right">
         <span id="agentStatus" class="agent-status">offline</span>
         <button type="button" id="btnAgentToggle" class="agent-toggle" aria-expanded="false" aria-controls="agentBody" aria-label="expand local agent" onclick="toggleAgentBody()"><i class="ph ph-caret-down" aria-hidden="true"></i></button>
@@ -192,6 +193,9 @@
     <div class="row">
       <button class="btn-sec" onclick="copiarListaFormatada()"><i class="ph ph-list-numbers" aria-hidden="true"></i> artist - title | link</button>
       <button class="btn-sec" onclick="baixarCsv()"><i class="ph ph-file-csv" aria-hidden="true"></i> .csv export</button>
+      <button class="btn-sec" onclick="copiarApenasLinks()"><i class="ph ph-link" aria-hidden="true"></i> yt/ytm links</button>
+      <button id="btnForEach" class="btn-sec" onclick="copiarForEach()"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> auto copy (3s)</button>
+      <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple" aria-hidden="true"></i> .txt export</button>
     </div>
   </div>
   </div>
@@ -206,13 +210,13 @@
 
     <input type="search" id="busca" aria-label="filter track or artist" placeholder="🔍 filter track or artist..." oninput="render()" />
 
-    <label class="filter-only" for="chkOnlySelected">
-      <input type="checkbox" id="chkOnlySelected" onchange="render()"> only selected tracks
-    </label>
-
-    <div class="row row-split">
-      <button class="btn-sec" onclick="selecionarTodas(true)"><i class="ph ph-check-square" aria-hidden="true"></i> check visible</button>
-      <button class="btn-sec" onclick="selecionarTodas(false)"><i class="ph ph-square" aria-hidden="true"></i> uncheck all</button>
+    <!-- playlist tools: icon switches, full action name on hover/focus -->
+    <div id="trackToolbar" class="track-toolbar" role="toolbar" aria-label="track selection" hidden>
+      <button type="button" id="btnOnlySelected" class="tool-switch" aria-pressed="false" aria-label="only selected tracks" data-tip="only selected tracks" onclick="toggleSomenteMarcadas()"><i class="ph ph-funnel" aria-hidden="true"></i></button>
+      <button type="button" class="tool-switch" aria-label="check failed" data-tip="check failed" onclick="selecionarFalhas()"><i class="ph ph-warning" aria-hidden="true"></i></button>
+      <button type="button" class="tool-switch" aria-label="invert selection" data-tip="invert selection" onclick="inverterSelecao()"><i class="ph ph-arrows-left-right" aria-hidden="true"></i></button>
+      <button type="button" class="tool-switch" aria-label="check visible" data-tip="check visible" onclick="selecionarTodas(true)"><i class="ph ph-check-square" aria-hidden="true"></i></button>
+      <button type="button" class="tool-switch" aria-label="uncheck all" data-tip="uncheck all" onclick="selecionarTodas(false)"><i class="ph ph-square" aria-hidden="true"></i></button>
     </div>
 
     <ul id="lista" class="track-list" aria-label="tracks"></ul>
@@ -225,15 +229,9 @@
 
     <button id="btnYt" class="btn-yt" onclick="buscarLinksYoutube()"><i class="ph ph-youtube-logo" aria-hidden="true"></i> generate links</button>
 
-    <div class="row export-row">
-      <button class="btn-sec" onclick="copiarApenasLinks()"><i class="ph ph-link" aria-hidden="true"></i> yt/ytm links</button>
-      <button id="btnForEach" class="btn-sec" onclick="copiarForEach()"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> auto copy (3s)</button>
-      <button class="btn-sec" onclick="baixarTxt()"><i class="ph ph-download-simple" aria-hidden="true"></i> .txt export</button>
-    </div>
-
-    <div class="row row-split" style="margin-top: 10px;">
-      <button type="button" id="btnDl" class="btn-sec" onclick="iniciarDownload()"><i class="ph ph-hard-drives" aria-hidden="true"></i> download selected</button>
-      <button type="button" id="btnDlFolder" class="btn-sec" onclick="escolherPastaDownload()"><i class="ph ph-folder" aria-hidden="true"></i> folder</button>
+    <div class="dl-row">
+      <button type="button" id="btnDl" class="btn-sec" onclick="iniciarDownload()"><i class="ph ph-download-simple" aria-hidden="true"></i> download</button>
+      <button type="button" id="btnDlFolder" class="icon-square" aria-label="change folder" data-tip="change folder" onclick="escolherPastaDownload()"><i class="ph ph-folder" aria-hidden="true"></i></button>
     </div>
     <p class="help-text" id="dlFolderInfo">pick a download folder before the first run.</p>
   </div>

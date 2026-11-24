@@ -1155,6 +1155,18 @@ function selecionarTodas(estado) {
   render();
 }
 
+// "only selected" is a latched switch in the toolbar (aria-pressed), not a checkbox
+let somenteMarcadas = false;
+
+function toggleSomenteMarcadas() {
+  somenteMarcadas = !somenteMarcadas;
+
+  const btn = document.getElementById('btnOnlySelected');
+  if (btn) btn.setAttribute('aria-pressed', somenteMarcadas ? 'true' : 'false');
+
+  render();
+}
+
 function copiarLinkUnico(num, ev) {
   if (ev) ev.stopPropagation();
   const m = musicasGlobal.find(x => x.num === num);
@@ -1212,12 +1224,15 @@ function fitPlaceholderRows() {
 function render() {
   document.getElementById('pTitle').innerText = nomePlaylist.toLowerCase();
   const q = document.getElementById('busca').value.toLowerCase();
-  const filtroMarcadas = document.getElementById('chkOnlySelected');
-  const apenasMarcadas = !!(filtroMarcadas && filtroMarcadas.checked);
+  const apenasMarcadas = somenteMarcadas;
   const visiveis = apenasMarcadas ? musicasGlobal.filter(m => m.selecionada) : musicasGlobal;
   const filtradas = visiveis.filter(m =>
     m.titulo.toLowerCase().includes(q) || m.artista.toLowerCase().includes(q)
   );
+
+  // the whole selection toolbar is playlist-only: nothing to act on with an empty list
+  const toolbar = document.getElementById('trackToolbar');
+  if (toolbar) toolbar.hidden = !musicasGlobal.length;
 
   const lista = document.getElementById('lista');
   if (!musicasGlobal.length) {
