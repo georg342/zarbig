@@ -341,9 +341,10 @@ function setAdminUI(enabled) {
       : '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
   }
 
-  // admin mode stacks more cards in the controls column; the height cap is
-  // re-measured by the observer below, and the ghost rows are re-rendered
+  // admin mode stacks more cards in the controls column: re-measure the panel
+  // height and redraw the ghost rows when nothing is loaded
   if (!musicasGlobal.length) render();
+  agendarSyncResultsCap();
 
   // the floating gradient picker follows admin mode (helper lives in main.js)
   if (window.setAdminBgWidget) window.setAdminBgWidget(enabled);
@@ -401,19 +402,32 @@ window.toggleAdminMode = async function () {
 // ==========================================
 // RESULTS PANEL HEIGHT
 // ==========================================
-// The controls column decides how long the page is. The results card fills that
-// height, capped to it, so the leftover space gets used and a long track list
-// scrolls inside the card instead of pushing the page any lower.
+// The controls column decides how long the page is. Its height is measured with
+// the stretch class off (otherwise offsetHeight already reports the stretched
+// row) and cached in --results-cap, which pages.css uses as the card max-height.
+// No observer: a resize observer that measures the column it also resizes loops.
 function syncResultsCap() {
   const main = document.getElementById('main');
   const controls = document.querySelector('.col-controls');
   if (!main || !controls) return;
 
-  main.classList.add('stretch-results');
-  main.style.setProperty('--results-cap', `${controls.offsetHeight}px`);
+  const esticado = main.classList.contains('stretch-results');
+  if (esticado) main.classList.remove('stretch-results');
 
-  // the cap changed the list height: ghost rows follow it
+  const altura = controls.offsetHeight;
+
+  main.style.setProperty('--results-cap', `${altura}px`);
+  main.classList.add('stretch-results');
+
+  // the panel height changed: the ghost rows follow it
   fitPlaceholderRows();
+}
+
+function agendarSyncResultsCap() {
+  requestAnimationFrame(() => {
+    syncResultsCap();
+    fitPlaceholderRows();
+  });
 }
 
 // Inicializa melhorias na UI dinamicamente se necessário
@@ -453,14 +467,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // draws the placeholder rows so the results panel is shaped before any load
   render();
 
-  // the results card follows the controls column height, never the other way:
-  // the page length stays the same, the card only fills the space up to it
-  syncResultsCap();
-  const controlsCol = document.querySelector('.col-controls');
-  if (controlsCol && typeof ResizeObserver === 'function') {
-    new ResizeObserver(syncResultsCap).observe(controlsCol);
-  }
-  window.addEventListener('resize', syncResultsCap);
+  // panel height changes with the viewport: re-measure the cap and the ghost rows
+  window.addEventListener('resize', agendarSyncResultsCap);
+  agendarSyncResultsCap();
 });
 
 function limparUrlSpotify() {
@@ -853,8 +862,9 @@ function renderPlaceholderRows(total = 7) {
   return `<li class="track-item empty">no playlist loaded yet. paste a spotify link and hit load playlist.</li>${linhas}`;
 }
 
-// Keeps the ghost rows close to the height of a real track row (~41px): the
-// count follows the panel height instead of stretching 7 rows into fat bars.
+// Keeps the ghost rows close to the height of a real track row (~47px): the
+// count follows the panel height instead of stretching a few rows into fat bars.
+// The hint row takes ~40px of the list, so it is discounted first.
 function fitPlaceholderRows() {
   if (musicasGlobal.length) return;
   if (window.matchMedia('(max-width: 1024px)').matches) return;
@@ -862,7 +872,7 @@ function fitPlaceholderRows() {
   const lista = document.getElementById('lista');
   if (!lista || !lista.clientHeight) return;
 
-  const total = Math.min(40, Math.max(7, Math.round(lista.clientHeight / 41)));
+  const total = Math.min(40, Math.max(1, Math.round((lista.clientHeight - 40) / 47)));
   if (total === placeholderCount) return;
 
   placeholderCount = total;
@@ -879,6 +889,8 @@ function render() {
   const lista = document.getElementById('lista');
   if (!musicasGlobal.length) {
     lista.innerHTML = renderPlaceholderRows(placeholderCount);
+    // the row count follows the panel height, measured by syncResultsCap
+    agendarSyncResultsCap();
     atualizarContador();
     updateToolsVisibility();
     return;
@@ -1357,7 +1369,13 @@ function baixarTxt() {
 function updateToolsVisibility() {
   const toolsCard = document.getElementById('toolsCard');
   if (!toolsCard) return;
-  toolsCard.style.display = musicasGlobal.length ? 'block' : 'none';
+
+  const antes = toolsCard.style.display;
+  const agora = musicasGlobal.length ? 'block' : 'none';
+  toolsCard.style.display = agora;
+
+  // the tools card sets the controls column height, so the panel cap follows it
+  if (antes !== agora) agendarSyncResultsCap();
 }
 
 // Marca apenas as faixas que falharam.

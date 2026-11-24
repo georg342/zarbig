@@ -30,17 +30,22 @@
 }
 
 /* extractor: the results card fills the controls column (the page length is set
-   by it) and never grows past that height: a long track list scrolls inside the
-   card instead of pushing the page lower */
+   by that column) and never grows past that height: extra content stays inside
+   the card instead of spilling over the debug console. --results-cap is the
+   measured controls height (script), with the card kept in the flow so its own
+   height can never push the page any lower */
 @media (min-width: 1025px) {
   .layout.stretch-results { align-items: stretch; }
   .layout.stretch-results > .col-results { display: flex; }
-  .layout.stretch-results > .col-results > .card { flex: 1; display: flex; flex-direction: column; max-height: var(--results-cap, none); }
+  .layout.stretch-results > .col-results > .card {
+    flex: 1; display: flex; flex-direction: column;
+    max-height: var(--results-cap, none); overflow: hidden;
+  }
   .layout.stretch-results .track-list { flex: 1; min-height: 0; max-height: none; display: flex; flex-direction: column; }
   .layout.stretch-results .track-item { flex: 0 0 auto; }
   /* ghost rows share whatever height the list ends up with, so the box never
      shows a half empty block under the last placeholder */
-  .layout.stretch-results .track-item.skeleton { flex: 1 1 0; min-height: 0; }
+  .layout.stretch-results .track-item.skeleton { flex: 1 1 0; min-height: 34px; }
 }
 
 /* extractor: url field with a small inline clear (x) button */
