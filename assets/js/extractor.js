@@ -208,7 +208,8 @@ function cachearLinkYt(m, opt) {
   linksCache[chaveLinkYt(m)] = {
     id: opt.id,
     title: opt.title || '',
-    channel: opt.channelTitle || ''
+    channel: opt.channelTitle || '',
+    art: opt.artTrack === true || ehArtTrack(opt)
   };
 
   podarLinkCache();
@@ -230,6 +231,9 @@ function lerLinkYt(m) {
     id: item.id,
     title: item.title,
     channelTitle: item.channel,
+    // cache entries written before the art track flag existed are still
+    // classifiable by the "<artist> - topic" channel name
+    artTrack: item.art === true || ehArtTrack({ channelTitle: item.channel }),
     thumbnail: `https://i.ytimg.com/vi/${item.id}/default.jpg`
   };
 }
@@ -242,6 +246,7 @@ function aplicarLinkYt(m, opt, usarYtMusic) {
   m.ytUrl = `https://${prefixo}/watch?v=${opt.id}`;
   m.ytTitle = opt.title;
   m.ytChannel = opt.channelTitle;
+  m.ytArt = opt.artTrack === true || ehArtTrack(opt);
   m.erroYt = false;
 
   cachearLinkYt(m, opt);
@@ -626,6 +631,7 @@ function criarObjetoMusica(num, tit, art) {
     ytUrl: null,
     ytTitle: null,
     ytChannel: null,
+    ytArt: false,
     erroYt: false 
   };
 }
@@ -993,6 +999,8 @@ function render() {
     }
 
     const ownedBadge = m.jaTenho ? `<span class="owned-badge">owned</span>` : '';
+    // official label upload picked by priorizarArtTracks()
+    const artBadge = m.ytArt ? `<span class="art-badge">art track</span>` : '';
 
     return `
       <li class="track-item ${m.selecionada ? 'selected' : ''} ${m.jaTenho ? 'owned' : ''}" onclick="toggleItem(${m.num}, event)">
@@ -1005,6 +1013,7 @@ function render() {
         </div>
         <div class="badges-container" style="display: flex; align-items: center; gap: 6px;">
           ${ownedBadge}
+          ${artBadge}
           ${badgeYt}
           ${changeVideoBtn}
           ${m.ytUrl ? `<button class="copy-btn" onclick="copiarLinkUnico(${m.num}, event)" title="copy link"><i class="ph ph-copy" aria-hidden="true"></i></button>` : ''}
@@ -1562,6 +1571,7 @@ async function resetarLinks() {
     m.ytUrl = null;
     m.ytTitle = null;
     m.ytChannel = null;
+    m.ytArt = false;
     m.erroYt = false;
     // reset also forgets the cached picks, otherwise the next run would just
     // hand back the same links without searching again

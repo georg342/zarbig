@@ -89,6 +89,8 @@
 .yt-badge { width: auto; margin: 0; min-height: 26px; font-size: var(--text-xs); padding: 4px 7px; border-radius: var(--radius); background: var(--card-bg); color: var(--text-muted); text-decoration: none; text-align: center; border: var(--border-width) solid var(--border-strong); cursor: pointer; }
 .yt-badge.ok { background: var(--youtube-soft); color: var(--youtube); border: var(--border-width) solid var(--youtube); }
 .yt-badge.err { background: var(--warning-soft); color: var(--warning); border: var(--border-width) solid var(--warning); }
+/* art track: the resolved link is the official label upload, not a manual video */
+.art-badge { width: auto; margin: 0; font-size: var(--text-xs); padding: 4px 7px; text-align: center; color: var(--accent); background: #000; border: var(--border-width) solid var(--accent); }
 
 .progress-wrap { display: none; background: #0a0a0a; height: 6px; border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; border: var(--border-width) solid var(--border-strong); }
 /* progress fill: width is the one animated property kept on purpose (data feedback,
