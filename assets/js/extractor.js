@@ -1,7 +1,7 @@
 const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default youtube data api key (public search uses jina)
 const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
-const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords' };
+const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links' };
 const DEFAULT_SUFFIXES = ['official audio', 'official video'];
 const DEFAULT_ADMIN_CFG = { maxResults: 15, delayMs: 1000, suffixes: DEFAULT_SUFFIXES, useApi: true, autoPick: true };
 
@@ -94,6 +94,120 @@ function filtrarResultados(resultados) {
     log(`[filtro] descartado pelo título: "${opt.title}"`);
     return false;
   });
+}
+
+// ==========================================
+// YOUTUBE LINK CACHE (localStorage)
+// ==========================================
+// Only the picked video id plus the title/channel shown in the ui are kept: the
+// url is rebuilt from the yt music toggle, so both link flavours stay valid.
+// Key = normalized "artista|titulo", so the same track found in another playlist
+// (or loaded again later) skips the whole search.
+const LINK_CACHE_LIMIT = 2000;
+
+let linksCache = {};
+let linksCacheTimer = null;
+
+function chaveLinkYt(m) {
+  return `${normalizarNome(m.artista)}|${normalizarNome(m.titulo)}`;
+}
+
+function lerLinkCache() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ytLinks);
+    if (!raw) return {};
+
+    const salvo = JSON.parse(raw);
+    if (!salvo || typeof salvo !== 'object' || Array.isArray(salvo)) return {};
+
+    // ignore anything that does not look like a youtube video id
+    return Object.keys(salvo).reduce((mapa, chave) => {
+      const item = salvo[chave];
+      if (item && typeof item.id === 'string' && item.id.length === 11) {
+        mapa[chave] = {
+          id: item.id,
+          title: typeof item.title === 'string' ? item.title : '',
+          channel: typeof item.channel === 'string' ? item.channel : ''
+        };
+      }
+      return mapa;
+    }, {});
+  } catch (e) {
+    return {};
+  }
+}
+
+function salvarLinkCache() {
+  if (linksCacheTimer) {
+    clearTimeout(linksCacheTimer);
+    linksCacheTimer = null;
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.ytLinks, JSON.stringify(linksCache));
+  } catch (e) {
+    log(`[warn] cache de links não salvo: ${e.message}`);
+  }
+}
+
+// drops the oldest entries once the cap is hit (object keys keep insertion order)
+function podarLinkCache() {
+  const chaves = Object.keys(linksCache);
+  const excedente = chaves.length - LINK_CACHE_LIMIT;
+  if (excedente <= 0) return;
+
+  chaves.slice(0, excedente).forEach(chave => { delete linksCache[chave]; });
+}
+
+// batches write once per 800ms instead of once per track
+function agendarSalvarLinkCache() {
+  if (linksCacheTimer) return;
+  linksCacheTimer = setTimeout(salvarLinkCache, 800);
+}
+
+function cachearLinkYt(m, opt) {
+  if (!opt || !opt.id) return;
+
+  linksCache[chaveLinkYt(m)] = {
+    id: opt.id,
+    title: opt.title || '',
+    channel: opt.channelTitle || ''
+  };
+
+  podarLinkCache();
+  agendarSalvarLinkCache();
+}
+
+// Cached option for this track, or null. A cached video whose title is now
+// blocked by the exclude keywords is ignored, so the filter still wins.
+function lerLinkYt(m) {
+  const item = linksCache[chaveLinkYt(m)];
+  if (!item) return null;
+
+  if (tituloBloqueado(item.title)) {
+    log(`[filtro] link em cache descartado pelo título: "${item.title}"`);
+    return null;
+  }
+
+  return {
+    id: item.id,
+    title: item.title,
+    channelTitle: item.channel,
+    thumbnail: `https://i.ytimg.com/vi/${item.id}/default.jpg`
+  };
+}
+
+// Single place that writes a resolved video into a track and mirrors it to the
+// link cache, so a later load of the same track skips the search.
+function aplicarLinkYt(m, opt, usarYtMusic) {
+  const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
+
+  m.ytUrl = `https://${prefixo}/watch?v=${opt.id}`;
+  m.ytTitle = opt.title;
+  m.ytChannel = opt.channelTitle;
+  m.erroYt = false;
+
+  cachearLinkYt(m, opt);
 }
 
 function getAdminCfg() {
@@ -307,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   keywordsExclusao = lerKeywordsExclusao();
+  linksCache = lerLinkCache();
   preencherKeywordsExclusao();
   preencherYtKey();
 
@@ -880,6 +995,13 @@ async function buscarResultados(m) {
 
 // Busca automática em segundo plano: pega o 1º resultado silenciosamente sem abrir modals
 async function acharVideoAutomatico(m) {
+  // a track already resolved before (same playlist or not) skips the search
+  const emCache = lerLinkYt(m);
+  if (emCache) {
+    log(`[cache] faixa #${m.num} resolvida pelo cache (${emCache.id}).`);
+    return emCache;
+  }
+
   const opcoes = await buscarResultados(m);
   if (opcoes.length > 0) {
     return opcoes[0];
@@ -988,12 +1110,7 @@ async function alterarVideoManual(num, ev) {
 
   const escolhido = await mostrarModalZarbig(m, opcoes);
   if (escolhido && escolhido.id) {
-    const usarYtMusic = document.getElementById('chkYtMusic').checked;
-    const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
-    m.ytUrl = `https://${prefixo}/watch?v=${escolhido.id}`;
-    m.ytTitle = escolhido.title;
-    m.ytChannel = escolhido.channelTitle;
-    m.erroYt = false;
+    aplicarLinkYt(m, escolhido, document.getElementById('chkYtMusic').checked);
     log(`[ok] [youtube] faixa #${m.num} link encontrado (manual): ${m.ytUrl}`);
     render();
     mostrarToast(`track #${m.num} updated!`);
@@ -1049,10 +1166,7 @@ async function buscarLinksYoutube() {
       }
 
       if (escolhido && escolhido.id) {
-        const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
-        m.ytUrl = `https://${prefixo}/watch?v=${escolhido.id}`;
-        m.ytTitle = escolhido.title;
-        m.ytChannel = escolhido.channelTitle;
+        aplicarLinkYt(m, escolhido, usarYtMusic);
         log(`[ok] [youtube] faixa #${m.num} link encontrado: ${m.ytUrl}`);
       } else if (!(isAdmin && !cfg.autoPick)) {
         m.erroYt = true;
@@ -1072,6 +1186,7 @@ async function buscarLinksYoutube() {
   status.innerText = "search complete!";
   progWrap.style.display = 'none';
   btn.disabled = false;
+  salvarLinkCache();
   mostrarToast("links generated!");
   if (descartesFiltro > 0) mostrarToast(`${descartesFiltro} videos discarded by title filter`);
   window.__zbBatchRunning = false;
@@ -1085,11 +1200,7 @@ async function tentarUnica(num, tipo) {
     log(`=== re-tentando link faixa #${m.num} ===`);
     const res = await acharVideoAutomatico(m);
     if (res && res.id) { 
-      const prefixo = document.getElementById('chkYtMusic').checked ? "music.youtube.com" : "www.youtube.com";
-      m.ytUrl = `https://${prefixo}/watch?v=${res.id}`; 
-      m.ytTitle = res.title;
-      m.ytChannel = res.channelTitle;
-      m.erroYt = false;
+      aplicarLinkYt(m, res, document.getElementById('chkYtMusic').checked);
       log(`[ok] [youtube] faixa #${m.num} link encontrado no retry: ${m.ytUrl}`);
     } else {
       m.erroYt = true;
@@ -1224,11 +1335,7 @@ async function retentarFalhas() {
     try {
       const res = await acharVideoAutomatico(m);
       if (res && res.id) {
-        const prefixo = usarYtMusic ? "music.youtube.com" : "www.youtube.com";
-        m.ytUrl = `https://${prefixo}/watch?v=${res.id}`;
-        m.ytTitle = res.title;
-        m.ytChannel = res.channelTitle;
-        m.erroYt = false;
+        aplicarLinkYt(m, res, usarYtMusic);
         log(`[ok] [retry] faixa #${m.num} link encontrado: ${m.ytUrl}`);
       }
     } catch (e) {
@@ -1245,6 +1352,7 @@ async function retentarFalhas() {
   progWrap.style.display = 'none';
   const restantes = musicasGlobal.filter(m => m.erroYt).length;
   status.innerText = `retry complete (${falhas.length - restantes} ok, ${restantes} failed)`;
+  salvarLinkCache();
   mostrarToast(`retried ${falhas.length} tracks`);
   if (descartesFiltro > 0) mostrarToast(`${descartesFiltro} videos discarded by title filter`);
   window.__zbBatchRunning = false;
@@ -1266,10 +1374,14 @@ async function resetarLinks() {
     m.ytTitle = null;
     m.ytChannel = null;
     m.erroYt = false;
+    // reset also forgets the cached picks, otherwise the next run would just
+    // hand back the same links without searching again
+    delete linksCache[chaveLinkYt(m)];
   });
 
+  salvarLinkCache();
   render();
-  log('[info] all generated links reset.');
+  log('[info] all generated links reset (cache entries dropped).');
   mostrarToast('all links reset!');
 }
 
