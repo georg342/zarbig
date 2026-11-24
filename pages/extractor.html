@@ -139,7 +139,7 @@
   </div>
   <div class="col-results">
 
-  <div id="resCard" class="card" style="display:none;">
+  <div id="resCard" class="card">
     <div class="header-res">
       <strong id="pTitle">playlist</strong>
       <div id="status" role="status" aria-live="polite"></div>
@@ -153,7 +153,7 @@
       <button class="btn-sec" onclick="selecionarTodas(false)"><i class="ph ph-square" aria-hidden="true"></i> uncheck all</button>
     </div>
 
-    <ul id="lista" class="track-list"></ul>
+    <ul id="lista" class="track-list" aria-label="tracks"></ul>
 
     <div class="progress-wrap" id="progWrap">
       <div class="progress-bar prog-yt" id="progBar" role="progressbar" aria-label="youtube links progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>

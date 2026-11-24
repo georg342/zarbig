@@ -2,7 +2,7 @@ const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default yo
 const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
 const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links' };
-const DEFAULT_SUFFIXES = ['official audio', 'official video'];
+const DEFAULT_SUFFIXES = ['official audio', 'topic'];
 const DEFAULT_ADMIN_CFG = { maxResults: 15, delayMs: 1000, suffixes: DEFAULT_SUFFIXES, useApi: true, autoPick: true };
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -427,6 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const scanInput = document.getElementById('scanFolderInput');
   if (scanInput) scanInput.addEventListener('change', onPastaSelecionada);
+
+  // draws the placeholder rows so the results panel is shaped before any load
+  render();
 });
 
 function limparUrlSpotify() {
@@ -798,6 +801,24 @@ function copiarLinkUnico(num, ev) {
   window.copyText(links.join('\n'), `link #${m.num} copied!`);
 }
 
+// Ghost rows keep the results panel shaped before a playlist is loaded, so the
+// page never shows a blank column next to the controls.
+function renderPlaceholderRows(total = 7) {
+  const linhas = Array.from({ length: total }, (_, i) => `
+    <li class="track-item skeleton" aria-hidden="true">
+      <span class="skeleton-box skeleton-check"></span>
+      <span class="num">${i + 1}</span>
+      <div class="info">
+        <span class="skeleton-bar skeleton-title"></span>
+        <span class="skeleton-bar skeleton-artist"></span>
+      </div>
+      <span class="skeleton-box skeleton-badge"></span>
+    </li>
+  `).join('');
+
+  return `<li class="track-item empty">no playlist loaded yet. paste a spotify link and hit load playlist.</li>${linhas}`;
+}
+
 function render() {
   document.getElementById('pTitle').innerText = nomePlaylist.toLowerCase();
   const q = document.getElementById('busca').value.toLowerCase();
@@ -805,7 +826,15 @@ function render() {
     m.titulo.toLowerCase().includes(q) || m.artista.toLowerCase().includes(q)
   );
 
-  document.getElementById('lista').innerHTML = filtradas.map(m => {
+  const lista = document.getElementById('lista');
+  if (!musicasGlobal.length) {
+    lista.innerHTML = renderPlaceholderRows();
+    atualizarContador();
+    updateToolsVisibility();
+    return;
+  }
+
+  lista.innerHTML = filtradas.map(m => {
     let badgeYt = `<span class="yt-badge" id="badge-yt-${m.num}">no link</span>`;
     if (m.ytUrl) {
       badgeYt = `<a href="${m.ytUrl}" target="_blank" class="yt-badge ok" onclick="event.stopPropagation()">yt link</a>`;
@@ -847,6 +876,11 @@ function render() {
       </li>
     `;
   }).join('');
+
+  // playlist loaded but nothing matches the search: say it instead of leaving a bare box
+  if (!filtradas.length) {
+    lista.innerHTML = `<li class="track-item empty">no tracks match "${window.escapeHtml(q)}"</li>`;
+  }
 
   atualizarContador();
   updateToolsVisibility();

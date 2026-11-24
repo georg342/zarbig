@@ -46,6 +46,17 @@
 /* only pointer users get the row as a shortcut: the checkbox carries the keyboard path */
 .track-item.empty { justify-content: center; color: var(--text-muted); font-size: var(--text-xs); cursor: default; }
 .track-item.empty:hover { background: none; }
+/* extractor: ghost rows keep the results panel shaped before a playlist loads.
+   static blocks, no animation -- the page must not shimmer for 1s straight */
+.track-item.skeleton { cursor: default; }
+.track-item.skeleton:hover { background: none; }
+.skeleton-box, .skeleton-bar { display: block; background: rgba(255, 255, 255, 0.06); }
+.skeleton-box { flex-shrink: 0; border: var(--border-width) solid var(--border-color); }
+.skeleton-bar { border: 0; height: 8px; }
+.skeleton-check { width: var(--check-size); height: var(--check-size); }
+.skeleton-title { width: 55%; margin-bottom: 6px; }
+.skeleton-artist { width: 30%; height: 6px; }
+.skeleton-badge { width: 58px; height: 26px; }
 .track-item input[type="checkbox"] { width: var(--check-size); height: var(--check-size); accent-color: var(--primary); cursor: pointer; flex-shrink: 0; border-radius: var(--radius); }
 .num { color: var(--text-muted); font-size: var(--text-sm); width: 20px; text-align: right; flex-shrink: 0; }
 .info { flex: 1; overflow: hidden; }
