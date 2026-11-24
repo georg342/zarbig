@@ -341,13 +341,8 @@ function setAdminUI(enabled) {
       : '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
   }
 
-  // admin mode makes the controls column much taller; stretch the results panel
-  // so it stops short at the same height instead of leaving a dead gap below
-  const layout = document.getElementById('main');
-  if (layout) layout.classList.toggle('stretch-results', enabled);
-
-  // the taller panel needs more ghost rows to stay filled; when a playlist is
-  // loaded the toggle handlers already re-render
+  // admin mode stacks more cards in the controls column; the height cap is
+  // re-measured by the observer below, and the ghost rows are re-rendered
   if (!musicasGlobal.length) render();
 
   // the floating gradient picker follows admin mode (helper lives in main.js)
@@ -403,6 +398,21 @@ window.toggleAdminMode = async function () {
   }
 };
 
+// ==========================================
+// RESULTS PANEL HEIGHT
+// ==========================================
+// The controls column decides how long the page is. The results card fills that
+// height, capped to it, so the leftover space gets used and a long track list
+// scrolls inside the card instead of pushing the page any lower.
+function syncResultsCap() {
+  const main = document.getElementById('main');
+  const controls = document.querySelector('.col-controls');
+  if (!main || !controls) return;
+
+  main.classList.add('stretch-results');
+  main.style.setProperty('--results-cap', `${controls.offsetHeight}px`);
+}
+
 // Inicializa melhorias na UI dinamicamente se necessário
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.fetchWithTimeout !== 'function') {
@@ -439,6 +449,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // draws the placeholder rows so the results panel is shaped before any load
   render();
+
+  // the results card follows the controls column height, never the other way:
+  // the page length stays the same, the card only fills the space up to it
+  syncResultsCap();
+  const controlsCol = document.querySelector('.col-controls');
+  if (controlsCol && typeof ResizeObserver === 'function') {
+    new ResizeObserver(syncResultsCap).observe(controlsCol);
+  }
+  window.addEventListener('resize', syncResultsCap);
 });
 
 function limparUrlSpotify() {
