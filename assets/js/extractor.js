@@ -341,6 +341,15 @@ function setAdminUI(enabled) {
       : '<i class="ph ph-lock" aria-hidden="true"></i> admin mode';
   }
 
+  // admin mode makes the controls column much taller; stretch the results panel
+  // so it stops short at the same height instead of leaving a dead gap below
+  const layout = document.getElementById('main');
+  if (layout) layout.classList.toggle('stretch-results', enabled);
+
+  // the taller panel needs more ghost rows to stay filled; when a playlist is
+  // loaded the toggle handlers already re-render
+  if (!musicasGlobal.length) render();
+
   // the floating gradient picker follows admin mode (helper lives in main.js)
   if (window.setAdminBgWidget) window.setAdminBgWidget(enabled);
 }
@@ -828,7 +837,8 @@ function render() {
 
   const lista = document.getElementById('lista');
   if (!musicasGlobal.length) {
-    lista.innerHTML = renderPlaceholderRows();
+    // admin mode stacks a tall panel on the left, so it gets more ghost rows
+    lista.innerHTML = renderPlaceholderRows(isAdmin ? 16 : 7);
     atualizarContador();
     updateToolsVisibility();
     return;
