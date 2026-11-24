@@ -12,6 +12,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
 </head>
 <body>
+
+  <!-- faixa de progresso fixa no topo: links e download escrevem aqui -->
+  <div id="zbProgress" class="zb-progress" data-kind="" aria-hidden="true">
+    <div class="zb-progress-row">
+      <span class="zb-progress-label" id="zbProgressLabel"></span>
+      <span class="zb-progress-info" id="zbProgressInfo" aria-live="polite"></span>
+    </div>
+    <div class="zb-progress-track" id="zbProgressTrack" role="progressbar" aria-label="task progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="zb-progress-fill" id="zbProgressFill"></span>
+      <span class="zb-progress-sweep" aria-hidden="true"></span>
+    </div>
+  </div>
   
   <a class="skip-link" href="#main">skip to content</a>
 
@@ -194,20 +206,16 @@
 
     <input type="search" id="busca" aria-label="filter track or artist" placeholder="🔍 filter track or artist..." oninput="render()" />
 
+    <label class="filter-only" for="chkOnlySelected">
+      <input type="checkbox" id="chkOnlySelected" onchange="render()"> only selected tracks
+    </label>
+
     <div class="row row-split">
       <button class="btn-sec" onclick="selecionarTodas(true)"><i class="ph ph-check-square" aria-hidden="true"></i> check visible</button>
       <button class="btn-sec" onclick="selecionarTodas(false)"><i class="ph ph-square" aria-hidden="true"></i> uncheck all</button>
     </div>
 
     <ul id="lista" class="track-list" aria-label="tracks"></ul>
-
-    <div class="progress-wrap" id="progWrap">
-      <div class="progress-bar prog-yt" id="progBar" role="progressbar" aria-label="youtube links progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
-    </div>
-    
-    <div class="progress-wrap" id="progWrapDl">
-      <div class="progress-bar prog-dl" id="progBarDl" role="progressbar" aria-label="download progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
-    </div>
 
     <div class="yt-music-toggle">
       <input type="checkbox" id="chkYtMusic" checked />

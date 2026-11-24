@@ -464,6 +464,7 @@ async function iniciarDownload() {
   renderAgentStatus();
 
   const total = Number(dados.total) || escolhidas.length;
+  zbProgressoMostrar('download', 'downloading audio', `0/${total}`);
   atualizarBarraDownload(0, total, true);
   definirStatusDownload(`downloading 0/${total}...`);
   acompanharDownload(dados.jobId);
@@ -485,7 +486,9 @@ async function acompanharDownload(jobId) {
 
   const done = Number(dados.done) || 0;
   const total = Number(dados.total) || 0;
-  atualizarBarraDownload(done, total, true);
+  const atual = (dados.items || []).find(item => item.state === 'downloading');
+  atualizarBarraDownload(done, total, true,
+    `${done}/${total}${atual && atual.title ? ` · ${atual.title}` : ''}`);
   definirStatusDownload(dados.state === 'running'
     ? `downloading ${done}/${total}...`
     : `download ${dados.state}`);
@@ -543,15 +546,14 @@ async function cancelarDownload() {
 // ==========================================
 // UI
 // ==========================================
-function atualizarBarraDownload(done, total, mostrar) {
-  const wrap = document.getElementById('progWrapDl');
-  const bar = document.getElementById('progBarDl');
-  if (!wrap || !bar) return;
+function atualizarBarraDownload(done, total, mostrar, info) {
+  if (!mostrar) {
+    zbProgressoEsconder('download');
+    return;
+  }
 
-  const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-  wrap.style.display = mostrar ? 'block' : 'none';
-  bar.style.width = `${pct}%`;
-  bar.setAttribute('aria-valuenow', String(pct));
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  zbProgressoAtualizar('download', pct, info || `${done}/${total}`);
 }
 
 // Badge html lives here so render() (extractor.js) only calls one hook.

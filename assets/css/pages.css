@@ -51,6 +51,97 @@
   .layout.stretch-results .track-item.skeleton { flex: 1 1 0; min-height: 34px; }
 }
 
+/* ==========================================
+   top progress strip (links + download)
+   ========================================== */
+/* fixed on the very top edge, full viewport width: a "puxadinho" of the browser
+   bar. label on the left, counter/track on the right, fill + moving sweep */
+.zb-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 70;
+  padding: 6px var(--space-3) 0;
+  background: #0a0a0a;
+  border-bottom: var(--border-width-bold) solid var(--border-strong);
+  transform: translateY(-100%);
+  transition: transform 0.12s linear;
+  pointer-events: none;
+}
+.zb-progress.is-active { transform: translateY(0); }
+.zb-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: 5px;
+  min-width: 0;
+}
+.zb-progress-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.zb-progress-info {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.zb-progress-track {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  background: #000;
+  border-top: var(--border-width) solid var(--border-color);
+}
+.zb-progress-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  transition: width 0.1s linear;
+}
+.zb-progress[data-kind="links"] .zb-progress-fill { background: var(--youtube); }
+.zb-progress[data-kind="download"] .zb-progress-fill { background: var(--accent); }
+/* the sweep is the "something is running" signal: transform only, so it stays on
+   the compositor; reduced motion drops it and leaves the fill as the feedback */
+.zb-progress-sweep {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-110%);
+  animation: zb-progress-sweep 1.2s linear infinite;
+}
+@keyframes zb-progress-sweep {
+  to { transform: translateX(360%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zb-progress { transition: none; }
+  .zb-progress-sweep { animation: none; opacity: 0; }
+}
+/* list filter: "only selected tracks" */
+.filter-only {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.filter-only input {
+  width: var(--check-size);
+  height: var(--check-size);
+  margin: 0;
+  accent-color: var(--primary);
+}
+
 /* extractor: local agent card + download badges */
 .agent-card { border: var(--border-width-bold) solid var(--border-strong); }
 .agent-status {
@@ -120,16 +211,8 @@
 .yt-badge.err { background: var(--warning-soft); color: var(--warning); border: var(--border-width) solid var(--warning); }
 /* art track: the resolved link is the official label upload, not a manual video */
 .art-badge { width: auto; margin: 0; font-size: var(--text-xs); padding: 4px 7px; text-align: center; color: var(--accent); background: #000; border: var(--border-width) solid var(--accent); }
-/* resolved link whose title/channel does not carry the spotify artist */
+/* resolved link whose title/channel does not carry the spotify artist/title */
 .artist-warn { display: inline-flex; align-items: center; justify-content: center; min-height: 26px; padding: 2px 7px; font-size: 0.9rem; color: var(--warning); background: var(--warning-soft); border: var(--border-width) solid var(--warning); }
-
-.progress-wrap { display: none; background: #0a0a0a; height: 6px; border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; border: var(--border-width) solid var(--border-strong); }
-/* progress fill: width is the one animated property kept on purpose (data feedback,
-   not an interactive state), so it only gets the strict 100ms linear step */
-.progress-bar { height: 100%; width: 0%; transition: width 0.1s linear; }
-.prog-yt { background: var(--youtube); }
-.prog-dl { background: var(--accent); }
-
 
 .yt-music-toggle { display: flex; align-items: center; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-3); background: #0a0a0a; padding: 10px; border-radius: var(--radius); border: var(--border-width) solid var(--border-strong); }
 .yt-music-toggle input { width: var(--check-size); height: var(--check-size); accent-color: var(--youtube); margin: 0; }

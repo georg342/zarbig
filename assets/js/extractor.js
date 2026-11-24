@@ -27,6 +27,59 @@ function log(msg) {
 
 window.onerror = (msg, src, l) => log(`erro global (l:${l}): ${msg}`);
 
+// ==========================================
+// TOP PROGRESS STRIP (shared: links + download)
+// ==========================================
+// One fixed strip on the very top edge carries every long task: label on the
+// left, counters/track on the right and a moving sweep, so the run stays visible
+// even while the percentage stalls between requests.
+let zbProgressoDono = null;
+
+function zbProgressoMostrar(tipo, rotulo, info) {
+  const barra = document.getElementById('zbProgress');
+  if (!barra) return;
+
+  zbProgressoDono = tipo;
+  barra.dataset.kind = tipo;
+  barra.classList.add('is-active');
+  barra.removeAttribute('aria-hidden');
+
+  const label = document.getElementById('zbProgressLabel');
+  if (label) label.textContent = rotulo;
+
+  const track = document.getElementById('zbProgressTrack');
+  if (track) track.setAttribute('aria-label', rotulo || 'task progress');
+
+  zbProgressoAtualizar(tipo, 0, info);
+}
+
+function zbProgressoAtualizar(tipo, pct, info) {
+  const barra = document.getElementById('zbProgress');
+  if (!barra || barra.dataset.kind !== tipo) return;
+
+  const valor = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+  const fill = document.getElementById('zbProgressFill');
+  const track = document.getElementById('zbProgressTrack');
+
+  if (fill) fill.style.width = `${valor}%`;
+  if (track) track.setAttribute('aria-valuenow', String(valor));
+
+  if (info !== undefined) {
+    const infoEl = document.getElementById('zbProgressInfo');
+    if (infoEl) infoEl.textContent = info;
+  }
+}
+
+function zbProgressoEsconder(tipo) {
+  const barra = document.getElementById('zbProgress');
+  if (!barra) return;
+  if (tipo && barra.dataset.kind !== tipo) return;
+
+  zbProgressoDono = null;
+  barra.classList.remove('is-active');
+  barra.setAttribute('aria-hidden', 'true');
+}
+
 let musicasGlobal = [];
 let nomePlaylist = "playlist";
 let isAdmin = false;
@@ -48,12 +101,12 @@ function parseSufixos(valor, fallback) {
 // ==========================================
 // TITLE EXCLUDE FILTER (public + admin)
 // ==========================================
-// "live, Remix ,, cover" -> ['live','remix','cover']
+// "video, ao vivo" -> ['video','ao vivo']; normalized so case/accent never matter
 function parseKeywordsExclusao(valor) {
   if (valor === undefined || valor === null) return [];
 
   const lista = Array.isArray(valor) ? valor : String(valor).split(',');
-  const keywords = lista.map(k => String(k).trim().toLowerCase()).filter(Boolean);
+  const keywords = lista.map(k => normalizarNome(k)).filter(Boolean);
 
   return [...new Set(keywords)];
 }
@@ -123,12 +176,14 @@ function salvarUrlPlaylist() {
   }
 }
 
-// true when the video title contains any excluded keyword
+// true when the video title contains any excluded keyword. Both sides go
+// through normalizarNome, so "video" drops "Vídeo"/"VIDEO" and "ao vivo" drops
+// "Ao Vivo".
 function tituloBloqueado(titulo) {
   if (!keywordsExclusao.length) return false;
 
-  const alvo = String(titulo || '').toLowerCase();
-  return keywordsExclusao.some(k => alvo.includes(k));
+  const alvo = normalizarNome(titulo);
+  return keywordsExclusao.some(k => k && alvo.includes(k));
 }
 
 // Drops blocked results and counts them for the batch toast.
@@ -180,12 +235,12 @@ function priorizarArtTracks(resultados) {
   return artTracks.concat(demais);
 }
 
-// The spotify artist has to show up in the video title or channel. When it does
-// not, the row is flagged so the pick can be reviewed by hand (an accent or a
-// featured credit should not trigger it, normalizarNome strips both).
+// The spotify artist has to show up in the video title or channel. A "a, b"
+// credit is checked artist by artist, each against both fields: youtube often
+// hosts the track on one of them only.
 function artistaNoVideo(m, opt) {
-  const texto = normalizarNome(`${opt.title || ''} ${opt.channelTitle || ''}`);
-  if (!texto) return false;
+  const campos = [normalizarNome(opt.title), normalizarNome(opt.channelTitle)].filter(Boolean);
+  if (!campos.length) return false;
 
   const artistas = String(m.artista || '')
     .split(',')
@@ -195,7 +250,30 @@ function artistaNoVideo(m, opt) {
   // no artist on the spotify side: nothing to compare against
   if (!artistas.length) return true;
 
-  return artistas.some(artista => new RegExp(`\\b${artista}\\b`).test(texto));
+  return artistas.some(artista => campos.some(campo => new RegExp(`\\b${artista}\\b`).test(campo)));
+}
+
+// Spotify titles carry noise (feat, remaster, live, official audio): compare the
+// significant words and accept the pick when at least half of them are there.
+const TITULO_IGNORADOS = new Set([
+  'the', 'and', 'of', 'feat', 'ft', 'with', 'vs', 'de', 'da', 'do', 'das', 'dos',
+  'em', 'no', 'na', 'nos', 'nas', 'ao', 'vivo', 'live', 'remix', 'remaster',
+  'remastered', 'version', 'edit', 'extended', 'radio', 'original', 'official',
+  'audio', 'video', 'tema', 'part', 'pt'
+]);
+
+function tokensDoTexto(texto) {
+  return normalizarNome(texto).split(' ').filter(Boolean);
+}
+
+function tituloNoVideo(m, opt) {
+  const tokens = tokensDoTexto(m.titulo).filter(t => !TITULO_IGNORADOS.has(t));
+  if (!tokens.length) return true;
+
+  const alvo = new Set(tokensDoTexto(`${opt.title || ''} ${opt.channelTitle || ''}`));
+  const achados = tokens.filter(t => alvo.has(t)).length;
+
+  return achados / tokens.length >= 0.5;
 }
 
 // ==========================================
@@ -313,6 +391,7 @@ function aplicarLinkYt(m, opt, usarYtMusic) {
   m.ytChannel = opt.channelTitle;
   m.ytArt = opt.artTrack === true || ehArtTrack(opt);
   m.artistaOk = artistaNoVideo(m, opt);
+  m.tituloOk = tituloNoVideo(m, opt);
   m.erroYt = false;
 
   cachearLinkYt(m, opt);
@@ -729,6 +808,7 @@ function criarObjetoMusica(num, tit, art) {
     ytChannel: null,
     ytArt: false,
     artistaOk: true,
+    tituloOk: true,
     dl: null,
     erroYt: false 
   };
@@ -1060,7 +1140,10 @@ function fitPlaceholderRows() {
 function render() {
   document.getElementById('pTitle').innerText = nomePlaylist.toLowerCase();
   const q = document.getElementById('busca').value.toLowerCase();
-  const filtradas = musicasGlobal.filter(m =>
+  const filtroMarcadas = document.getElementById('chkOnlySelected');
+  const apenasMarcadas = !!(filtroMarcadas && filtroMarcadas.checked);
+  const visiveis = apenasMarcadas ? musicasGlobal.filter(m => m.selecionada) : musicasGlobal;
+  const filtradas = visiveis.filter(m =>
     m.titulo.toLowerCase().includes(q) || m.artista.toLowerCase().includes(q)
   );
 
@@ -1099,9 +1182,12 @@ function render() {
     const ownedBadge = m.jaTenho ? `<span class="owned-badge">owned</span>` : '';
     // official label upload picked by priorizarArtTracks()
     const artBadge = m.ytArt ? `<span class="art-badge">art track</span>` : '';
-    // link resolved but the spotify artist is absent from title/channel: review it
-    const avisoArtista = (m.ytUrl && m.artistaOk === false)
-      ? `<span class="artist-warn" role="img" aria-label="artist not found in the video" title="artist not found in the video"><i class="ph ph-warning" aria-hidden="true"></i></span>`
+    // resolved link whose artist and/or title is absent from the video: review it
+    const faltandoVideo = [];
+    if (m.artistaOk === false) faltandoVideo.push('artist');
+    if (m.tituloOk === false) faltandoVideo.push('title');
+    const avisoVideo = (m.ytUrl && faltandoVideo.length)
+      ? `<span class="artist-warn" role="img" aria-label="${faltandoVideo.join(' and ')} not found in the video" title="${faltandoVideo.join(' and ')} not found in the video"><i class="ph ph-warning" aria-hidden="true"></i></span>`
       : '';
     // download state lives in extractor-download.js: one hook keeps it out of here
     const dlBadge = window.zbDlBadgeHtml ? window.zbDlBadgeHtml(m) : '';
@@ -1118,7 +1204,7 @@ function render() {
         <div class="badges-container" style="display: flex; align-items: center; gap: 6px;">
           ${dlBadge}
           ${ownedBadge}
-          ${avisoArtista}
+          ${avisoVideo}
           ${artBadge}
           ${badgeYt}
           ${changeVideoBtn}
@@ -1130,7 +1216,10 @@ function render() {
 
   // playlist loaded but nothing matches the search: say it instead of leaving a bare box
   if (!filtradas.length) {
-    lista.innerHTML = `<li class="track-item empty">no tracks match "${window.escapeHtml(q)}"</li>`;
+    const vazio = apenasMarcadas
+      ? (q ? `no selected tracks match "${window.escapeHtml(q)}"` : 'no selected tracks.')
+      : `no tracks match "${window.escapeHtml(q)}"`;
+    lista.innerHTML = `<li class="track-item empty">${vazio}</li>`;
   }
 
   atualizarContador();
@@ -1445,8 +1534,6 @@ async function buscarLinksYoutube() {
   }
 
   const btn = document.getElementById('btnYt');
-  const progWrap = document.getElementById('progWrap');
-  const progBar = document.getElementById('progBar');
   const status = document.getElementById('status');
   const usarYtMusic = document.getElementById('chkYtMusic').checked;
   const cfg = getAdminCfg();
@@ -1457,12 +1544,10 @@ async function buscarLinksYoutube() {
   if (!viaApi) log('[info] r.jina.ai: limite ~20 req/min no free tier.');
 
   btn.disabled = true;
-  progWrap.style.display = 'block';
-  progBar.style.width = '0%';
-  progBar.setAttribute('aria-valuenow', '0');
 
   let concluidas = 0;
   const total = selecionadas.length;
+  zbProgressoMostrar('links', 'generating links', `0/${total}`);
   descartesFiltro = 0;
 
   for (let m of selecionadas) {
@@ -1491,14 +1576,13 @@ async function buscarLinksYoutube() {
     }
 
     concluidas++;
-    progBar.style.width = `${(concluidas / total) * 100}%`;
-    progBar.setAttribute('aria-valuenow', String(Math.round((concluidas / total) * 100)));
+    zbProgressoAtualizar('links', (concluidas / total) * 100, `${concluidas}/${total} · ${m.titulo}`);
     render();
     await sleep(delayMs);
   }
 
   status.innerText = "search complete!";
-  progWrap.style.display = 'none';
+  zbProgressoEsconder('links');
   btn.disabled = false;
   salvarLinkCache();
   mostrarToast("links generated!");
@@ -1635,18 +1719,13 @@ async function retentarFalhas() {
     return mostrarToast('no failed tracks to retry!');
   }
 
-  const progWrap = document.getElementById('progWrap');
-  const progBar = document.getElementById('progBar');
   const status = document.getElementById('status');
   const usarYtMusic = document.getElementById('chkYtMusic').checked;
   const cfg = getAdminCfg();
   const delayMs = isAdmin ? cfg.delayMs : Math.max(cfg.delayMs, 1000);
 
-  progWrap.style.display = 'block';
-  progBar.style.width = '0%';
-  progBar.setAttribute('aria-valuenow', '0');
-
   let feitas = 0;
+  zbProgressoMostrar('links', 'retrying failed links', `0/${falhas.length}`);
   descartesFiltro = 0;
 
   for (const m of falhas) {
@@ -1663,13 +1742,12 @@ async function retentarFalhas() {
     }
 
     feitas++;
-    progBar.style.width = `${(feitas / falhas.length) * 100}%`;
-    progBar.setAttribute('aria-valuenow', String(Math.round((feitas / falhas.length) * 100)));
+    zbProgressoAtualizar('links', (feitas / falhas.length) * 100, `${feitas}/${falhas.length} · ${m.titulo}`);
     render();
     await sleep(delayMs);
   }
 
-  progWrap.style.display = 'none';
+  zbProgressoEsconder('links');
   const restantes = musicasGlobal.filter(m => m.erroYt).length;
   status.innerText = `retry complete (${falhas.length - restantes} ok, ${restantes} failed)`;
   salvarLinkCache();
@@ -1695,6 +1773,7 @@ async function resetarLinks() {
     m.ytChannel = null;
     m.ytArt = false;
     m.artistaOk = true;
+    m.tituloOk = true;
     m.erroYt = false;
     // reset also forgets the cached picks, otherwise the next run would just
     // hand back the same links without searching again
