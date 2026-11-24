@@ -427,6 +427,10 @@ function tracksParaDownload() {
   return musicasGlobal.filter(m => m.selecionada && m.ytUrl && !m.jaTenho);
 }
 
+// A run walks the whole selection: the batch size is only the chunk sent to the
+// agent per request, the next chunk starts as soon as one finishes.
+let zbDl = { fila: [], lote: 0, lotes: 0, feitos: 0, alvo: 0, loteAlvo: 0, tamanho: 50 };
+
 async function iniciarDownload() {
   if (!plataformaSuportada()) {
     window.mostrarToast('desktop only');
@@ -451,23 +455,45 @@ async function iniciarDownload() {
     return;
   }
 
-  const cfg = getAdminCfg();
-  const lote = Math.max(1, Number(cfg.dlBatchSize) || 50);
-  let escolhidas = fila;
-
-  if (fila.length > lote) {
-    const seguir = await window.showCustomModal({
-      title: 'download batch',
-      message: `${fila.length} tracks selected, the batch limit is ${lote}. download the first ${lote} now?`
-    });
-    if (!seguir) return;
-    escolhidas = fila.slice(0, lote);
-  }
-
   const pasta = await garantirPastaDownload();
   if (!pasta) return;
 
-  escolhidas.forEach(m => {
+  const cfg = getAdminCfg();
+  const tamanho = Math.max(1, Number(cfg.dlBatchSize) || 50);
+
+  zbDl = {
+    fila: fila.slice(),
+    lote: 0,
+    lotes: Math.ceil(fila.length / tamanho),
+    feitos: 0,
+    alvo: fila.length,
+    loteAlvo: 0,
+    tamanho: tamanho
+  };
+
+  zbDownloading = true;
+  zbAgentOnline = true;
+  renderAgentStatus();
+  zbProgressoMostrar('download', 'downloading audio', `batch 0/${zbDl.lotes} · 0/${zbDl.alvo}`);
+
+  executarLoteDownload();
+}
+
+async function executarLoteDownload() {
+  if (!zbDownloading) return;
+
+  const cfg = getAdminCfg();
+  const fatia = zbDl.fila.splice(0, zbDl.tamanho);
+
+  if (!fatia.length) {
+    terminarDownload('download finished', zbDl.feitos, zbDl.alvo);
+    return;
+  }
+
+  zbDl.lote += 1;
+  zbDl.loteAlvo = fatia.length;
+
+  fatia.forEach(m => {
     m.dl = { state: 'queued', ext: null, file: null, error: null };
     atualizarBadgeDl(m);
   });
@@ -477,8 +503,8 @@ async function iniciarDownload() {
     dados = await chamarAgente('/download', {
       method: 'POST',
       body: {
-        folder: pasta,
-        items: escolhidas.map(m => ({
+        folder: pastaDownload(),
+        items: fatia.map(m => ({
           num: m.num,
           url: m.ytUrl,
           artist: m.artista,
@@ -492,19 +518,14 @@ async function iniciarDownload() {
       }
     });
   } catch (e) {
-    window.mostrarToast(`download failed: ${e.message}`);
+    terminarDownload(`download failed: ${e.message}`);
     return;
   }
 
-  zbDownloading = true;
   zbCurrentJob = dados.jobId;
-  zbAgentOnline = true;
-  renderAgentStatus();
-
-  const total = Number(dados.total) || escolhidas.length;
-  zbProgressoMostrar('download', 'downloading audio', `0/${total}`);
-  atualizarBarraDownload(0, total, true);
-  definirStatusDownload(`downloading 0/${total}...`);
+  atualizarBarraDownload(zbDl.feitos, zbDl.alvo, true,
+    `batch ${zbDl.lote}/${zbDl.lotes} · ${zbDl.feitos}/${zbDl.alvo}`);
+  definirStatusDownload(`batch ${zbDl.lote}/${zbDl.lotes}: 0/${Number(dados.total) || fatia.length}`);
   acompanharDownload(dados.jobId);
 }
 
@@ -523,23 +544,33 @@ async function acompanharDownload(jobId) {
   aplicarStatusItens(dados.items || []);
 
   const done = Number(dados.done) || 0;
-  const total = Number(dados.total) || 0;
+  const total = Number(dados.total) || zbDl.loteAlvo;
   const atual = (dados.items || []).find(item => item.state === 'downloading');
-  atualizarBarraDownload(done, total, true,
-    `${done}/${total}${atual && atual.title ? ` · ${atual.title}` : ''}`);
+  const feitos = zbDl.feitos + done;
+
+  atualizarBarraDownload(feitos, zbDl.alvo, true,
+    `batch ${zbDl.lote}/${zbDl.lotes} · ${feitos}/${zbDl.alvo}${atual && atual.title ? ` · ${atual.title}` : ''}`);
   definirStatusDownload(dados.state === 'running'
-    ? `downloading ${done}/${total}...`
-    : `download ${dados.state}`);
+    ? `batch ${zbDl.lote}/${zbDl.lotes}: ${done}/${total}`
+    : `batch ${dados.state}`);
 
   if (dados.state === 'running') {
     zbPollTimer = setTimeout(() => acompanharDownload(jobId), ZB_DL_POLL_MS);
     return;
   }
 
+  zbDl.feitos += done;
+
+  // the selection keeps going: the next chunk starts as soon as this one ends
+  if (zbDownloading && zbDl.fila.length) {
+    executarLoteDownload();
+    return;
+  }
+
   const falhas = (dados.items || []).filter(item => item.state === 'error').length;
   terminarDownload(falhas
     ? `download finished with ${falhas} error(s)`
-    : 'download finished', done, total);
+    : 'download finished', zbDl.feitos, zbDl.alvo);
 }
 
 function aplicarStatusItens(items) {
@@ -565,6 +596,7 @@ function terminarDownload(mensagem, done, total) {
   zbCurrentJob = null;
   clearTimeout(zbPollTimer);
   zbPollTimer = null;
+  zbDl.fila = [];
 
   atualizarBarraDownload(total || done || 0, total || done || 0, false);
   definirStatusDownload(total ? `download ${done}/${total}` : '');
@@ -573,6 +605,7 @@ function terminarDownload(mensagem, done, total) {
 }
 
 async function cancelarDownload() {
+  zbDl.fila = [];
   try {
     await chamarAgente('/cancel', { method: 'POST', body: {} });
     window.mostrarToast('cancelling...');
@@ -580,6 +613,88 @@ async function cancelarDownload() {
     window.mostrarToast(`cancel failed: ${e.message}`);
   }
 }
+
+// ==========================================
+// AUTO DOWNLOAD (admin) + DELETE ON RETRY
+// ==========================================
+let zbAutoFila = [];
+let zbAutoRodando = false;
+
+// Admin only, opt-in: every resolved link goes straight to the agent. The queue
+// keeps one job at a time, the agent refuses a second one with 409.
+window.zbAutoBaixar = function (m) {
+  if (!m || !m.ytUrl) return;
+  if (typeof isAdmin === 'undefined' || !isAdmin) return;
+  if (!getAdminCfg().autoDownload) return;
+  if (!plataformaSuportada() || !tokenAgente() || !pastaDownload()) return;
+
+  zbAutoFila.push(m);
+  processarFilaAuto();
+};
+
+async function processarFilaAuto() {
+  if (zbAutoRodando) return;
+  zbAutoRodando = true;
+
+  try {
+    while (zbAutoFila.length) {
+      const m = zbAutoFila.shift();
+      if (!m.ytUrl) continue;
+
+      const cfg = getAdminCfg();
+      try {
+        await chamarAgente('/download', {
+          method: 'POST',
+          body: {
+            folder: pastaDownload(),
+            items: [{ num: m.num, url: m.ytUrl, artist: m.artista, title: m.titulo }],
+            cfg: { timeout: cfg.dlTimeoutS, useCookies: cfg.useCookies, cookieBrowser: cfg.cookieBrowser }
+          }
+        });
+      } catch (e) {
+        // 409 (job running) or offline: the row badge already tells the story
+        continue;
+      }
+
+      m.dl = { state: 'queued', ext: null, file: null, error: null };
+      atualizarBadgeDl(m);
+      await esperarJobAuto();
+    }
+  } finally {
+    zbAutoRodando = false;
+  }
+}
+
+async function esperarJobAuto() {
+  for (;;) {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    let dados;
+    try {
+      dados = await chamarAgente('/status');
+    } catch (e) {
+      return;
+    }
+
+    aplicarStatusItens(dados.items || []);
+    if (dados.state !== 'running') return;
+  }
+}
+
+// Retry only: removes the file the agent saved for the old link.
+window.zbApagarBaixado = async function (m) {
+  const arquivo = m && m.dl && m.dl.file;
+  if (!arquivo) return false;
+
+  try {
+    await chamarAgente('/delete', { method: 'POST', body: { folder: pastaDownload(), file: arquivo } });
+    m.dl = null;
+    atualizarBadgeDl(m);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 
 // ==========================================
 // UI
@@ -618,7 +733,7 @@ window.zbDlBadgeHtml = function (m) {
   }
 
   if (dl.state === 'downloading') {
-    return `<span id="${id}" class="dl-badge" title="downloading">dl...</span>`;
+    return `<span id="${id}" class="dl-badge is-downloading" title="downloading">dl...</span>`;
   }
 
   return `<span id="${id}" class="dl-badge" title="queued">dl</span>`;

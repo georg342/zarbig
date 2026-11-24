@@ -81,21 +81,21 @@ depois abra <http://localhost:8000>.
 | público | `r.jina.ai` (scrape de `youtube.com/results?search_query=`) | sem chave; ~20 req/min no free tier; 3 tentativas com backoff |
 | admin | youtube data api v3 | `maxResults`, `delay`, lista de `suffix` e `auto-pick` configuráveis; o toggle `use official youtube api` desliga a api e força `r.jina.ai`; se a api falhar ou vier vazia, cai automaticamente para `r.jina.ai` |
 
-**query suffix (lista):** vale nos dois modos, inclusive no público. o padrão é `official audio` + `official video`: os termos são tentados em ordem até aparecer um vídeo, então só cai para o próximo sufixo quando o anterior não retorna nada. lista vazia = busca sem sufixo.
+**query suffix (lista):** o padrão é `topic` + `official audio`, nessa ordem — `topic` primeiro é o que acha o art track. no modo público a busca sempre usa os dois; só o admin pode editar/remover. os termos são tentados em ordem até aparecer um candidato aprovado. lista vazia (admin) = busca sem sufixo.
 
-**auto-pick:** quando ligado, escolhe o melhor candidato nesta ordem: art track com o artista e o título do spotify no vídeo → qualquer candidato com artista + título → primeiro art track → primeiro resultado. link já salvo no cache não é revalidado (o badge amarelo de alerta avisa quando artista/título não batem).
+**auto-pick:** escolhe só entre candidatos aprovados — todo pedaço do nome do artista (créditos separados por vírgula, cada um quebrado por espaço) precisa estar no título **ou** no canal, e o título do spotify precisa bater. entre os aprovados, art track primeiro. **se nada passa, a faixa fica failed** (nada de link aleatório). link já salvo no cache não é revalidado; o badge amarelo avisa quando artista/título não batem.
 
-**exclude title keywords:** campo de pills — digite e tecle `enter` ou `,` para virar uma pill, `X` remove, `backspace` com o campo vazio apaga a última. a comparação ignora caixa e acento.
+**exclude title keywords:** campo de pills — digite e tecle `enter` ou `,` para virar uma pill, `X` remove, `backspace` com o campo vazio apaga a última. a comparação ignora caixa e acento. `recheck keywords` (playlist tools) marca como failed as faixas cujo link salvo tem alguma keyword no título, para você dar `retry failed` sem refazer tudo.
 
 **delay (ms):** pausa entre faixas na geração em lote (e no `retry failed`); o modo público nunca desce de 1000ms. cada tentativa de sufixo é uma requisição, então listas longas + delay baixo estouram o limite do `r.jina.ai`.
 
 **playlist tools (público, aparecem após carregar uma playlist):**
 
 - **already owned filter** — cole os nomes dos arquivos locais (ou use "scan folder") e clique em "uncheck owned"; as faixas encontradas ganham o badge `owned`, são desmarcadas e ficam protegidas de seleção/geração;
-- **batch tools** — `retry failed` (re-tenta apenas as que falharam) e `reset links` (limpa os links gerados, com confirmação);
+- **batch tools** — `retry failed` (re-tenta apenas as que falharam), `reset links` (limpa os links gerados, com confirmação) e `recheck keywords` (marca como failed as que têm keyword no título do vídeo salvo);
 - **export** — `artista - titulo | link` (copia), `.csv` (`num,titulo,artista,yt_url,yt_title,yt_channel`), `yt/ytm links`, `auto copy (3s)` e `.txt`.
 
-**admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`), os parâmetros do agente de download (lote, timeout, cookies) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
+**admin mode (senha → md5 `ADMIN_HASH`):** libera o card `admin tools` com a chave da youtube data api (pré-preenchida com `YOUTUBE_API_KEY`, editável via `localStorage.zb_yt_key`), os parâmetros de busca (salvos em `localStorage.zb_admin_cfg`: `results per search`, `delay`, lista de sufixos, toggle `use official youtube api` e `auto-pick`), os parâmetros do agente de download (lote, timeout, cookies, `auto-download links`) e o botão de lápis para trocar o vídeo de uma faixa manualmente (zarbig mode).
 
 ### agente local de download (`agent/`)
 
@@ -104,7 +104,7 @@ o download das faixas roda fora do navegador: cors e falta de filesystem impedem
 1. no card `local agent`, baixe `zarbig-yt-agent.zip` (asset de release);
 2. rode `start.bat`: na primeira vez baixa `yt-dlp`, `deno` e `ffmpeg` (~300 MB) em `%LOCALAPPDATA%\zarbig-yt-agent` e imprime o token (também copiado para a área de transferência);
 3. `paste token` na página → status vira `online`;
-4. `download selected` baixa as faixas marcadas que já têm link, um arquivo por faixa, com metadados quando o youtube fornece;
+4. `download` baixa **todas** as faixas marcadas que já têm link, em lotes encadeados (o tamanho do lote é só o pedido ao agente), um arquivo por faixa, com metadados quando o youtube fornece;
 5. `folder` troca a pasta de destino (padrão `%USERPROFILE%\Downloads\zarbig`, salva em `localStorage.zb_dl_folder`).
 
 formato: `-x --audio-format best`, ou seja, `.opus` quando a fonte é opus; se só existir aac o arquivo sai `.m4a` e a linha mostra o formato com aviso. `archive.txt` na pasta evita baixar de novo. mobile e safari ficam desabilitados (o agente roda na máquina do visitante).

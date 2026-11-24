@@ -2,7 +2,7 @@ const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default yo
 const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
 const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links', playlistUrl: 'zb_playlist_url' };
-const DEFAULT_SUFFIXES = ['official audio', 'topic'];
+const DEFAULT_SUFFIXES = ['topic', 'official audio'];
 const COOKIE_BROWSERS = ['chrome', 'edge', 'firefox'];
 const DEFAULT_ADMIN_CFG = {
   maxResults: 15,
@@ -13,7 +13,8 @@ const DEFAULT_ADMIN_CFG = {
   dlBatchSize: 50,
   dlTimeoutS: 300,
   useCookies: false,
-  cookieBrowser: 'chrome'
+  cookieBrowser: 'chrome',
+  autoDownload: false
 };
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -283,12 +284,12 @@ function filtrarResultados(resultados) {
 // ==========================================
 // Art tracks are the label-delivered uploads youtube builds from a release: the
 // channel is "<artist> - topic" (localized as "- tópico") and the description
-// carries the distributor credit ("provided to youtube by ...") plus a ℗/© line.
-// Both search backends run their candidates through priorizarArtTracks(), so the
-// official audio wins when it exists and the old first-result behaviour stays as
-// the fallback when no art track is found.
+// carries the distributor credit ("provided to youtube by ..." / ℗).
+// A plain "© 20xx" is NOT accepted: compilation channels ("now that's what i call
+// music") carry it and used to be promoted to art track by mistake.
+// Both backends run their candidates through priorizarArtTracks().
 const ART_TRACK_CHANNEL = /\s-\s*(?:topic|t[óo]pico)\s*$/i;
-const ART_TRACK_DESCRIPTION = /provided to youtube by|℗|©\s*\d{4}|&copy;\s*\d{4}/i;
+const ART_TRACK_DESCRIPTION = /provided to youtube by|℗/i;
 
 function ehArtTrack(opt) {
   if (!opt) return false;
@@ -315,22 +316,61 @@ function priorizarArtTracks(resultados) {
   return artTracks.concat(demais);
 }
 
-// The spotify artist has to show up in the video title or channel. A "a, b"
-// credit is checked artist by artist, each against both fields: youtube often
-// hosts the track on one of them only.
-function artistaNoVideo(m, opt) {
-  const campos = [normalizarNome(opt.title), normalizarNome(opt.channelTitle)].filter(Boolean);
-  if (!campos.length) return false;
-
-  const artistas = String(m.artista || '')
+function listarArtistas(m) {
+  return String(m.artista || '')
     .split(',')
     .map(normalizarNome)
     .filter(a => a && a !== 'unknown');
+}
 
-  // no artist on the spotify side: nothing to compare against
+// Every piece of a credited artist has to show up in the video title or channel:
+// "50 cent" needs both "50" and "cent". A "a, b" credit is checked artist by
+// artist, because youtube often hosts the track on one of them only.
+// This is the acceptance gate used by every search path.
+function artistaTokens(m, opt) {
+  const campos = [normalizarNome(opt.title), normalizarNome(opt.channelTitle)].filter(Boolean);
+  if (!campos.length) return false;
+
+  const artistas = listarArtistas(m);
   if (!artistas.length) return true;
 
-  return artistas.some(artista => campos.some(campo => new RegExp(`\\b${artista}\\b`).test(campo)));
+  return artistas.some(artista => {
+    const pedacos = artista.split(' ').filter(Boolean);
+    return pedacos.every(pedaco => campos.some(campo => new RegExp(`\\b${pedaco}\\b`).test(campo)));
+  });
+}
+
+// Full credited name present somewhere: this drives the yellow warning, not the
+// acceptance (that one is token based).
+function artistaNoVideo(m, opt) {
+  const texto = normalizarNome(`${opt.title || ''} ${opt.channelTitle || ''}`);
+  if (!texto) return false;
+
+  const artistas = listarArtistas(m);
+  if (!artistas.length) return true;
+
+  return artistas.some(artista => new RegExp(`\\b${artista}\\b`).test(texto));
+}
+
+// Drops candidates that do not carry the artist at all, before anything is picked.
+function filtrarPorArtista(m, resultados) {
+  if (!Array.isArray(resultados) || !resultados.length) return resultados;
+
+  return resultados.filter(opt => {
+    if (artistaTokens(m, opt)) return true;
+    log(`[filtro] descartado (artista): "${opt.title || ''}"`);
+    return false;
+  });
+}
+
+// Manual list (zarbig mode): valid picks first, the rest stays visible so a
+// deliberate override is still possible.
+function ordenarPorArtista(m, opcoes) {
+  const ok = [];
+  const resto = [];
+
+  opcoes.forEach(opt => (artistaTokens(m, opt) ? ok : resto).push(opt));
+  return ok.concat(resto);
 }
 
 // Spotify titles carry noise (feat, remaster, live, official audio): compare the
@@ -498,7 +538,8 @@ function getAdminCfg() {
       dlBatchSize: Number.isFinite(dlBatchSize) ? Math.min(200, Math.max(1, dlBatchSize)) : DEFAULT_ADMIN_CFG.dlBatchSize,
       dlTimeoutS: Number.isFinite(dlTimeoutS) ? Math.min(1800, Math.max(60, dlTimeoutS)) : DEFAULT_ADMIN_CFG.dlTimeoutS,
       useCookies: parsed.useCookies === true,
-      cookieBrowser: COOKIE_BROWSERS.includes(parsed.cookieBrowser) ? parsed.cookieBrowser : DEFAULT_ADMIN_CFG.cookieBrowser
+      cookieBrowser: COOKIE_BROWSERS.includes(parsed.cookieBrowser) ? parsed.cookieBrowser : DEFAULT_ADMIN_CFG.cookieBrowser,
+      autoDownload: parsed.autoDownload === true
     };
   } catch (e) {
     return { ...DEFAULT_ADMIN_CFG };
@@ -539,6 +580,9 @@ function preencherAdminCfg() {
   if (dlTimeoutInput) dlTimeoutInput.value = cfg.dlTimeoutS;
   if (dlCookiesInput) dlCookiesInput.checked = cfg.useCookies;
   if (dlBrowserInput) dlBrowserInput.value = cfg.cookieBrowser;
+
+  const autoDlInput = document.getElementById('cfgAutoDownload');
+  if (autoDlInput) autoDlInput.checked = cfg.autoDownload;
 }
 
 function salvarYtKey() {
@@ -571,6 +615,7 @@ function salvarAdminCfg() {
   const dlTimeoutInput = document.getElementById('cfgDlTimeout');
   const dlCookiesInput = document.getElementById('cfgDlCookies');
   const dlBrowserInput = document.getElementById('cfgDlBrowser');
+  const autoDlInput = document.getElementById('cfgAutoDownload');
   const atual = getAdminCfg();
 
   const maxResults = parseInt(maxInput ? maxInput.value : '', 10);
@@ -587,7 +632,8 @@ function salvarAdminCfg() {
     dlBatchSize: Number.isFinite(dlBatchSize) ? Math.min(200, Math.max(1, dlBatchSize)) : atual.dlBatchSize,
     dlTimeoutS: Number.isFinite(dlTimeoutS) ? Math.min(1800, Math.max(60, dlTimeoutS)) : atual.dlTimeoutS,
     useCookies: dlCookiesInput ? dlCookiesInput.checked : atual.useCookies,
-    cookieBrowser: dlBrowserInput && COOKIE_BROWSERS.includes(dlBrowserInput.value) ? dlBrowserInput.value : atual.cookieBrowser
+    cookieBrowser: dlBrowserInput && COOKIE_BROWSERS.includes(dlBrowserInput.value) ? dlBrowserInput.value : atual.cookieBrowser,
+    autoDownload: autoDlInput ? autoDlInput.checked : atual.autoDownload
   };
 
   localStorage.setItem(STORAGE_KEYS.adminCfg, JSON.stringify(cfg));
@@ -1254,9 +1300,11 @@ function render() {
 
     let ytDetailsHtml = '';
     if (m.ytTitle && m.ytChannel) {
+      // channel on its own line: a long video title must not hide it
       ytDetailsHtml = `
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-transform: lowercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px;">
-          <span style="color: #fff;">video:</span> ${window.escapeHtml(m.ytTitle)} | <span style="color: #fff;">channel:</span> ${window.escapeHtml(m.ytChannel)}
+        <div class="yt-meta">
+          <span><span class="yt-meta-key">video:</span> ${window.escapeHtml(m.ytTitle)}</span>
+          <span><span class="yt-meta-key">channel:</span> ${window.escapeHtml(m.ytChannel)}</span>
         </div>
       `;
     }
@@ -1321,10 +1369,12 @@ function render() {
 function montarTermosBusca(m) {
   const cfg = getAdminCfg();
   const base = `${m.titulo} ${m.artista}`.trim();
-  const comSufixo = cfg.suffixes.map(s => `${base} ${s}`.trim()).filter(Boolean);
 
-  // the bare "title artist" query goes first: it is the one that surfaces art
-  // tracks, and the suffixes stay behind it as the transparent fallback
+  // public mode always searches the two defaults (admin can edit/remove them);
+  // the bare "title artist" query stays first as the art track probe
+  const sufixos = isAdmin ? cfg.suffixes : DEFAULT_SUFFIXES;
+  const comSufixo = sufixos.map(s => `${base} ${s}`.trim()).filter(Boolean);
+
   return [...new Set([base, ...comSufixo])];
 }
 
@@ -1401,14 +1451,14 @@ async function buscarResultadosApi(m) {
       description: item.snippet.description || '',
       thumbnail: item.snippet.thumbnails?.default?.url || ''
     })).filter(opt => opt.id);
-    // art tracks first: the api gives channel + description on the result itself,
-    // so no extra details call is needed to confirm one
-    const ordenados = priorizarArtTracks(filtrarResultados(brutos));
+    // keyword filter, then the artist gate: a candidate without the artist is out
+    const validos = filtrarPorArtista(m, filtrarResultados(brutos));
+    const ordenados = priorizarArtTracks(validos);
     const resultados = apenasArtTrack ? ordenados.filter(opt => opt.artTrack) : ordenados;
 
     if (resultados.length > 0) return resultados;
     if (brutos.length > 0) {
-      log(`[info] [youtube api] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título; tentando o próximo sufixo...`);
+      log(`[info] [youtube api] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título/artista; tentando o próximo sufixo...`);
       continue;
     }
     log(`[warn] [youtube api] sem resultados para "${termo}"; tentando o próximo sufixo...`);
@@ -1440,14 +1490,13 @@ async function buscarResultadosJina(m) {
         const txt = await res.text();
         const brutos = parseResultadosJina(txt);
         if (brutos.length > 0) {
-          // a suffix whose videos were all filtered still counts as an attempt:
-          // no retry, just move on to the next suffix.
-          // the "- topic" channel is the art track signal available here; the
-          // scrape carries no description, so no extra fetch is spent on it
-          const ordenados = priorizarArtTracks(filtrarResultados(brutos));
+          // keyword filter, then the artist gate; the "- topic" channel is the art
+          // track signal available here (the scrape carries no description)
+          const validos = filtrarPorArtista(m, filtrarResultados(brutos));
+          const ordenados = priorizarArtTracks(validos);
           resultados = apenasArtTrack ? ordenados.filter(opt => opt.artTrack) : ordenados;
           if (resultados.length === 0) {
-            log(`[info] [jina] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título.`);
+            log(`[info] [jina] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título/artista.`);
           }
           break;
         }
@@ -1483,19 +1532,17 @@ async function buscarResultados(m) {
   return buscarResultadosJina(m);
 }
 
-// Priority shared by the automatic pick (public always, admin with auto-pick on):
-// an art track whose video really carries the spotify artist and title wins, then
-// any candidate that passes both checks, then the first art track, then #1.
+// Priority shared by every automatic pick: only candidates that pass the artist
+// gate and the title check are eligible, art track first. Nothing eligible means
+// no link at all (the row goes to failed/retry instead of linking a wrong video).
 function escolherMelhorResultado(m, opcoes) {
   if (!opcoes || !opcoes.length) return null;
 
-  const completo = opcoes.find(o => ehArtTrack(o) && artistaNoVideo(m, o) && tituloNoVideo(m, o));
-  if (completo) return completo;
+  const validos = opcoes.filter(o => artistaTokens(m, o) && tituloNoVideo(m, o));
+  const artValido = validos.find(o => ehArtTrack(o));
+  if (artValido) return artValido;
 
-  const valido = opcoes.find(o => artistaNoVideo(m, o) && tituloNoVideo(m, o));
-  if (valido) return valido;
-
-  return opcoes.find(o => ehArtTrack(o)) || opcoes[0];
+  return validos[0] || null;
 }
 
 // Busca automática em segundo plano: pega o melhor resultado sem abrir modals
@@ -1507,11 +1554,20 @@ async function acharVideoAutomatico(m) {
     return emCache;
   }
 
-  return escolherMelhorResultado(m, await buscarResultados(m));
+  const escolhido = escolherMelhorResultado(m, await buscarResultados(m));
+  if (!escolhido) {
+    m.erroYt = true;
+    log(`[warn] faixa #${m.num} sem candidato aprovado (artista/título).`);
+  }
+
+  return escolhido;
 }
 
 // Abre o modal de seleção manual (Zarbig Mode) para escolher entre os 15 resultados
 async function mostrarModalZarbig(m, opcoes) {
+  // valid picks first; rejected ones stay visible for a deliberate override
+  opcoes = ordenarPorArtista(m, opcoes);
+
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
@@ -1665,6 +1721,7 @@ async function buscarLinksYoutube() {
       if (escolhido && escolhido.id) {
         aplicarLinkYt(m, escolhido, usarYtMusic);
         log(`[ok] [youtube] faixa #${m.num} link encontrado: ${m.ytUrl}`);
+        enfileirarDownloadAuto(m);
       } else if (!(isAdmin && !cfg.autoPick)) {
         m.erroYt = true;
       }
@@ -1688,16 +1745,45 @@ async function buscarLinksYoutube() {
   window.__zbBatchRunning = false;
 }
 
+// A retry replaces the link of a track that already had one: the file the agent
+// downloaded for the old link is deleted first (plain downloads never delete).
+async function prepararRetry(m) {
+  m.retry = true;
+  if (m.dl && m.dl.file && window.zbApagarBaixado) await window.zbApagarBaixado(m);
+}
+
+// Admin only, opt-in: a resolved link goes straight to the local agent.
+function enfileirarDownloadAuto(m) {
+  if (window.zbAutoBaixar) window.zbAutoBaixar(m);
+}
+
+// Marks every track whose resolved video title has an excluded keyword, so
+// `retry failed` re-searches them with the new keyword list.
+function rechecarKeywords() {
+  const alvo = musicasGlobal.filter(m => m.ytUrl && tituloBloqueado(m.ytTitle || ''));
+  if (!alvo.length) {
+    mostrarToast('no saved link matches the keywords');
+    return;
+  }
+
+  alvo.forEach(m => { m.erroYt = true; });
+  render();
+  log(`[info] ${alvo.length} faixa(s) marcadas por keyword no título do vídeo.`);
+  mostrarToast(`${alvo.length} tracks flagged by keywords`);
+}
+
 async function tentarUnica(num, tipo) {
   const m = musicasGlobal.find(x => x.num === num);
   if (!m) return;
   
   if (tipo === 'yt') {
     log(`=== re-tentando link faixa #${m.num} ===`);
+    await prepararRetry(m);
     const res = await acharVideoAutomatico(m);
     if (res && res.id) { 
       aplicarLinkYt(m, res, document.getElementById('chkYtMusic').checked);
       log(`[ok] [youtube] faixa #${m.num} link encontrado no retry: ${m.ytUrl}`);
+      enfileirarDownloadAuto(m);
     } else {
       m.erroYt = true;
     }
@@ -1830,10 +1916,12 @@ async function retentarFalhas() {
     status.innerText = `retrying (${feitas}/${falhas.length}): ${m.titulo}`;
 
     try {
+      await prepararRetry(m);
       const res = await acharVideoAutomatico(m);
       if (res && res.id) {
         aplicarLinkYt(m, res, usarYtMusic);
         log(`[ok] [retry] faixa #${m.num} link encontrado: ${m.ytUrl}`);
+        enfileirarDownloadAuto(m);
       }
     } catch (e) {
       log(`[err] retry faixa #${m.num}: ${e.message}`);

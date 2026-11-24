@@ -39,6 +39,7 @@
   .layout.stretch-results > .col-results { display: flex; }
   .layout.stretch-results > .col-results > .card {
     flex: 1; display: flex; flex-direction: column;
+    width: 100%; min-width: 0;
     height: var(--card-h, auto);
   }
   .layout.stretch-results .track-list {
@@ -264,6 +265,35 @@
   outline: none;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
+}
+
+/* resolved video metadata: two lines, each with its own ellipsis so a long title
+   never hides the channel */
+.yt-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  min-width: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+/* flex children need min-width: 0 or the nowrap text pushes the row wider */
+.track-item .info { flex-basis: 0; min-width: 0; }
+.yt-meta > span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yt-meta-key { color: #fff; }
+
+/* download badge: "dl..." blinks while the track is being fetched */
+.dl-badge.is-downloading { animation: zb-dl-blink 1s steps(2, end) infinite; }
+@keyframes zb-dl-blink { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) {
+  .dl-badge.is-downloading { animation: none; }
 }
 
 /* extractor: local agent card + download badges */

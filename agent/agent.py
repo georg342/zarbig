@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 AGENT_NAME = "zarbig-yt-agent"
 HOST = "127.0.0.1"
 PORT = 8787
@@ -454,6 +454,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/cancel":
             JOB.cancel_job()
             return self._json(200, {"cancelled": True})
+        if path == "/delete":
+            return self._delete()
         if path == "/folder/pick":
             chosen = pick_folder()
             if not chosen:
@@ -465,6 +467,35 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/download":
             return self._download()
         return self._json(404, {"error": "not found"})
+
+    def _delete(self):
+        """Retry cleanup: removes a file the agent saved, only inside the folder."""
+        payload = self._body()
+        if not isinstance(payload, dict):
+            return self._json(400, {"error": "invalid json"})
+
+        folder = validate_folder(payload.get("folder"))
+        if folder is None:
+            return self._json(400, {"error": "invalid folder"})
+
+        raw = payload.get("file")
+        if not isinstance(raw, str) or not raw:
+            return self._json(400, {"error": "invalid file"})
+
+        try:
+            target = Path(raw).resolve()
+            target.relative_to(folder.resolve())  # raises when outside the folder
+        except (OSError, ValueError):
+            return self._json(400, {"error": "file outside folder"})
+
+        try:
+            if target.is_file():
+                target.unlink()
+        except OSError as exc:
+            return self._json(500, {"error": f"could not delete: {exc}"})
+
+        print(f"[delete] {target}")
+        return self._json(200, {"deleted": str(target)})
 
     def _download(self):
         payload = self._body()

@@ -136,6 +136,11 @@
       <input type="checkbox" id="cfgDlCookies">
       <label for="cfgDlCookies">use browser cookies</label>
     </div>
+    <div class="yt-music-toggle" style="margin-top: 10px;">
+      <input type="checkbox" id="cfgAutoDownload">
+      <label for="cfgAutoDownload">auto-download links</label>
+    </div>
+    <p class="help-text">auto-download sends each new link straight to the local agent. a retry deletes the old file before downloading the new link.</p>
     <div class="input-group" style="margin-top: 10px;">
       <label for="cfgDlBrowser">cookie browser</label>
       <select id="cfgDlBrowser" class="text-input">
@@ -187,6 +192,9 @@
     <div class="row">
       <button class="btn-sec" onclick="retentarFalhas()"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> retry failed</button>
       <button class="btn-danger-outline" style="flex: 1; margin-bottom: 0;" onclick="resetarLinks()"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> reset links</button>
+    </div>
+    <div class="row">
+      <button class="btn-sec" onclick="rechecarKeywords()"><i class="ph ph-list-checks" aria-hidden="true"></i> recheck keywords</button>
     </div>
 
     <h4 class="tools-subtitle">export</h4>
