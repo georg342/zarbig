@@ -97,6 +97,43 @@ function filtrarResultados(resultados) {
 }
 
 // ==========================================
+// ART TRACK PREFERENCE (public + admin)
+// ==========================================
+// Art tracks are the label-delivered uploads youtube builds from a release: the
+// channel is "<artist> - topic" (localized as "- tópico") and the description
+// carries the distributor credit ("provided to youtube by ...") plus a ℗/© line.
+// Both search backends run their candidates through priorizarArtTracks(), so the
+// official audio wins when it exists and the old first-result behaviour stays as
+// the fallback when no art track is found.
+const ART_TRACK_CHANNEL = /\s-\s*(?:topic|t[óo]pico)\s*$/i;
+const ART_TRACK_DESCRIPTION = /provided to youtube by|℗|©\s*\d{4}|&copy;\s*\d{4}/i;
+
+function ehArtTrack(opt) {
+  if (!opt) return false;
+
+  // the api returns the channel name as a field; the jina scrape carries it in
+  // the markdown, so this single check covers both backends
+  if (ART_TRACK_CHANNEL.test(String(opt.channelTitle || ''))) return true;
+
+  return ART_TRACK_DESCRIPTION.test(String(opt.description || ''));
+}
+
+// Stable reorder: art tracks first, original order kept inside each group.
+function priorizarArtTracks(resultados) {
+  if (!Array.isArray(resultados)) return resultados;
+
+  const artTracks = [];
+  const demais = [];
+
+  resultados.forEach(opt => {
+    opt.artTrack = ehArtTrack(opt);
+    (opt.artTrack ? artTracks : demais).push(opt);
+  });
+
+  return artTracks.concat(demais);
+}
+
+// ==========================================
 // YOUTUBE LINK CACHE (localStorage)
 // ==========================================
 // Only the picked video id plus the title/channel shown in the ui are kept: the
@@ -1018,14 +1055,22 @@ function parseResultadosJina(raw) {
     const id = match[3];
     if (vistos.has(id)) continue;
 
-    const trecho = raw.slice(match.index, match.index + 400);
+    // the snippet window stops at the next result heading: without that cut a
+    // "provided to youtube by" line bleeds into the previous candidate
+    const proximo = raw.indexOf('\n### [', match.index + 4);
+    const fim = proximo === -1 ? match.index + 400 : Math.min(proximo, match.index + 400);
+    const trecho = raw.slice(match.index, fim);
     const canal = trecho.match(channelRegex);
+    // the search markdown sometimes carries the description snippet; that is the
+    // only text signal available without an extra fetch per candidate
+    const descricao = /provided to youtube by/i.test(trecho) ? 'provided to youtube by' : '';
 
     vistos.add(id);
     resultados.push({
       id: id,
       title: limparTextoSpotify(match[1]).trim(),
       channelTitle: canal ? limparTextoSpotify(canal[1]).trim() : 'youtube',
+      description: descricao,
       thumbnail: `https://i.ytimg.com/vi/${id}/default.jpg`
     });
   }
@@ -1054,9 +1099,12 @@ async function buscarResultadosApi(m) {
       id: item.id.videoId,
       title: (item.snippet.title || '').toLowerCase(),
       channelTitle: (item.snippet.channelTitle || '').toLowerCase(),
+      description: item.snippet.description || '',
       thumbnail: item.snippet.thumbnails?.default?.url || ''
     })).filter(opt => opt.id);
-    const resultados = filtrarResultados(brutos);
+    // art tracks first: the api gives channel + description on the result itself,
+    // so no extra details call is needed to confirm one
+    const resultados = priorizarArtTracks(filtrarResultados(brutos));
 
     if (resultados.length > 0) return resultados;
     if (brutos.length > 0) {
@@ -1088,7 +1136,9 @@ async function buscarResultadosJina(m) {
         if (brutos.length > 0) {
           // a suffix whose videos were all filtered still counts as an attempt:
           // no retry, just move on to the next suffix.
-          resultados = filtrarResultados(brutos);
+          // the "- topic" channel is the art track signal available here; the
+          // scrape carries no description, so no extra fetch is spent on it
+          resultados = priorizarArtTracks(filtrarResultados(brutos));
           if (resultados.length === 0) {
             log(`[info] [jina] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título.`);
           }
