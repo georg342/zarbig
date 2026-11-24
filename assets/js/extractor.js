@@ -1,7 +1,7 @@
 const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default youtube data api key (public search uses jina)
 const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
-const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links' };
+const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords', ytLinks: 'zb_yt_links', playlistUrl: 'zb_playlist_url' };
 const DEFAULT_SUFFIXES = ['official audio', 'topic'];
 const DEFAULT_ADMIN_CFG = { maxResults: 15, delayMs: 1000, suffixes: DEFAULT_SUFFIXES, useApi: true, autoPick: true };
 
@@ -73,6 +73,42 @@ function salvarKeywordsExclusao() {
     localStorage.setItem(STORAGE_KEYS.excludeKeywords, keywordsExclusao.join(', '));
   } catch (e) {
     log('[warn] não foi possível salvar as keywords de exclusão.');
+  }
+}
+
+// ==========================================
+// PLAYLIST URL (localStorage)
+// ==========================================
+// Same idea as the exclude keywords: the field is written on every keystroke and
+// restored on load, so the last playlist link survives a reload.
+function lerUrlPlaylist() {
+  try {
+    const salva = localStorage.getItem(STORAGE_KEYS.playlistUrl);
+    return salva === null ? null : salva;
+  } catch (e) {
+    return null;
+  }
+}
+
+function preencherUrlPlaylist() {
+  const input = document.getElementById('url');
+  if (!input) return;
+
+  const salva = lerUrlPlaylist();
+  // never stored (null) keeps the html default; a cleared field stays empty
+  if (salva === null) return;
+
+  input.value = salva;
+}
+
+function salvarUrlPlaylist() {
+  const input = document.getElementById('url');
+  if (!input) return;
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.playlistUrl, input.value.trim());
+  } catch (e) {
+    log('[warn] não foi possível salvar a url da playlist.');
   }
 }
 
@@ -538,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
   keywordsExclusao = lerKeywordsExclusao();
   linksCache = lerLinkCache();
   preencherKeywordsExclusao();
+  preencherUrlPlaylist();
   preencherYtKey();
 
   const scanInput = document.getElementById('scanFolderInput');
@@ -560,6 +597,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function limparUrlSpotify() {
   const urlInput = document.getElementById('url');
   if (urlInput) urlInput.value = '';
+  // clearing the field also clears the stored link, otherwise it returns on reload
+  salvarUrlPlaylist();
   mostrarToast('spotify url cleared');
 }
 

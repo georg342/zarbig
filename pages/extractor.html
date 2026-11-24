@@ -24,7 +24,7 @@
   <main class="layout stretch-results" id="main">
   <div class="col-controls">
   <div class="card">
-    <input type="url" id="url" aria-label="spotify playlist link" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." />
+    <input type="url" id="url" aria-label="spotify playlist link" value="https://open.spotify.com/playlist/28cBQdfd9WCmicqwt70hZc?si=7X5PlbATQs6wT6BP5AFS0g&utm_source=copy-link&pi=FEsM3DEpR9Cvy" placeholder="spotify playlist link..." oninput="salvarUrlPlaylist()" />
     <button type="button" onclick="extrair()" style="margin-bottom:0;">load playlist</button>
     <button type="button" class="link-btn" onclick="toggleBox('manualBox')" aria-expanded="false" aria-controls="manualBox"><i class="ph ph-wrench" aria-hidden="true"></i> manual mode</button>
     <button type="button" class="link-btn" onclick="toggleBox('apiBox')" aria-expanded="false" aria-controls="apiBox"><i class="ph ph-gear" aria-hidden="true"></i> official spotify api (+100 tracks)</button>
