@@ -69,11 +69,11 @@ if not exist "%APPDIR%\.installed" (
 )
 
 rem --- dependencies ------------------------------------------------------
-call :download "%YTDLP_URL%" "%BIN%\yt-dlp.exe" 10000000 "yt-dlp.exe"
+call :download "%YTDLP_URL%" "%BIN%\yt-dlp.exe" 15000000 "yt-dlp.exe"
 if errorlevel 1 goto :fail
 
 if not exist "%BIN%\deno.exe" (
-  call :download "%DENO_URL%" "%TMP%\deno.zip" 50000000 "deno.zip"
+  call :download "%DENO_URL%" "%TMP%\deno.zip" 25000000 "deno.zip"
   if errorlevel 1 goto :fail
   echo [..]   extracting deno.exe
   tar -xf "%TMP%\deno.zip" -C "%BIN%"
@@ -81,11 +81,8 @@ if not exist "%BIN%\deno.exe" (
     echo [error] could not extract deno.zip
     goto :fail
   )
-  if not exist "%BIN%\deno.exe" (
-    echo [error] deno.exe missing after extraction
-    goto :fail
-  )
-  echo [ok]   deno.exe ready
+  call :min "%BIN%\deno.exe" 40000000 "deno.exe"
+  if errorlevel 1 goto :fail
 )
 
 if not exist "%BIN%\ffmpeg.exe" (
@@ -100,11 +97,10 @@ if not exist "%BIN%\ffmpeg.exe" (
     if exist "%%D\bin\ffprobe.exe" copy /y "%%D\bin\ffprobe.exe" "%BIN%\" >nul
     if exist "%%D\bin\ffplay.exe" copy /y "%%D\bin\ffplay.exe" "%BIN%\" >nul
   )
-  if not exist "%BIN%\ffmpeg.exe" (
-    echo [error] ffmpeg.exe missing after extraction
-    goto :fail
-  )
-  echo [ok]   ffmpeg.exe ready
+  call :min "%BIN%\ffmpeg.exe" 20000000 "ffmpeg.exe"
+  if errorlevel 1 goto :fail
+  call :min "%BIN%\ffprobe.exe" 10000000 "ffprobe.exe"
+  if errorlevel 1 goto :fail
 )
 
 rem --- cleanup + agent copy ----------------------------------------------
@@ -173,5 +169,24 @@ if !SIZE! LSS %MIN% (
   exit /b 1
 )
 echo [ok]   %LABEL% ^(!SIZE! bytes^)
+exit /b 0
+
+rem --- minimum size check on an extracted file --------------------------
+:min
+set "FILE=%~1"
+set "MIN=%~2"
+set "LABEL=%~3"
+set "SIZE="
+if exist "%FILE%" for %%A in ("%FILE%") do set "SIZE=%%~zA"
+if not defined SIZE (
+  echo [error] %LABEL% is missing after extraction.
+  exit /b 1
+)
+if !SIZE! LSS %MIN% (
+  echo [error] %LABEL% looks truncated ^(!SIZE! bytes^).
+  del /q "%FILE%"
+  exit /b 1
+)
+echo [ok]   %LABEL% ready ^(!SIZE! bytes^)
 exit /b 0
 
