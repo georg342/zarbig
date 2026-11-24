@@ -405,7 +405,26 @@ window.toggleAdminMode = async function () {
 // The controls column decides how long the page is. Its height is measured with
 // the stretch class off (otherwise offsetHeight already reports the stretched
 // row) and cached in --results-cap, which pages.css uses as the card max-height.
-// No observer: a resize observer that measures the column it also resizes loops.
+// The cap never goes below the card's fixed chrome + a usable list, otherwise the
+// buttons under the list would be cut. No observer that measures its own target:
+// that is what produced the "resizeobserver loop" error.
+const MIN_LIST_HEIGHT = 120;
+
+// Height of everything in the card except the track list (padding, header,
+// search, selection row, toggle, help text, buttons).
+function medirChromeResCard() {
+  const card = document.getElementById('resCard');
+  const list = document.getElementById('lista');
+  if (!card || !list) return 0;
+
+  const displayAnterior = list.style.display;
+  list.style.display = 'none';
+  const chrome = card.scrollHeight;
+  list.style.display = displayAnterior;
+
+  return chrome;
+}
+
 function syncResultsCap() {
   const main = document.getElementById('main');
   const controls = document.querySelector('.col-controls');
@@ -414,7 +433,7 @@ function syncResultsCap() {
   const esticado = main.classList.contains('stretch-results');
   if (esticado) main.classList.remove('stretch-results');
 
-  const altura = controls.offsetHeight;
+  const altura = Math.max(controls.offsetHeight, medirChromeResCard() + MIN_LIST_HEIGHT);
 
   main.style.setProperty('--results-cap', `${altura}px`);
   main.classList.add('stretch-results');
@@ -470,6 +489,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // panel height changes with the viewport: re-measure the cap and the ghost rows
   window.addEventListener('resize', agendarSyncResultsCap);
   agendarSyncResultsCap();
+
+  // fonts and icons change the controls column height after first paint
+  window.addEventListener('load', agendarSyncResultsCap);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(agendarSyncResultsCap).catch(() => {});
+  }
 });
 
 function limparUrlSpotify() {
