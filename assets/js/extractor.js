@@ -411,6 +411,9 @@ function syncResultsCap() {
 
   main.classList.add('stretch-results');
   main.style.setProperty('--results-cap', `${controls.offsetHeight}px`);
+
+  // the cap changed the list height: ghost rows follow it
+  fitPlaceholderRows();
 }
 
 // Inicializa melhorias na UI dinamicamente se necessário
@@ -830,7 +833,10 @@ function copiarLinkUnico(num, ev) {
 }
 
 // Ghost rows keep the results panel shaped before a playlist is loaded, so the
-// page never shows a blank column next to the controls.
+// page never shows a blank column next to the controls. Rows always use flex to
+// share the list height; `placeholderCount` is adjusted by fitPlaceholderRows().
+let placeholderCount = 7;
+
 function renderPlaceholderRows(total = 7) {
   const linhas = Array.from({ length: total }, (_, i) => `
     <li class="track-item skeleton" aria-hidden="true">
@@ -847,6 +853,22 @@ function renderPlaceholderRows(total = 7) {
   return `<li class="track-item empty">no playlist loaded yet. paste a spotify link and hit load playlist.</li>${linhas}`;
 }
 
+// Keeps the ghost rows close to the height of a real track row (~41px): the
+// count follows the panel height instead of stretching 7 rows into fat bars.
+function fitPlaceholderRows() {
+  if (musicasGlobal.length) return;
+  if (window.matchMedia('(max-width: 1024px)').matches) return;
+
+  const lista = document.getElementById('lista');
+  if (!lista || !lista.clientHeight) return;
+
+  const total = Math.min(40, Math.max(7, Math.round(lista.clientHeight / 41)));
+  if (total === placeholderCount) return;
+
+  placeholderCount = total;
+  render();
+}
+
 function render() {
   document.getElementById('pTitle').innerText = nomePlaylist.toLowerCase();
   const q = document.getElementById('busca').value.toLowerCase();
@@ -856,8 +878,7 @@ function render() {
 
   const lista = document.getElementById('lista');
   if (!musicasGlobal.length) {
-    // admin mode stacks a tall panel on the left, so it gets more ghost rows
-    lista.innerHTML = renderPlaceholderRows(isAdmin ? 16 : 7);
+    lista.innerHTML = renderPlaceholderRows(placeholderCount);
     atualizarContador();
     updateToolsVisibility();
     return;
