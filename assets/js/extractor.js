@@ -1,7 +1,7 @@
 const YOUTUBE_API_KEY = 'AIzaSyBN02HbxDwq9KuCjaJa4cqtFV9gvIe_xDk'; // default youtube data api key (public search uses jina)
 const ADMIN_HASH = 'f1c1592588411002af340cbaedd6fc33';
 const JINA_SEARCH_BASE = 'https://r.jina.ai/https://www.youtube.com/results?search_query=';
-const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg' };
+const STORAGE_KEYS = { ytKey: 'zb_yt_key', adminCfg: 'zb_admin_cfg', excludeKeywords: 'zb_exclude_keywords' };
 const DEFAULT_SUFFIXES = ['official audio', 'official video'];
 const DEFAULT_ADMIN_CFG = { maxResults: 15, delayMs: 1000, suffixes: DEFAULT_SUFFIXES, useApi: true, autoPick: true };
 
@@ -32,6 +32,68 @@ function parseSufixos(valor, fallback) {
   const sufixos = lista.map(s => String(s).trim().replace(/\s+/g, ' ').toLowerCase()).filter(Boolean);
 
   return [...new Set(sufixos)].slice(0, 10);
+}
+
+// ==========================================
+// TITLE EXCLUDE FILTER (public + admin)
+// ==========================================
+// "live, Remix ,, cover" -> ['live','remix','cover']
+function parseKeywordsExclusao(valor) {
+  if (valor === undefined || valor === null) return [];
+
+  const lista = Array.isArray(valor) ? valor : String(valor).split(',');
+  const keywords = lista.map(k => String(k).trim().toLowerCase()).filter(Boolean);
+
+  return [...new Set(keywords)];
+}
+
+// kept in memory so the filter does not touch localStorage for every result
+let keywordsExclusao = [];
+let descartesFiltro = 0;
+
+function lerKeywordsExclusao() {
+  try {
+    return parseKeywordsExclusao(localStorage.getItem(STORAGE_KEYS.excludeKeywords));
+  } catch (e) {
+    return [];
+  }
+}
+
+function preencherKeywordsExclusao() {
+  const input = document.getElementById('cfgExcludeKeywords');
+  if (input) input.value = keywordsExclusao.join(', ');
+}
+
+function salvarKeywordsExclusao() {
+  const input = document.getElementById('cfgExcludeKeywords');
+  if (!input) return;
+
+  keywordsExclusao = parseKeywordsExclusao(input.value);
+  try {
+    localStorage.setItem(STORAGE_KEYS.excludeKeywords, keywordsExclusao.join(', '));
+  } catch (e) {
+    log('[warn] não foi possível salvar as keywords de exclusão.');
+  }
+}
+
+// true when the video title contains any excluded keyword
+function tituloBloqueado(titulo) {
+  if (!keywordsExclusao.length) return false;
+
+  const alvo = String(titulo || '').toLowerCase();
+  return keywordsExclusao.some(k => alvo.includes(k));
+}
+
+// Drops blocked results and counts them for the batch toast.
+function filtrarResultados(resultados) {
+  if (!keywordsExclusao.length) return resultados;
+
+  return resultados.filter(opt => {
+    if (!tituloBloqueado(opt.title)) return true;
+    descartesFiltro++;
+    log(`[filtro] descartado pelo título: "${opt.title}"`);
+    return false;
+  });
 }
 
 function getAdminCfg() {
@@ -244,6 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
     row.appendChild(clearBtn);
   }
 
+  keywordsExclusao = lerKeywordsExclusao();
+  preencherKeywordsExclusao();
   preencherYtKey();
 
   const scanInput = document.getElementById('scanFolderInput');
@@ -331,8 +395,210 @@ function criarObjetoMusica(num, tit, art) {
   };
 }
 
+// ==========================================
+// SPOTIFY PLAYLIST > 100 TRACKS (NO OAUTH)
+// ==========================================
+// The embed page ships an anonymous session token inside __NEXT_DATA__, and the
+// web player graphql endpoint answers with it, so playlists above the embed's
+// 100 track cap can be paged. cors: api-partner allows authorization/app-platform
+// from any origin and r.jina.ai allows x-return-format, so no extra proxy is needed.
+const SPOTIFY_CACHE_PREFIX = 'zb_spotify_cache_';
+const SPOTIFY_EMBED_BASE = 'https://open.spotify.com/embed/playlist/';
+const SPOTIFY_PATHFINDER = 'https://api-partner.spotify.com/pathfinder/v1/query';
+const SPOTIFY_FETCH_PLAYLIST = {
+  operation: 'fetchPlaylist',
+  hash: '21ea11a6ac75a5f3e01fd365d29c18e0a4a8b7dc09f89bbb5d73910190c6acaf'
+};
+const SPOTIFY_PAGE_SIZE = 100;
+
+// Pulls accessToken + expiration out of the embed __NEXT_DATA__ payload.
+function extrairTokenEmbed(html) {
+  if (!html) return null;
+
+  const bloco = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  const json = bloco ? bloco[1] : html;
+
+  let token = null;
+  let expiraEm = 0;
+
+  try {
+    const sessao = JSON.parse(json)?.props?.pageProps?.state?.settings?.session;
+    token = sessao?.accessToken || null;
+    expiraEm = parseInt(sessao?.accessTokenExpirationTimestampMs, 10) || 0;
+  } catch (e) {
+    // regex fallback below handles a payload that the parser rejects
+  }
+
+  if (!token) {
+    const m = json.match(/"accessToken":"([^"]+)"/);
+    token = m ? m[1] : null;
+  }
+  if (!expiraEm) {
+    const m = json.match(/"accessTokenExpirationTimestampMs":(\d+)/);
+    expiraEm = m ? parseInt(m[1], 10) : 0;
+  }
+
+  return token ? { token: token, expiraEm: expiraEm } : null;
+}
+
+// Asks r.jina.ai for the raw embed html (not the markdown) to get the token.
+async function buscarTokenSpoti(id) {
+  const alvo = `${SPOTIFY_EMBED_BASE}${id}`;
+  log('[info] [spotify] buscando token anônimo no embed (html)...');
+
+  let ultimoErro = null;
+
+  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+    try {
+      const res = await fetchRapido(`https://r.jina.ai/${alvo}`, {
+        headers: { 'X-Return-Format': 'html' },
+        referrerPolicy: 'no-referrer'
+      }, 25000);
+
+      // jina answers 403/429 when the free tier throttles, and a 200 body can still
+      // be a warning page: the token check decides, not the status code.
+      const dados = extrairTokenEmbed(await res.text());
+      if (dados) return dados;
+      ultimoErro = new Error(`sem token no html (http ${res.status})`);
+      log(`[warn] [spotify] token não encontrado (tentativa ${tentativa}/2, http ${res.status}).`);
+    } catch (e) {
+      ultimoErro = e;
+      log(`[warn] [spotify] token falhou (tentativa ${tentativa}/2): ${e.message}`);
+    }
+    if (tentativa < 2) await sleep(1500);
+  }
+
+  throw new Error(`token anônimo indisponível (${ultimoErro ? ultimoErro.message : 'sem resposta'})`);
+}
+
+// One page of the playlist through the web player persisted query.
+async function buscarPaginaSpoti(id, token, offset) {
+  const variables = JSON.stringify({
+    uri: `spotify:playlist:${id}`,
+    offset: offset,
+    limit: SPOTIFY_PAGE_SIZE,
+    enableWatchFeedEntrypoint: false
+  });
+  const extensions = JSON.stringify({
+    persistedQuery: { version: 1, sha256Hash: SPOTIFY_FETCH_PLAYLIST.hash }
+  });
+  const url = `${SPOTIFY_PATHFINDER}?operationName=${SPOTIFY_FETCH_PLAYLIST.operation}`
+    + `&variables=${encodeURIComponent(variables)}&extensions=${encodeURIComponent(extensions)}`;
+
+  const res = await fetchRapido(url, {
+    headers: { 'Authorization': `Bearer ${token}`, 'app-platform': 'WebPlayer' },
+    referrerPolicy: 'no-referrer'
+  }, 15000);
+
+  if (!res.ok) throw new Error(`pathfinder http ${res.status}`);
+
+  const dados = await res.json();
+  if (dados.errors && dados.errors.length) throw new Error(`pathfinder: ${dados.errors[0].message}`);
+
+  const playlist = dados.data && dados.data.playlistV2;
+  if (!playlist) throw new Error('pathfinder: playlist vazia');
+  return playlist;
+}
+
+// itemV2/itemV3 -> the same { titulo, artista } shape the embed parser produces.
+function normalizarFaixaSpoti(item) {
+  const faixa = (item && (item.itemV2?.data || item.itemV3?.data)) || null;
+  if (!faixa) return null;
+
+  const titulo = faixa.name || (faixa.data && faixa.data.name);
+  if (!titulo) return null;
+
+  const artistas = (faixa.artists?.items || []).map(a => a && a.profile && a.profile.name).filter(Boolean);
+  const doAlbum = (faixa.albumOfTrack?.artists?.items || []).map(a => a && a.profile && a.profile.name).filter(Boolean);
+
+  return { titulo: titulo, artista: (artistas.length ? artistas : doAlbum).join(', ') || 'unknown' };
+}
+
+// Pages to the end. Anything unexpected throws so semApi can fall back to the embed parse.
+async function extrairViaPathfinder(id) {
+  const { token } = await buscarTokenSpoti(id);
+
+  const faixas = [];
+  let nome = null;
+  let total = 0;
+  let offset = 0;
+
+  for (;;) {
+    const playlist = await buscarPaginaSpoti(id, token, offset);
+    if (!nome) nome = playlist.name || null;
+
+    const pagina = playlist.content || {};
+    const itens = pagina.items || [];
+    total = pagina.totalCount || total;
+
+    itens.forEach(item => {
+      const faixa = normalizarFaixaSpoti(item);
+      if (faixa) faixas.push(faixa);
+    });
+
+    if (itens.length < SPOTIFY_PAGE_SIZE) break;
+    offset += SPOTIFY_PAGE_SIZE;
+    if (total && offset >= total) break;
+    if (offset >= 10000) break; // safety stop for a runaway loop
+  }
+
+  if (!faixas.length) throw new Error('pathfinder não retornou faixas');
+  log(`[ok] [spotify] ${faixas.length} faixas via pathfinder (total ${total}).`);
+  return { nome: nome, faixas: faixas };
+}
+
+function lerCacheSpoti(id) {
+  try {
+    const raw = sessionStorage.getItem(SPOTIFY_CACHE_PREFIX + id);
+    if (!raw) return null;
+
+    const salvo = JSON.parse(raw);
+    if (!salvo || !Array.isArray(salvo.faixas) || !salvo.faixas.length) return null;
+    return salvo;
+  } catch (e) {
+    return null;
+  }
+}
+
+function salvarCacheSpoti(id, dados) {
+  try {
+    sessionStorage.setItem(SPOTIFY_CACHE_PREFIX + id, JSON.stringify(dados));
+  } catch (e) {
+    log('[warn] cache da sessão cheio; playlist não foi cacheada.');
+  }
+}
+
+// Turns the { nome, faixas } payload into the page's music objects.
+function aplicarPlaylistSpoti(dados) {
+  if (dados.nome) nomePlaylist = dados.nome;
+  musicasGlobal = dados.faixas.map((f, i) => criarObjetoMusica(i + 1, f.titulo, f.artista));
+  render();
+  document.getElementById('status').innerText = `${musicasGlobal.length} tracks loaded!`;
+  document.getElementById('resCard').style.display = 'block';
+}
+
 async function semApi(id) {
-  const target = `https://open.spotify.com/embed/playlist/${id}`;
+  // same playlist loaded twice in one session reuses the sessionStorage copy
+  const cache = lerCacheSpoti(id);
+  if (cache) {
+    aplicarPlaylistSpoti(cache);
+    log(`[cache] ${cache.faixas.length} faixas restauradas da sessão.`);
+    return;
+  }
+
+  // route 1: anonymous embed token + pathfinder graphql (no 100 track cap)
+  try {
+    const dados = await extrairViaPathfinder(id);
+    salvarCacheSpoti(id, dados);
+    aplicarPlaylistSpoti(dados);
+    return;
+  } catch (e) {
+    log(`[warn] [spotify] pathfinder falhou (${e.message}); caindo para o parse do embed.`);
+    mostrarToast('limite de 100 faixas (fallback)');
+  }
+
+  // route 2: embed markdown parse (spotify caps this one at 100 tracks)
+  const target = `${SPOTIFY_EMBED_BASE}${id}`;
   const proxies = [
     { nome: "jina", url: `https://r.jina.ai/${target}` },
     { nome: "allorigins", url: `https://api.allorigins.win/get?url=${encodeURIComponent(target)}` }
@@ -536,14 +802,19 @@ async function buscarResultadosApi(m) {
     }
 
     const data = await res.json();
-    const resultados = (data.items || []).map(item => ({
+    const brutos = (data.items || []).map(item => ({
       id: item.id.videoId,
       title: (item.snippet.title || '').toLowerCase(),
       channelTitle: (item.snippet.channelTitle || '').toLowerCase(),
       thumbnail: item.snippet.thumbnails?.default?.url || ''
     })).filter(opt => opt.id);
+    const resultados = filtrarResultados(brutos);
 
     if (resultados.length > 0) return resultados;
+    if (brutos.length > 0) {
+      log(`[info] [youtube api] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título; tentando o próximo sufixo...`);
+      continue;
+    }
     log(`[warn] [youtube api] sem resultados para "${termo}"; tentando o próximo sufixo...`);
   }
 
@@ -565,8 +836,16 @@ async function buscarResultadosJina(m) {
         // page, so success is measured by parsed results instead of res.ok.
         const res = await fetchRapido(target, { referrerPolicy: 'no-referrer' }, 20000);
         const txt = await res.text();
-        resultados = parseResultadosJina(txt);
-        if (resultados.length > 0) break;
+        const brutos = parseResultadosJina(txt);
+        if (brutos.length > 0) {
+          // a suffix whose videos were all filtered still counts as an attempt:
+          // no retry, just move on to the next suffix.
+          resultados = filtrarResultados(brutos);
+          if (resultados.length === 0) {
+            log(`[info] [jina] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título.`);
+          }
+          break;
+        }
         log(`[warn] [jina] nenhum vídeo encontrado (tentativa ${tentativa}/3)`);
       } catch (e) {
         log(`[warn] [jina] tentativa ${tentativa}/3 falhou: ${e.message}`);
@@ -753,6 +1032,7 @@ async function buscarLinksYoutube() {
 
   let concluidas = 0;
   const total = selecionadas.length;
+  descartesFiltro = 0;
 
   for (let m of selecionadas) {
     status.innerText = `processing (${concluidas}/${total}): ${m.titulo}`;
@@ -793,6 +1073,7 @@ async function buscarLinksYoutube() {
   progWrap.style.display = 'none';
   btn.disabled = false;
   mostrarToast("links generated!");
+  if (descartesFiltro > 0) mostrarToast(`${descartesFiltro} videos discarded by title filter`);
   window.__zbBatchRunning = false;
 }
 
@@ -935,6 +1216,7 @@ async function retentarFalhas() {
   progBar.setAttribute('aria-valuenow', '0');
 
   let feitas = 0;
+  descartesFiltro = 0;
 
   for (const m of falhas) {
     status.innerText = `retrying (${feitas}/${falhas.length}): ${m.titulo}`;
@@ -964,6 +1246,7 @@ async function retentarFalhas() {
   const restantes = musicasGlobal.filter(m => m.erroYt).length;
   status.innerText = `retry complete (${falhas.length - restantes} ok, ${restantes} failed)`;
   mostrarToast(`retried ${falhas.length} tracks`);
+  if (descartesFiltro > 0) mostrarToast(`${descartesFiltro} videos discarded by title filter`);
   window.__zbBatchRunning = false;
 }
 

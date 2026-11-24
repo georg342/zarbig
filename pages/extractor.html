@@ -40,6 +40,12 @@
       <input type="password" id="csec" aria-label="spotify client secret" placeholder="client secret" oninput="salvarChaves()" />
     </div>
 
+    <div class="input-group" style="margin-top: 14px;">
+      <label for="cfgExcludeKeywords">exclude title keywords</label>
+      <input type="text" id="cfgExcludeKeywords" class="text-input" placeholder="ex: live, remix, cover, sped up" autocomplete="off" spellcheck="false" oninput="salvarKeywordsExclusao()">
+    </div>
+    <p class="help-text">comma separated, case-insensitive. videos with any of these words in the title are skipped in public and admin mode.</p>
+
     <p class="help-text">paste the playlist link and hit load playlist. if the proxy fails, use manual mode. the official spotify api only stores the credentials for now.</p>
   </div>
 
