@@ -40,6 +40,8 @@
       <input type="password" id="csec" aria-label="spotify client secret" placeholder="client secret" oninput="salvarChaves()" />
     </div>
 
+    <button type="button" class="link-btn link-btn-danger" onclick="limparCacheLinks()"><i class="ph ph-broom" aria-hidden="true"></i> clear saved links</button>
+
     <div class="input-group" style="margin-top: 14px;">
       <label for="cfgExcludeKeywords">exclude title keywords</label>
       <input type="text" id="cfgExcludeKeywords" class="text-input" placeholder="ex: live, remix, cover, sped up" autocomplete="off" spellcheck="false" oninput="salvarKeywordsExclusao()">

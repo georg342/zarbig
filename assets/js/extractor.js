@@ -169,6 +169,24 @@ function priorizarArtTracks(resultados) {
   return artTracks.concat(demais);
 }
 
+// The spotify artist has to show up in the video title or channel. When it does
+// not, the row is flagged so the pick can be reviewed by hand (an accent or a
+// featured credit should not trigger it, normalizarNome strips both).
+function artistaNoVideo(m, opt) {
+  const texto = normalizarNome(`${opt.title || ''} ${opt.channelTitle || ''}`);
+  if (!texto) return false;
+
+  const artistas = String(m.artista || '')
+    .split(',')
+    .map(normalizarNome)
+    .filter(a => a && a !== 'unknown');
+
+  // no artist on the spotify side: nothing to compare against
+  if (!artistas.length) return true;
+
+  return artistas.some(artista => new RegExp(`\\b${artista}\\b`).test(texto));
+}
+
 // ==========================================
 // YOUTUBE LINK CACHE (localStorage)
 // ==========================================
@@ -283,6 +301,7 @@ function aplicarLinkYt(m, opt, usarYtMusic) {
   m.ytTitle = opt.title;
   m.ytChannel = opt.channelTitle;
   m.ytArt = opt.artTrack === true || ehArtTrack(opt);
+  m.artistaOk = artistaNoVideo(m, opt);
   m.erroYt = false;
 
   cachearLinkYt(m, opt);
@@ -671,6 +690,7 @@ function criarObjetoMusica(num, tit, art) {
     ytTitle: null,
     ytChannel: null,
     ytArt: false,
+    artistaOk: true,
     erroYt: false 
   };
 }
@@ -1040,6 +1060,10 @@ function render() {
     const ownedBadge = m.jaTenho ? `<span class="owned-badge">owned</span>` : '';
     // official label upload picked by priorizarArtTracks()
     const artBadge = m.ytArt ? `<span class="art-badge">art track</span>` : '';
+    // link resolved but the spotify artist is absent from title/channel: review it
+    const avisoArtista = (m.ytUrl && m.artistaOk === false)
+      ? `<span class="artist-warn" role="img" aria-label="artist not found in the video" title="artist not found in the video"><i class="ph ph-warning" aria-hidden="true"></i></span>`
+      : '';
 
     return `
       <li class="track-item ${m.selecionada ? 'selected' : ''} ${m.jaTenho ? 'owned' : ''}" onclick="toggleItem(${m.num}, event)">
@@ -1052,6 +1076,7 @@ function render() {
         </div>
         <div class="badges-container" style="display: flex; align-items: center; gap: 6px;">
           ${ownedBadge}
+          ${avisoArtista}
           ${artBadge}
           ${badgeYt}
           ${changeVideoBtn}
@@ -1078,10 +1103,11 @@ function render() {
 function montarTermosBusca(m) {
   const cfg = getAdminCfg();
   const base = `${m.titulo} ${m.artista}`.trim();
-  const termos = cfg.suffixes.map(s => `${base} ${s}`.trim()).filter(Boolean);
+  const comSufixo = cfg.suffixes.map(s => `${base} ${s}`.trim()).filter(Boolean);
 
-  // empty suffix list = search without suffix
-  return termos.length > 0 ? [...new Set(termos)] : [base];
+  // the bare "title artist" query goes first: it is the one that surfaces art
+  // tracks, and the suffixes stay behind it as the transparent fallback
+  return [...new Set([base, ...comSufixo])];
 }
 
 // The official api only runs in admin mode with the "use official youtube api" toggle on.
@@ -1132,7 +1158,14 @@ async function buscarResultadosApi(m) {
 
   if (!key) throw new Error('youtube api key not configured');
 
-  for (const termo of montarTermosBusca(m)) {
+  const termos = montarTermosBusca(m);
+
+  for (let i = 0; i < termos.length; i++) {
+    const termo = termos[i];
+    // the first (bare) query only accepts art tracks; the suffixes keep the old
+    // behaviour, so a missing art track falls back to the usual pick
+    const apenasArtTrack = i === 0 && termos.length > 1;
+
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${cfg.maxResults}&q=${encodeURIComponent(termo)}&key=${key}`;
     log(`[info] [youtube api] buscando opções para: "${termo}"`);
 
@@ -1152,7 +1185,8 @@ async function buscarResultadosApi(m) {
     })).filter(opt => opt.id);
     // art tracks first: the api gives channel + description on the result itself,
     // so no extra details call is needed to confirm one
-    const resultados = priorizarArtTracks(filtrarResultados(brutos));
+    const ordenados = priorizarArtTracks(filtrarResultados(brutos));
+    const resultados = apenasArtTrack ? ordenados.filter(opt => opt.artTrack) : ordenados;
 
     if (resultados.length > 0) return resultados;
     if (brutos.length > 0) {
@@ -1167,8 +1201,14 @@ async function buscarResultadosApi(m) {
 
 async function buscarResultadosJina(m) {
   const cfg = getAdminCfg();
+  const termos = montarTermosBusca(m);
 
-  for (const termo of montarTermosBusca(m)) {
+  for (let i = 0; i < termos.length; i++) {
+    const termo = termos[i];
+    // bare query first: only art tracks count there, the suffixes keep the old
+    // behaviour as the fallback when the bare query finds none
+    const apenasArtTrack = i === 0 && termos.length > 1;
+
     const target = `${JINA_SEARCH_BASE}${encodeURIComponent(termo)}`;
     log(`[info] [jina] buscando resultados para: "${termo}"`);
 
@@ -1186,7 +1226,8 @@ async function buscarResultadosJina(m) {
           // no retry, just move on to the next suffix.
           // the "- topic" channel is the art track signal available here; the
           // scrape carries no description, so no extra fetch is spent on it
-          resultados = priorizarArtTracks(filtrarResultados(brutos));
+          const ordenados = priorizarArtTracks(filtrarResultados(brutos));
+          resultados = apenasArtTrack ? ordenados.filter(opt => opt.artTrack) : ordenados;
           if (resultados.length === 0) {
             log(`[info] [jina] todos os ${brutos.length} vídeos de "${termo}" caíram no filtro de título.`);
           }
@@ -1611,6 +1652,7 @@ async function resetarLinks() {
     m.ytTitle = null;
     m.ytChannel = null;
     m.ytArt = false;
+    m.artistaOk = true;
     m.erroYt = false;
     // reset also forgets the cached picks, otherwise the next run would just
     // hand back the same links without searching again
@@ -1621,6 +1663,23 @@ async function resetarLinks() {
   render();
   log('[info] all generated links reset (cache entries dropped).');
   mostrarToast('all links reset!');
+}
+
+// Wipes every link saved in localStorage (the whole browser cache), not only the
+// links of the playlist that happens to be open.
+async function limparCacheLinks() {
+  const confirmado = await window.showCustomModal({
+    title: 'clear saved links',
+    message: 'delete every youtube link saved in this browser?'
+  });
+
+  if (!confirmado) return;
+
+  linksCache = {};
+  // salvarLinkCache() cancels the pending debounce and rewrites the key (with its
+  // try/catch), so the storage ends up empty instead of holding stale entries
+  salvarLinkCache();
+  mostrarToast('saved links cleared!');
 }
 
 // Normaliza nomes de arquivos/títulos para comparar sem acento, extensão ou pontuação.
