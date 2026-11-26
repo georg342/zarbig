@@ -26,6 +26,7 @@ const btnAdminUnlock = document.getElementById('btnAdminUnlock');
 const pastaInput = document.getElementById('pastaInput');
 const btnPastaPost = document.getElementById('btnPastaPost');
 const btnPastaClear = document.getElementById('btnPastaClear');
+const btnPastaPaste = document.getElementById('btnPastaPaste');
 const pastaStatus = document.getElementById('pastaStatus');
 const pastaState = document.getElementById('pastaState');
 const pastaFeed = document.getElementById('pastaFeed');
@@ -363,6 +364,30 @@ async function pollFeed() {
 }
 
 btnPastaPost.addEventListener('click', postPasta);
+
+// clipboard read needs a secure context and a permission grant, so every
+// failure falls back to focusing the field for a manual ctrl+v
+btnPastaPaste.addEventListener('click', async () => {
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    mostrarToast('paste not supported, use ctrl+v');
+    pastaInput.focus();
+    return;
+  }
+
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text) {
+      mostrarToast('clipboard is empty');
+      return;
+    }
+    pastaInput.value = text;
+    pastaInput.focus();
+    mostrarToast('pasted from clipboard');
+  } catch (err) {
+    mostrarToast('clipboard blocked, use ctrl+v');
+    pastaInput.focus();
+  }
+});
 
 // local only: clearing the field never touches the cloud
 btnPastaClear.addEventListener('click', () => {
