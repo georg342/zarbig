@@ -9,8 +9,6 @@ const BUCKET_NAME = 'dj-sets';
 // file share lives under a folder prefix inside the existing bucket, so the
 // sets page (bucket root) never mixes with these files.
 const PREFIX = 'files';
-// notes live in their own prefix, so they never show up in the files listing
-const NOTE_PATH = 'posts/post.txt';
 // supabase free plan caps every upload at 50 mb (global file size limit).
 // raise this only if the project moves to a paid plan.
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -31,11 +29,6 @@ const lockScreen = document.getElementById('lockScreen');
 const toolContent = document.getElementById('toolContent');
 const btnAdminToggle = document.getElementById('btnAdminToggle');
 const btnAdminUnlock = document.getElementById('btnAdminUnlock');
-const postInput = document.getElementById('postInput');
-const btnPost = document.getElementById('btnPost');
-const btnClearPost = document.getElementById('btnClearPost');
-const postStatus = document.getElementById('postStatus');
-const postState = document.getElementById('postState');
 
 let currentFiles = [];
 let isAdmin = false;
@@ -96,7 +89,6 @@ window.toggleAdminMode = async function() {
       syncAdminUI();
       mostrarToast('login successful');
       loadFiles();
-      loadPost();
     } else {
       mostrarToast('invalid password');
     }
@@ -388,84 +380,6 @@ btnDeleteAll.addEventListener('click', async () => {
 
   mostrarToast('all files deleted!');
   loadFiles();
-});
-
-// ==========================================
-// 5. POST NOTE (single living text, admin-only)
-// ==========================================
-// every post overwrites the cloud copy: one note, no history, no feed.
-async function loadPost() {
-  postStatus.innerText = '';
-  postState.innerText = 'loading...';
-
-  try {
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .download(NOTE_PATH);
-
-    // a missing object is the normal first-run state, not a failure
-    if (error) {
-      if (/not found|does not exist/i.test(error.message || '')) {
-        postInput.value = '';
-        postState.innerText = 'nothing posted yet';
-        return;
-      }
-      throw error;
-    }
-
-    postInput.value = await data.text();
-    postState.innerText = 'loaded from cloud';
-  } catch (err) {
-    postState.innerText = 'load error';
-    mostrarToast(`error loading post: ${err.message}`);
-  }
-}
-
-async function postPost() {
-  if (!isAdmin) {
-    mostrarToast('unauthorized!');
-    return;
-  }
-
-  const text = postInput.value;
-  // empty posts are rejected on purpose: they would wipe the cloud note
-  if (!text.trim()) {
-    mostrarToast('nothing to post!');
-    return;
-  }
-
-  btnPost.disabled = true;
-  postStatus.innerText = 'posting...';
-
-  const blob = new Blob([text], { type: 'text/plain' });
-
-  try {
-    const { error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(NOTE_PATH, blob, { contentType: 'text/plain', upsert: true, cacheControl: '0' });
-
-    if (error) throw error;
-  } catch (err) {
-    postStatus.innerText = `post error: ${err.message}`;
-    mostrarToast('failed to post text');
-    btnPost.disabled = false;
-    return;
-  }
-
-  postStatus.innerText = '';
-  postState.innerText = 'posted';
-  mostrarToast('posted!');
-  btnPost.disabled = false;
-}
-
-btnPost.addEventListener('click', postPost);
-
-// local only: the cloud note is never wiped by this button
-btnClearPost.addEventListener('click', () => {
-  postInput.value = '';
-  postStatus.innerText = '';
-  postInput.focus();
-  mostrarToast('field cleared');
 });
 
 // The tool stays locked until toggleAdminMode() authenticates.

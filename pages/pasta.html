@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0c0c0c">
+  <meta name="description" content="clipboard feed synced across devices: post text anywhere, read it anywhere.">
+  <title>zarbig - copy pasta</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">skip to content</a>
+
+  <header class="app-header sets-header">
+    <a href="../index.html" class="back-btn"><i class="ph ph-arrow-left" aria-hidden="true"></i> back to hub</a>
+    <h1><i class="ph ph-bowl-food" aria-hidden="true"></i> copy pasta</h1>
+    <p>clipboard feed, synced across devices</p>
+  </header>
+
+  <main id="main">
+    <!-- Locked state: the whole tool is admin-only -->
+    <section id="lockScreen" class="card admin-lock" aria-labelledby="lockTitle">
+      <i class="ph ph-lock-key admin-lock-icon" aria-hidden="true"></i>
+      <h2 id="lockTitle" class="section-title">admin mode required</h2>
+      <p>this tool is admin-only. enter admin mode to read the feed and post text.</p>
+      <button id="btnAdminUnlock" class="btn-primary" type="button" onclick="toggleAdminMode()" aria-expanded="false" aria-controls="toolContent"><i class="ph ph-lock" aria-hidden="true"></i> admin mode</button>
+    </section>
+
+    <!-- Tool: shown only with admin authenticated -->
+    <div id="toolContent" class="layout" style="display: none;">
+      <div class="col-controls">
+
+        <!-- Admin mode toggle -->
+        <div style="margin-bottom: 12px; text-align: center;">
+          <button id="btnAdminToggle" class="btn-sec" type="button" onclick="toggleAdminMode()" aria-expanded="true" aria-controls="composerCard"><i class="ph ph-lock-open" aria-hidden="true"></i> exit admin mode</button>
+        </div>
+
+        <div id="composerCard" class="card">
+          <div class="list-header">
+            <h3 class="section-title">new post</h3>
+            <span id="pastaState" class="help-text">not loaded</span>
+          </div>
+          <label class="sr-only" for="pastaInput">post text</label>
+          <textarea id="pastaInput" placeholder="paste anything here..."></textarea>
+          <div class="post-actions">
+            <button id="btnPastaPost" class="btn-primary" type="button"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> post</button>
+            <button id="btnPastaClear" class="btn-sec btn-square" type="button" title="clear field" aria-label="clear post field"><i class="ph ph-x" aria-hidden="true"></i></button>
+          </div>
+          <div id="pastaStatus" class="status-msg" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="col-results">
+        <div class="card">
+          <div class="list-header">
+            <h3 class="section-title">feed</h3>
+          </div>
+          <ul id="pastaFeed" class="sets-list">
+            <!-- Injected via JS -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../assets/js/main.js"></script>
+  <script type="module" src="../assets/js/pasta.js"></script>
+</body>
+</html>

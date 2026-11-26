@@ -773,3 +773,23 @@
   padding: 0;
   margin-bottom: 0;
 }
+
+/* Copy Pasta: clipboard feed, one card per post */
+.pasta-item {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.pasta-item .set-actions {
+  align-self: flex-end;
+}
+.pasta-text {
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  color: #e5e5e5;
+  max-height: 220px;
+  overflow-y: auto;
+  user-select: text;
+}

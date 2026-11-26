@@ -31,21 +31,6 @@
     <!-- Tool: injected/shown only with admin authenticated -->
     <div id="toolContent" class="layout" style="display: none;">
       <div class="col-results">
-        <!-- Shared text note: one living post, stored in supabase storage -->
-        <section class="card" aria-labelledby="postTitle">
-          <div class="list-header">
-            <h3 id="postTitle" class="section-title">post</h3>
-            <span id="postState" class="help-text">not loaded</span>
-          </div>
-          <textarea id="postInput" aria-describedby="postHelp" placeholder="write something..."></textarea>
-          <p class="help-text" id="postHelp">saved on supabase, visible from any device after reload.</p>
-          <div class="post-actions">
-            <button id="btnPost" class="btn-primary" type="button"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> post</button>
-            <button id="btnClearPost" class="btn-sec btn-square" type="button" title="clear field" aria-label="clear post field"><i class="ph ph-x" aria-hidden="true"></i></button>
-          </div>
-          <div id="postStatus" class="status-msg" role="status" aria-live="polite"></div>
-        </section>
-
         <div class="card">
           <div class="list-header">
             <h3 class="section-title">available files</h3>
