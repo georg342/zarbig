@@ -10,6 +10,7 @@ regras:
 - um comando por chamada; ecoar exit code: `cmd /c "..."; Write-Output "EXIT=$LASTEXITCODE"`
 - `command completion could not be observed`: reexecutar antes de assumir.
 - `rtk` ausente/falhando: usar `git` direto e avisar.
+- aviso `No hook installed — run 'rtk init -g'` silenciado via `%APPDATA%\rtk\config.toml`, `[hooks] suppress_hook_warning = true`. rtk 1.2.0 não tem flag CLI pra isso; não sugerir `rtk init -g`.
 
 `rtk gain` só quando o usuário pedir estatísticas.
 
