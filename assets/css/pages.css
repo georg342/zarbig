@@ -756,3 +756,20 @@
 .file-share-help {
   margin-bottom: var(--space-3);
 }
+/* post bar: wide post button with a square clear button on its right */
+.post-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.post-actions .btn-primary {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+.post-actions .btn-square {
+  flex: 0 0 46px;
+  width: 46px;
+  min-height: 46px;
+  padding: 0;
+  margin-bottom: 0;
+}

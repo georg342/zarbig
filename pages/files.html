@@ -39,7 +39,10 @@
           </div>
           <textarea id="postInput" aria-describedby="postHelp" placeholder="write something..."></textarea>
           <p class="help-text" id="postHelp">saved on supabase, visible from any device after reload.</p>
-          <button id="btnPost" class="btn-primary" type="button"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> post</button>
+          <div class="post-actions">
+            <button id="btnPost" class="btn-primary" type="button"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> post</button>
+            <button id="btnClearPost" class="btn-sec btn-square" type="button" title="clear field" aria-label="clear post field"><i class="ph ph-x" aria-hidden="true"></i></button>
+          </div>
           <div id="postStatus" class="status-msg" role="status" aria-live="polite"></div>
         </section>
 

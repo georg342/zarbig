@@ -33,6 +33,7 @@ const btnAdminToggle = document.getElementById('btnAdminToggle');
 const btnAdminUnlock = document.getElementById('btnAdminUnlock');
 const postInput = document.getElementById('postInput');
 const btnPost = document.getElementById('btnPost');
+const btnClearPost = document.getElementById('btnClearPost');
 const postStatus = document.getElementById('postStatus');
 const postState = document.getElementById('postState');
 
@@ -458,6 +459,14 @@ async function postPost() {
 }
 
 btnPost.addEventListener('click', postPost);
+
+// local only: the cloud note is never wiped by this button
+btnClearPost.addEventListener('click', () => {
+  postInput.value = '';
+  postStatus.innerText = '';
+  postInput.focus();
+  mostrarToast('field cleared');
+});
 
 // The tool stays locked until toggleAdminMode() authenticates.
 syncAdminUI();
